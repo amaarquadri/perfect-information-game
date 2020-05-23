@@ -78,14 +78,9 @@ class TicTacToe(Game):
 
     @staticmethod
     def check_win(pieces):
-        # Check vertical
-        for i in range(3):
-            if np.all(pieces[i, :]):
-                return True
-
-        # Check horizontal
-        for j in range(3):
-            if np.all(pieces[:, j]):
+        # Check vertical and horizontal
+        for k in range(3):
+            if np.all(pieces[k, :]) or np.all(pieces[:, k]):
                 return True
 
         # Check diagonals
