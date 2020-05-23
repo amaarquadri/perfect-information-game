@@ -1,4 +1,9 @@
+import numpy as np
 from itertools import product
+
+
+def choose_random(values):
+    return values[np.random.randint(len(values))]
 
 
 def iter_product(shape, actions=None):
