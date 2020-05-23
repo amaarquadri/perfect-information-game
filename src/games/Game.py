@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import numpy as np
 
 
 class Game(ABC):
@@ -78,9 +79,8 @@ class Game(ABC):
         pass
 
     @classmethod
-    @abstractmethod
     def is_player_1_turn(cls, state):
-        pass
+        return np.all(state[:, :, -1])
 
     @classmethod
     @abstractmethod
@@ -94,3 +94,10 @@ class Game(ABC):
         :return: 1 if player 1 won, 0 if draw, -1 if player 2 won.
         """
         pass
+
+    @classmethod
+    def null_move(cls, state):
+        move = np.copy(state)
+        move[:, :, -1] = np.zeros_like(state[:, :, -1]) if cls.is_player_1_turn(state) \
+            else np.ones_like(state[:, :, -1])
+        return move

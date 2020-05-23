@@ -87,10 +87,6 @@ class Amazons(Game):
         return moves
 
     @classmethod
-    def is_player_1_turn(cls, state):
-        return np.all(state[:, :, -1])
-
-    @classmethod
     def is_over(cls, state):
         return len(cls.get_possible_moves(state)) == 0
 
@@ -99,10 +95,3 @@ class Amazons(Game):
         if not cls.is_over(state):
             raise Exception('Game is not over!')
         return -1 if cls.is_player_1_turn(state) else 1
-
-    @classmethod
-    def null_move(cls, state):
-        move = np.copy(state)
-        move[:, :, -1] = np.zeros(cls.BOARD_SHAPE) if cls.is_player_1_turn(state) \
-            else np.ones(cls.BOARD_SHAPE)
-        return move

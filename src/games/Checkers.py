@@ -46,10 +46,6 @@ class Checkers(Game):
         return cls.STARTING_STATE
 
     @classmethod
-    def is_player_1_turn(cls, state):
-        return np.all(state[:, :, -1])
-
-    @classmethod
     def get_possible_moves(cls, state):
         """
         Moveset: kings can only move 1 square. Multi jumps are not allowed.
@@ -115,10 +111,3 @@ class Checkers(Game):
     @classmethod
     def is_empty(cls, state, i, j):
         return np.all(state[i, j, :-1] == 0)
-
-    @classmethod
-    def null_move(cls, state):
-        move = np.copy(state)
-        move[:, :, -1] = np.zeros(cls.BOARD_SHAPE) if cls.is_player_1_turn(state) \
-            else np.ones(cls.BOARD_SHAPE)
-        return move

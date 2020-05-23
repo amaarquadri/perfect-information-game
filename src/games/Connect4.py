@@ -57,10 +57,6 @@ class Connect4(Game):
         return moves
 
     @classmethod
-    def is_player_1_turn(cls, state):
-        return np.all(state[:, :, -1])
-
-    @classmethod
     def check_win(cls, pieces):
         # Check vertical
         for i, j in iter_product((cls.ROWS, cls.COLUMNS - 4)):
@@ -78,8 +74,8 @@ class Connect4(Game):
             if np.all(np.diag(pieces[i:i + 4, j:j + 4])) or np.all(np.diag(flipped_pieces[i:i + 4, j:j + 4])):
                 return True
 
-    @classmethod
-    def full_board(cls, state):
+    @staticmethod
+    def full_board(state):
         return np.all(np.logical_or(state[:, :, 0], state[:, :, 1]) == 1)
 
     @classmethod
@@ -94,10 +90,3 @@ class Connect4(Game):
             return -1
         if cls.full_board(state):
             return 0
-
-    @classmethod
-    def null_move(cls, state):
-        move = np.copy(state)
-        move[:, :, -1] = np.zeros(cls.BOARD_SHAPE) if cls.is_player_1_turn(state) \
-            else np.ones(cls.BOARD_SHAPE)
-        return move

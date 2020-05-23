@@ -53,10 +53,6 @@ class TicTacToe(Game):
         return moves
 
     @classmethod
-    def is_player_1_turn(cls, state):
-        return np.all(state[:, :, -1])
-
-    @classmethod
     def is_over(cls, state):
         return cls.check_win(state[:, :, 0]) or cls.check_win(state[:, :, 1]) or cls.full_board(state)
 
@@ -68,13 +64,6 @@ class TicTacToe(Game):
             return -1
         if cls.full_board(state):
             return 0
-
-    @classmethod
-    def null_move(cls, state):
-        move = np.copy(state)
-        move[:, :, -1] = np.zeros(cls.BOARD_SHAPE) if cls.is_player_1_turn(state) \
-            else np.ones(cls.BOARD_SHAPE)
-        return move
 
     @staticmethod
     def check_win(pieces):
