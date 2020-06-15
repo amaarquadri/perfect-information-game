@@ -10,7 +10,7 @@ class MCTS:
         self.GameClass = GameClass
         self.c = c
 
-    def choose_move(self, position, iterations=1000):
+    def choose_move(self, position, iterations=100):
         if self.GameClass.is_over(position):
             raise Exception('Game Finished!')
 
@@ -39,13 +39,11 @@ class Node:
 
         if GameClass.is_over(position):
             self.terminal = True
-            self.expanded = True
             self.children = []
             self.rollout_sum = GameClass.get_winner(position)
             self.rollout_count = 1
         else:
             self.terminal = False
-            self.expanded = False
             self.children = None
             self.rollout_sum = 0
             self.rollout_count = 0
@@ -56,46 +54,47 @@ class Node:
                              self.GameClass.get_possible_moves(self.position)]
 
     def search_and_rollout(self, c=np.sqrt(2)):
-        if not self.expanded:
+        if self.rollout_count == 0:
             self.rollout()
-        else:
-            best_heuristic = -np.inf if self.is_maximizing else np.inf
-            best_child = None
-            for child in self.children:
-                if child.rollout_count > 0:
-                    child_heuristic = child.rollout_sum / child.rollout_count + \
-                                      c * np.sqrt(np.log(self.rollout_count) / child.rollout_count)
-                    if (self.is_maximizing and child_heuristic > best_heuristic) or \
-                            (not self.is_maximizing and child_heuristic < best_heuristic):
-                        best_heuristic = child_heuristic
-                        best_child = child
-            best_child.search_and_rollout(c)
+            return
+        
+        self.ensure_children()
+        best_heuristic = -np.inf if self.is_maximizing else np.inf
+        best_child = None
+        for child in self.children:
+            if child.rollout_count == 0:
+                best_child = child
+                break
+
+            child_heuristic = child.rollout_sum / child.rollout_count
+            exploration_term = c * np.sqrt(np.log(self.rollout_count) / child.rollout_count)
+            if self.is_maximizing:
+                child_heuristic += exploration_term
+                if child_heuristic > best_heuristic:
+                    best_heuristic = child_heuristic
+                    best_child = child
+            else:
+                child_heuristic -= exploration_term
+                if child_heuristic < best_heuristic:
+                    best_heuristic = child_heuristic
+                    best_child = child
+        best_child.search_and_rollout(c)
 
     def rollout(self):
         if self.terminal:
-            rollout_sum = self.rollout_sum
-        else:
-            self.ensure_children()
-            rollout_sum = self.children[np.random.randint(len(self.children))].rollout_recursive()
+            raise Exception('Not Implemented!')
+
+        self.ensure_children()
+        state = self.children[np.random.randint(len(self.children))].position
+        while not self.GameClass.is_over(state):
+            sub_states = self.GameClass.get_possible_moves(state)
+            state = sub_states[np.random.randint(len(sub_states))]
+
+        value = self.GameClass.get_winner(state)
 
         # update this node and all its parents
         node = self
         while node is not None:
-            node.rollout_sum += rollout_sum
+            node.rollout_sum += value
             node.rollout_count += 1
             node = node.parent
-
-        # mark this node as expanded
-        self.expanded = True
-
-    def rollout_recursive(self):
-        if self.terminal:
-            return self.rollout_sum
-
-        self.ensure_children()
-        val = self.children[np.random.randint(len(self.children))].rollout_recursive()
-
-        # Update this node while recursing back up to the original call in rollout
-        self.rollout_sum += val
-        self.rollout_count += 1
-        return val
