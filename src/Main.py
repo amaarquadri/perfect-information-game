@@ -1,9 +1,10 @@
-from src.games.Connect4 import Connect4 as Game
-from src.move_selection.MCTS import MCTS
+from src.games.Amazons import Amazons as Game
+from src.move_selection.MCTS import AsyncMCTS
 
 if __name__ == '__main__':
     board = Game()
-    move_chooser = MCTS(Game)
+    move_chooser = AsyncMCTS(Game, board.get_state())
+    move_chooser.start()
     time_limit = 3
 
     while not Game.is_over(board.get_state()):
@@ -15,5 +16,6 @@ if __name__ == '__main__':
 
         board.draw()
         print("\n")
-        board.set_state(move_chooser.choose_move(board.get_state(), time_limit=time_limit))
+        board.set_state(move_chooser.choose_move(board.get_state()))
+    move_chooser.terminate()
     print("Result: ", Game.get_winner(board.get_state()))
