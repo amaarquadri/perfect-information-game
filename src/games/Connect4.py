@@ -21,9 +21,20 @@ class Connect4(Game):
     def set_state(self, state):
         self.state = np.copy(state)
 
-    def draw(self, canvas=None):
+    def perform_user_move(self, move):
+        j = int(move) - 1
+        combined_column = np.logical_or(self.state[:, j, 0], self.state[:, j, 1])
+        max_empty_i = Connect4.ROWS - 1 if np.all(combined_column == 0) else np.argmax(np.diff(combined_column))
+        new_state = self.null_move(self.state)
+        new_state[max_empty_i, j, :2] = [1, 0] if self.is_player_1_turn(self.state) else [0, 1]
+        self.state = new_state
+
+    def draw(self, canvas=None, move_prompt=False):
         if canvas is None:
-            print(Connect4.get_human_readable_representation(self.state))
+            matrix = Connect4.get_human_move_prompt_representation(self.state) if move_prompt else \
+                Connect4.get_human_readable_representation(self.state)
+            for i in range(matrix.shape[0]):
+                print(' '.join(matrix[i, :]))
         else:
             raise NotImplementedError()
 
@@ -33,10 +44,16 @@ class Connect4(Game):
 
     @classmethod
     def get_human_readable_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, ' ', dtype=str)
+        representation = np.full(cls.BOARD_SHAPE, '_', dtype=str)
         for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
             representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
         return representation
+
+    @classmethod
+    def get_human_move_prompt_representation(cls, state):
+        representation = cls.get_human_readable_representation(state)
+        labels = [str(i) for i in range(1, Connect4.COLUMNS + 1)]
+        return np.row_stack((labels, representation, labels))
 
     @classmethod
     def get_starting_state(cls):
@@ -59,20 +76,22 @@ class Connect4(Game):
     @classmethod
     def check_win(cls, pieces):
         # Check vertical
-        for i, j in iter_product((cls.ROWS, cls.COLUMNS - 4)):
+        for i, j in iter_product((cls.ROWS, cls.COLUMNS - 3)):
             if np.all(pieces[i, j:j + 4]):
                 return True
 
         # Check horizontal
-        for i, j in iter_product((cls.ROWS - 4, cls.COLUMNS)):
+        for i, j in iter_product((cls.ROWS - 3, cls.COLUMNS)):
             if np.all(pieces[i:i + 4, j]):
                 return True
 
         # Check diagonals
         flipped_pieces = np.fliplr(pieces)
-        for i, j in iter_product((cls.ROWS - 4, cls.COLUMNS - 4)):
+        for i, j in iter_product((cls.ROWS - 3, cls.COLUMNS - 3)):
             if np.all(np.diag(pieces[i:i + 4, j:j + 4])) or np.all(np.diag(flipped_pieces[i:i + 4, j:j + 4])):
                 return True
+
+        return False
 
     @staticmethod
     def full_board(state):

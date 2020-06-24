@@ -21,9 +21,24 @@ class TicTacToe(Game):
     def set_state(self, state):
         self.state = state
 
-    def draw(self, canvas=None):
+    def perform_user_move(self, move):
+        move_number = int(move)
+        empty_square_index = 1
+        for i, j in iter_product(TicTacToe.BOARD_SHAPE):
+            if np.all(self.state[i, j, :-1] == 0):
+                if empty_square_index == move_number:
+                    new_state = self.null_move(self.state)
+                    new_state[i, j, :2] = [1, 0] if self.is_player_1_turn(self.state) else [0, 1]
+                    self.state = new_state
+                    return
+                else:
+                    empty_square_index += 1
+        raise ValueError('No move matching specified string')
+
+    def draw(self, canvas=None, move_prompt=False):
         if canvas is None:
-            print(TicTacToe.get_human_readable_representation(self.state))
+            print(TicTacToe.get_human_move_prompt_representation(self.state) if move_prompt else
+                  TicTacToe.get_human_readable_representation(self.state))
         else:
             raise NotImplementedError()
 
@@ -39,13 +54,23 @@ class TicTacToe(Game):
         return representation
 
     @classmethod
+    def get_human_move_prompt_representation(cls, state):
+        representation = cls.get_human_readable_representation(state)
+        move_number = 1
+        for i, j in iter_product(TicTacToe.BOARD_SHAPE):
+            if np.all(state[i, j, :-1] == 0):
+                representation[i, j] = str(move_number)
+                move_number += 1
+        return representation
+
+    @classmethod
     def get_starting_state(cls):
         return cls.STARTING_STATE
 
     @classmethod
     def get_possible_moves(cls, state):
         moves = []
-        for i, j in iter_product((3, 3)):
+        for i, j in iter_product(TicTacToe.BOARD_SHAPE):
             if np.all(state[i, j, :2] == 0):
                 move = cls.null_move(state)
                 move[i, j, :2] = [1, 0] if cls.is_player_1_turn(state) else [0, 1]
