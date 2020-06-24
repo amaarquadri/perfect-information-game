@@ -24,7 +24,7 @@ class Checkers(Game):
     def set_state(self, state):
         self.state = np.copy(state)
 
-    def draw(self, canvas=None):
+    def draw(self, canvas=None, move_prompt=False):
         if canvas is None:
             print(Checkers.get_human_readable_representation(self.state))
         else:

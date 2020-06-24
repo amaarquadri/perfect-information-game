@@ -31,16 +31,26 @@ class Game(ABC):
         """
         pass
 
+    def perform_user_move(self, move):
+        """
+        Performs the move specified by the string move, on the specified state and returns the resulting state.
+        """
+        raise NotImplementedError()
+
     def reset_game(self):
         self.set_state(self.get_starting_state())
 
     @abstractmethod
-    def draw(self, canvas):
+    def draw(self, canvas, move_prompt=False):
         """
         The board should be drawn in book-reading fashion. i.e. The first index represents the row from top to bottom
         and the second index represents the column from left to right.
         If canvas is None, then the class will print a representation to the screen.
+        If move_prompt is True, then additional information specified by get_human_move_prompt will be shown.
+        This allows the user to more easily input a string which can be interpreted as a move using perform_user_move
+
         :param canvas:
+        :param move_prompt: Whether or not to show additional data for prompting the user to make a move.
         """
         pass
 
@@ -62,6 +72,16 @@ class Game(ABC):
         :return: A human readable numpy matrix representation of the current state of this Game.
         """
         pass
+
+    @classmethod
+    def get_human_move_prompt_representation(cls, state):
+        """
+        The result will be a matrix with arbitrary shape and dtype=str. Each element should be a single character.
+        The underlying board representation given by get_human_readable_representation should still be present,
+        but extra data may be added such that the user can easily specify a move with a string that is read by
+        perform_user_move.
+        """
+        raise NotImplementedError()
 
     @classmethod
     @abstractmethod
