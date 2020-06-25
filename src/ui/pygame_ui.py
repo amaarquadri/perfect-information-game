@@ -1,4 +1,4 @@
-from src.games.Amazons import Amazons as Game
+from src.games.Connect4 import Connect4 as Game
 from src.move_selection.MCTS import AsyncMCTS
 import pygame
 from src.utils.Utils import iter_product
@@ -32,22 +32,29 @@ def main():
     red_circle = pygame.image.load('../../resources/red_circle_dark_square.png').convert()
     white_circle = pygame.image.load('../../resources/white_circle_dark_square.png').convert()
     black_circle = pygame.image.load('../../resources/black_circle_dark_square.png').convert()
+    yellow_circle = pygame.image.load('../../resources/yellow_circle_dark_square.png').convert()
 
     board = Game()
-    move_chooser = AsyncMCTS(Game, board.get_state(), time_limit=5)
+    move_chooser = AsyncMCTS(Game, board.get_state(), time_limit=1)
     move_chooser.start()
 
     def draw_board():
         chars = Game.get_human_readable_representation(board.get_state())
         for i, j in iter_product(Game.BOARD_SHAPE):
-            if chars[i, j] == 'W':
-                img = white_circle
-            elif chars[i, j] == 'B':
-                img = black_circle
-            elif chars[i, j] == 'X':
+            if chars[i, j] == 'r':
                 img = red_circle
+            elif chars[i, j] == 'y':
+                img = yellow_circle
             else:
                 img = empty_square
+            # if chars[i, j] == 'W':
+            #     img = white_circle
+            # elif chars[i, j] == 'B':
+            #     img = black_circle
+            # elif chars[i, j] == 'X':
+            #     img = red_circle
+            # else:
+            #     img = empty_square
             canvas.blit(img, (64 * j, 64 * i))  # Note pygame inverst x and y
         pygame.display.flip()
 
