@@ -37,10 +37,14 @@ class AsyncMCTS:
         pool = Pool(threads) if threads > 1 else None
 
         while True:
-            root.choose_rollout_node(c).rollout(threads, pool)
+            best_child = root.choose_rollout_node(c)
+
+            if best_child is not None:
+                best_child.rollout(threads, pool)
 
             if root.children is not None and worker_pipe.poll():
                 user_chosen_position = worker_pipe.recv()
+
                 for child in root.children:
                     if np.all(child.position == user_chosen_position):
                         root = child
@@ -50,13 +54,28 @@ class AsyncMCTS:
                     print(user_chosen_position)
                     raise Exception('Invalid user chosen move!')
 
+                if GameClass.is_over(root.position):
+                    print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
+                    break
+
                 start_time = time()
                 while time() - start_time < time_limit:
-                    root.choose_rollout_node(c).rollout(threads, pool)
+                    best_node = root.choose_rollout_node(c)
 
+                    # best_node will be None if the tree is fully expanded
+                    if best_node is None:
+                        break
+
+                    best_node.rollout(threads, pool)
+
+                print(f'MCTS choosing move based on {root.count_expanded_nodes()} expanded nodes and '
+                      f'{root.rollout_count} rollouts!')
                 root = root.choose_best_node()
                 root.parent = None
                 worker_pipe.send(root.position)
+                if GameClass.is_over(root.position):
+                    print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
+                    break
 
 
 class MCTS:
@@ -77,7 +96,13 @@ class MCTS:
         root = Node(position, parent=None, GameClass=self.GameClass)
         start_time = time()
         while time() - start_time < time_limit:
-            root.choose_rollout_node(self.c).rollout(self.threads, self.pool)
+            best_node = root.choose_rollout_node(self.c)
+
+            # best_node will be None if the tree is fully expanded
+            if best_node is None:
+                break
+
+            best_node.rollout(self.threads, self.pool)
 
         best_child = root.choose_best_node()
         # TODO: contemplate best_child while user is making their move
@@ -94,6 +119,12 @@ class Node:
         self.children = None
         self.rollout_sum = 0
         self.rollout_count = 0
+        self.fully_expanded = GameClass.is_over(position)  # True if this node has been fully expanded
+
+    def count_expanded_nodes(self):
+        if self.children is None:
+            return 0
+        return 1 + sum(child.count_expanded_nodes() for child in self.children)
 
     def ensure_children(self):
         if self.children is None:
@@ -125,6 +156,10 @@ class Node:
             if child.rollout_count == 0:
                 return child
 
+            # don't bother exploring fully expanded children
+            if child.fully_expanded:
+                continue
+
             child_heuristic = child.rollout_sum / child.rollout_count
             exploration_term = c * np.sqrt(np.log(self.rollout_count) / child.rollout_count)
             if self.is_maximizing:
@@ -137,6 +172,15 @@ class Node:
                 if child_heuristic < best_heuristic:
                     best_heuristic = child_heuristic
                     best_child = child
+
+        # if nothing was found because  all children are fully expanded
+        if best_child is None:
+            # this node is now fully expanded, so ask the parent to try to choose again
+            self.fully_expanded = True
+            if self.parent is not None:
+                return self.parent.choose_rollout_node()
+            # if no parent is available (i.e. this is the root node) then the entire search tree has been expanded
+            return None
 
         return best_child.choose_rollout_node(c)
 
