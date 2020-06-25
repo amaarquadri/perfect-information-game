@@ -32,9 +32,20 @@ class Amazons(Game):
     def set_state(self, state):
         self.state = np.copy(state)
 
+    def perform_user_move(self, move):
+        piece_from_i, piece_from_j, piece_to_i, piece_to_j, shot_i, shot_j = [int(s) for s in move.split(',')]
+        new_state = self.null_move(self.state)
+        new_state[piece_to_i, piece_to_j, :2] = new_state[piece_from_i, piece_from_j, :2]
+        new_state[piece_from_i, piece_from_j, :2] = [0, 0]
+        new_state[shot_i, shot_j, 2] = 1
+        self.state = new_state
+
+
     def draw(self, canvas=None, move_prompt=False):
         if canvas is None:
-            print(Amazons.get_human_readable_representation(self.state))
+            matrix = Amazons.get_human_readable_representation(self.state)
+            for i in range(matrix.shape[0]):
+                print(' '.join(matrix[i, :]))
         else:
             raise NotImplementedError()
 
@@ -44,7 +55,7 @@ class Amazons(Game):
 
     @classmethod
     def get_human_readable_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, ' ', dtype=str)
+        representation = np.full(cls.BOARD_SHAPE, '_', dtype=str)
         for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
             representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
         return representation
