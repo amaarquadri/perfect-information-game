@@ -18,9 +18,12 @@ class Amazons(Game):
 
     STATE_SHAPE = STARTING_STATE.shape  # 6, 6, 4
     BOARD_SHAPE = STATE_SHAPE[:-1]  # 6, 6
+    ROWS, COLUMNS = BOARD_SHAPE
     BOARD_LENGTH = BOARD_SHAPE[0]
     FEATURE_COUNT = STATE_SHAPE[-1]  # 3
     REPRESENTATION_LETTERS = ['W', 'B', 'X']
+    REPRESENTATION_FILES = ['white_circle', 'black_circle', 'red_circle']
+    CLICKS_PER_MOVE = 3
 
     def __init__(self, state=STARTING_STATE):
         super().__init__()
@@ -32,14 +35,20 @@ class Amazons(Game):
     def set_state(self, state):
         self.state = np.copy(state)
 
-    def perform_user_move(self, move):
-        piece_from_i, piece_from_j, piece_to_i, piece_to_j, shot_i, shot_j = [int(s) for s in move.split(',')]
+    def perform_user_move(self, clicks):
+        (piece_from_i, piece_from_j), (piece_to_i, piece_to_j), (shot_i, shot_j) = clicks
         new_state = self.null_move(self.state)
         new_state[piece_to_i, piece_to_j, :2] = new_state[piece_from_i, piece_from_j, :2]
         new_state[piece_from_i, piece_from_j, :2] = [0, 0]
         new_state[shot_i, shot_j, 2] = 1
-        self.state = new_state
 
+        for legal_move in Amazons.get_possible_moves(self.state):
+            if np.all(legal_move == new_state):
+                break
+        else:
+            raise ValueError('Illegal Move')
+
+        self.state = new_state
 
     def draw(self, canvas=None, move_prompt=False):
         if canvas is None:

@@ -10,6 +10,7 @@ class Connect4(Game):
     ROWS, COLUMNS = BOARD_SHAPE
     FEATURE_COUNT = STATE_SHAPE[-1]  # 3
     REPRESENTATION_LETTERS = ['y', 'r']
+    CLICKS_PER_MOVE = 1
 
     def __init__(self, state=STARTING_STATE):
         super().__init__()
@@ -21,12 +22,19 @@ class Connect4(Game):
     def set_state(self, state):
         self.state = np.copy(state)
 
-    def perform_user_move(self, move):
-        j = int(move) - 1
+    def perform_user_move(self, clicks):
+        j = clicks[0][1]
         combined_column = np.logical_or(self.state[:, j, 0], self.state[:, j, 1])
         max_empty_i = Connect4.ROWS - 1 if np.all(combined_column == 0) else np.argmax(np.diff(combined_column))
         new_state = self.null_move(self.state)
         new_state[max_empty_i, j, :2] = [1, 0] if self.is_player_1_turn(self.state) else [0, 1]
+
+        for legal_move in Connect4.get_possible_moves(self.state):
+            if np.all(legal_move == new_state):
+                break
+        else:
+            raise ValueError('Illegal Move')
+
         self.state = new_state
 
     def draw(self, canvas=None, move_prompt=False):
