@@ -3,10 +3,102 @@ from multiprocessing import Process, Pipe, Pool
 from time import time
 
 
+class AsyncMCTSRoot:
+    """
+    Implementation of Monte Carlo Tree Search that uses the other player's time to continue thinking.
+    This is achieved using multiprocessing, and a Pipe for transferring data to and from the worker process.
+    The parallelization is done by doing several distinct MCTS searches completely in parallel, and aggregating the
+    results when a move is requested.
+    """
+    def __init__(self, GameClass, position, c=np.sqrt(2), threads=7):
+        self.ui_pipe, manager_pipe = Pipe()
+        manager_pipes, worker_pipes = zip(*[Pipe() for _ in range(threads)])
+        self.manger_process = Process(target=self.manager_loop_func, args=(manager_pipe, manager_pipes))
+        self.worker_processes = [Process(target=self.worker_loop_func,
+                                         args=(worker_pipe, GameClass, c)) for worker_pipe in worker_pipes]
+
+    def start(self):
+        self.worker_process.start()
+
+    def choose_move(self, user_chosen_position):
+        """
+        Instructs the worker thread that the user has chosen the move specified by the given position.
+        The worker thread will then continue thinking for time_limit, and then return its chosen move.
+
+        :param user_chosen_position: The board position resulting from the user's move.
+        :return: The move chosen by monte carlo tree search.
+        """
+        self.parent_pipe.send(user_chosen_position)
+        return self.parent_pipe.recv()
+
+    def terminate(self):
+        self.worker_process.terminate()
+        self.worker_process.join()
+
+    @staticmethod
+    def manager_loop_func(ui_pipe, worker_pipes, GameClass, position):
+        root = Node(position, None, GameClass)
+
+        while True:
+            best_child = root.choose_rollout_node(c)
+
+            if best_child is not None:
+                best_child.rollout(threads, pool)
+
+            if root.children is not None and worker_pipe.poll():
+                user_chosen_position = worker_pipe.recv()
+
+                for child in root.children:
+                    if np.all(child.position == user_chosen_position):
+                        root = child
+                        root.parent = None
+                        break
+                else:
+                    print(user_chosen_position)
+                    raise Exception('Invalid user chosen move!')
+
+                if GameClass.is_over(root.position):
+                    print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
+                    break
+
+                start_time = time()
+                while time() - start_time < time_limit:
+                    best_node = root.choose_rollout_node(c)
+
+                    # best_node will be None if the tree is fully expanded
+                    if best_node is None:
+                        break
+
+                    best_node.rollout(threads, pool)
+
+                print(f'MCTS choosing move based on {root.count_expanded_nodes()} expanded nodes and '
+                      f'{root.rollout_count} rollouts!')
+                root = root.choose_best_node()
+                root.parent = None
+                worker_pipe.send(root.position)
+                if GameClass.is_over(root.position):
+                    print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
+                    break
+
+        if pool is not None:
+            pool.close()
+            pool.join()
+
+    @staticmethod
+    def worker_loop_func(worker_pipe, GameClass, c):
+        """
+        Worker thread workflow: receive MCTS root node, start doing MCTS, once a dummy message is receive,
+        return root result, wait for new MCTS root node.
+        """
+        pass
+
+
 class AsyncMCTS:
     """
     Implementation of Monte Carlo Tree Search that uses the other player's time to continue thinking.
     This is achieved using multiprocessing, and a Pipe for transferring data to and from the worker process.
+    The parallelization of MCTS is done by doing several rollouts in parallel each time a rollout is requested,
+    waiting for all of them to finish, and aggregating the result.
     """
     def __init__(self, GameClass, position, time_limit=3, c=np.sqrt(2), threads=7):
         self.parent_pipe, worker_pipe = Pipe()
@@ -76,6 +168,10 @@ class AsyncMCTS:
                 if GameClass.is_over(root.position):
                     print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
                     break
+
+        if pool is not None:
+            pool.close()
+            pool.join()
 
 
 class MCTS:
