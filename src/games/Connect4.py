@@ -10,6 +10,7 @@ class Connect4(Game):
     ROWS, COLUMNS = BOARD_SHAPE
     FEATURE_COUNT = STATE_SHAPE[-1]  # 3
     REPRESENTATION_LETTERS = ['y', 'r']
+    REPRESENTATION_FILES = ['dark_square', 'yellow_circle_dark_square', 'red_circle_dark_square']
     CLICKS_PER_MOVE = 1
 
     def __init__(self, state=STARTING_STATE):
@@ -58,10 +59,11 @@ class Connect4(Game):
         return representation
 
     @classmethod
-    def get_human_move_prompt_representation(cls, state):
-        representation = cls.get_human_readable_representation(state)
-        labels = [str(i) for i in range(1, Connect4.COLUMNS + 1)]
-        return np.row_stack((labels, representation, labels))
+    def get_img_index_representation(cls, state):
+        representation = np.full(cls.BOARD_SHAPE, 0)
+        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
+            representation[state[:, :, i] == 1] = i + 1
+        return representation
 
     @classmethod
     def get_starting_state(cls):

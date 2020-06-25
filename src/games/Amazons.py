@@ -22,7 +22,8 @@ class Amazons(Game):
     BOARD_LENGTH = BOARD_SHAPE[0]
     FEATURE_COUNT = STATE_SHAPE[-1]  # 3
     REPRESENTATION_LETTERS = ['W', 'B', 'X']
-    REPRESENTATION_FILES = ['white_circle', 'black_circle', 'red_circle']
+    REPRESENTATION_FILES = ['dark_square', 'white_circle_dark_square',
+                            'black_circle_dark_square', 'red_circle_dark_square']
     CLICKS_PER_MOVE = 3
 
     def __init__(self, state=STARTING_STATE):
@@ -67,6 +68,13 @@ class Amazons(Game):
         representation = np.full(cls.BOARD_SHAPE, '_', dtype=str)
         for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
             representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
+        return representation
+
+    @classmethod
+    def get_img_index_representation(cls, state):
+        representation = np.full(cls.BOARD_SHAPE, 0)
+        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
+            representation[state[:, :, i] == 1] = i + 1
         return representation
 
     @classmethod

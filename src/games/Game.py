@@ -74,14 +74,16 @@ class Game(ABC):
         pass
 
     @classmethod
-    def get_human_move_prompt_representation(cls, state):
+    @abstractmethod
+    def get_img_index_representation(cls, state):
         """
-        The result will be a matrix with arbitrary shape and dtype=str. Each element should be a single character.
-        The underlying board representation given by get_human_readable_representation should still be present,
-        but extra data may be added such that the user can easily specify a move with a string that is read by
-        perform_user_move.
+        The result will be a matrix with shape (n, m) and dtype=int. Each element will be an integer corresponding to
+        which image to use to represent that square. The mapping from indices to file names should be provided in a
+        class-level constant list called REPRESENTATION_FILES.
+
+        :return: A numpy matrix indicating which images to use for each square in the grid.
         """
-        raise NotImplementedError()
+        pass
 
     @classmethod
     @abstractmethod

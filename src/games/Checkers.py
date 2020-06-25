@@ -13,6 +13,9 @@ class Checkers(Game):
     BOARD_LENGTH = BOARD_SHAPE[0]  # 8
     FEATURE_COUNT = STATE_SHAPE[-1]  # 5
     REPRESENTATION_LETTERS = ['r', 'R', 'b', 'B']
+    CLICKS_PER_MOVE = 2
+    REPRESENTATION_FILES = ['dark_square', 'red_circle_dark_square', 'red_circle_k_dark_square',
+                            'black_circle_dark_square', 'black_circle_k_dark_square']
 
     def __init__(self, state=STARTING_STATE):
         super().__init__()
@@ -23,6 +26,11 @@ class Checkers(Game):
 
     def set_state(self, state):
         self.state = np.copy(state)
+
+    def perform_user_move(self, clicks):
+        (start_i, start_j), (end_i, end_j) = clicks
+        new_state = self.null_move(self.state)
+        # TODO
 
     def draw(self, canvas=None, move_prompt=False):
         if canvas is None:
@@ -42,6 +50,13 @@ class Checkers(Game):
         return representation
 
     @classmethod
+    def get_img_index_representation(cls, state):
+        representation = np.full(cls.BOARD_SHAPE, 0)
+        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
+            representation[state[:, :, i] == 1] = i + 1
+        return representation
+
+    @classmethod
     def get_starting_state(cls):
         return cls.STARTING_STATE
 
@@ -55,7 +70,7 @@ class Checkers(Game):
         moves = []
         if cls.is_player_1_turn(state):
             for i, j, (di, dj, king_move) in iter_product(cls.BOARD_SHAPE, [(-1, -1, False), (-1, 1, False),
-                                                                                 (1, -1, True), (1, 1, True)]):
+                                                                            (1, -1, True), (1, 1, True)]):
                 if np.any(state[i, j, 1] if king_move else state[i, j, :2]) \
                         and cls.is_valid(i + di, j + dj):
                     if cls.is_empty(state, i + di, j + dj):
@@ -73,7 +88,7 @@ class Checkers(Game):
                         moves.append(move)
         else:
             for i, j, (di, dj, king_move) in iter_product(cls.BOARD_SHAPE, [(1, -1, False), (1, 1, False),
-                                                                                 (-1, -1, True), (-1, 1, True)]):
+                                                                            (-1, -1, True), (-1, 1, True)]):
                 if np.any(state[i, j, 3] if king_move else state[i, j, 2:4]) \
                         and cls.is_valid(i + di, j + dj):
                     if cls.is_empty(state, i + di, j + dj):

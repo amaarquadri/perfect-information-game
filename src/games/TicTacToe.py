@@ -7,9 +7,12 @@ class TicTacToe(Game):
     STARTING_STATE = np.stack([np.zeros((3, 3)), np.zeros((3, 3)), np.ones((3, 3))], axis=-1)
     STATE_SHAPE = STARTING_STATE.shape  # 3, 3, 3
     BOARD_SHAPE = STATE_SHAPE[:-1]  # 3, 3
+    ROWS, COLUMNS = BOARD_SHAPE
     BOARD_LENGTH = BOARD_SHAPE[0]  # 3
     FEATURE_COUNT = STATE_SHAPE[-1]  # 3
     REPRESENTATION_LETTERS = ['X', 'O']
+    CLICKS_PER_MOVE = 1
+    REPRESENTATION_FILES = ['dark_square', 'white_circle_dark_square', 'black_circle_dark_square']
 
     def __init__(self, state=STARTING_STATE):
         super().__init__()
@@ -21,24 +24,18 @@ class TicTacToe(Game):
     def set_state(self, state):
         self.state = state
 
-    def perform_user_move(self, move):
-        move_number = int(move)
-        empty_square_index = 1
-        for i, j in iter_product(TicTacToe.BOARD_SHAPE):
-            if np.all(self.state[i, j, :-1] == 0):
-                if empty_square_index == move_number:
-                    new_state = self.null_move(self.state)
-                    new_state[i, j, :2] = [1, 0] if self.is_player_1_turn(self.state) else [0, 1]
-                    self.state = new_state
-                    return
-                else:
-                    empty_square_index += 1
-        raise ValueError('No move matching specified string')
+    def perform_user_move(self, clicks):
+        i, j = clicks[0]
+        if np.any(self.state[i, j, :2] != 0):
+            raise ValueError('Invalid Move!')
+
+        new_state = self.null_move(self.state)
+        new_state[i, j, :2] = [1, 0] if self.is_player_1_turn(self.state) else [0, 1]
+        self.state = new_state
 
     def draw(self, canvas=None, move_prompt=False):
         if canvas is None:
-            print(TicTacToe.get_human_move_prompt_representation(self.state) if move_prompt else
-                  TicTacToe.get_human_readable_representation(self.state))
+            print(TicTacToe.get_human_readable_representation(self.state))
         else:
             raise NotImplementedError()
 
@@ -48,19 +45,16 @@ class TicTacToe(Game):
 
     @classmethod
     def get_human_readable_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, ' ', dtype=str)
+        representation = np.full(cls.BOARD_SHAPE, '_', dtype=str)
         for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
             representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
         return representation
 
     @classmethod
-    def get_human_move_prompt_representation(cls, state):
-        representation = cls.get_human_readable_representation(state)
-        move_number = 1
-        for i, j in iter_product(TicTacToe.BOARD_SHAPE):
-            if np.all(state[i, j, :-1] == 0):
-                representation[i, j] = str(move_number)
-                move_number += 1
+    def get_img_index_representation(cls, state):
+        representation = np.full(cls.BOARD_SHAPE, 0)
+        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
+            representation[state[:, :, i] == 1] = i + 1
         return representation
 
     @classmethod

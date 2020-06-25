@@ -175,6 +175,9 @@ class Node:
 
         # if nothing was found because  all children are fully expanded
         if best_child is None:
+            if not self.fully_expanded and self.parent is None:
+                print('Fully expanded tree!')
+
             # this node is now fully expanded, so ask the parent to try to choose again
             self.fully_expanded = True
             if self.parent is not None:

@@ -1,4 +1,4 @@
-from src.games.Connect4 import Connect4 as Game
+from src.games.TicTacToe import TicTacToe as Game
 from src.move_selection.MCTS import AsyncMCTS
 import pygame
 from src.utils.Utils import iter_product
@@ -28,33 +28,16 @@ def quit_on_x():
 def main():
     pygame.init()
     canvas = pygame.display.set_mode((64 * Game.COLUMNS, 64 * Game.ROWS))  # Note pygame inverst x and y
-    empty_square = pygame.image.load('../../resources/dark_square.png').convert()
-    red_circle = pygame.image.load('../../resources/red_circle_dark_square.png').convert()
-    white_circle = pygame.image.load('../../resources/white_circle_dark_square.png').convert()
-    black_circle = pygame.image.load('../../resources/black_circle_dark_square.png').convert()
-    yellow_circle = pygame.image.load('../../resources/yellow_circle_dark_square.png').convert()
+    imgs = [pygame.image.load(f'../../resources/{file_name}.png') for file_name in Game.REPRESENTATION_FILES]
 
     board = Game()
-    move_chooser = AsyncMCTS(Game, board.get_state(), time_limit=1)
+    move_chooser = AsyncMCTS(Game, board.get_state(), time_limit=3, threads=1)
     move_chooser.start()
 
     def draw_board():
-        chars = Game.get_human_readable_representation(board.get_state())
+        indices = Game.get_img_index_representation(board.get_state())
         for i, j in iter_product(Game.BOARD_SHAPE):
-            if chars[i, j] == 'r':
-                img = red_circle
-            elif chars[i, j] == 'y':
-                img = yellow_circle
-            else:
-                img = empty_square
-            # if chars[i, j] == 'W':
-            #     img = white_circle
-            # elif chars[i, j] == 'B':
-            #     img = black_circle
-            # elif chars[i, j] == 'X':
-            #     img = red_circle
-            # else:
-            #     img = empty_square
+            img = imgs[indices[i, j]]
             canvas.blit(img, (64 * j, 64 * i))  # Note pygame inverst x and y
         pygame.display.flip()
 
