@@ -10,6 +10,7 @@ class Checkers(Game):
     STARTING_STATE = np.stack([RED, np.zeros((8, 8)), BLACK, np.zeros((8, 8)), np.ones((8, 8))], axis=-1)
     STATE_SHAPE = STARTING_STATE.shape  # 8, 8, 5
     BOARD_SHAPE = STATE_SHAPE[:-1]  # 8, 8
+    ROWS, COLUMNS = BOARD_SHAPE
     BOARD_LENGTH = BOARD_SHAPE[0]  # 8
     FEATURE_COUNT = STATE_SHAPE[-1]  # 5
     REPRESENTATION_LETTERS = ['r', 'R', 'b', 'B']
@@ -30,7 +31,23 @@ class Checkers(Game):
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
         new_state = self.null_move(self.state)
-        # TODO
+
+        is_king = np.any(self.state[start_i, start_j, [1, 3]] == 1) or \
+            end_j == 0 or end_j == Checkers.ROWS - 1
+        new_piece = [0] * 4
+        new_piece[2 * (not self.is_player_1_turn(self.state)) + is_king] = 1
+        new_state[end_i, end_j, :4] = new_piece
+        new_state[start_i, start_j, :4] = [0] * 4
+        if np.abs(end_j - start_j) == 2:
+            new_state[(start_i + end_i) // 2, (start_j + end_j) // 2, :4] = [0] * 4
+
+        for move in self.get_possible_moves(self.state):
+            if np.all(move == new_state):
+                break
+        else:
+            raise ValueError('Invalid Move!')
+
+        self.state = new_state
 
     def draw(self, canvas=None, move_prompt=False):
         if canvas is None:
