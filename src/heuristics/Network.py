@@ -1,3 +1,4 @@
+import numpy as np
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Conv3D, Flatten
@@ -17,26 +18,26 @@ class Network:
                 raise Exception('input shape of loaded model doesn\'t match')
         else:
             self.model = Sequential()
-            self.model.add(Conv3D(16, (3, 3, input_shape[2]), input_shape=input_shape + (1,), activation='relu'))
-            self.model.add(Conv3D(16, (3, 3, input_shape[2]), activation='relu'))
+            self.model.add(Conv3D(32, (3, 3, 1), input_shape=input_shape + (1,), activation='relu'))
+            self.model.add(Conv3D(32, (3, 3, input_shape[2] - 1), activation='relu'))
             self.model.add(Flatten())
-            self.model.add(Dense(8, activation='relu'))
-            self.model.add(Dense(8, activation='relu'))
-            self.model.add(Dense(1, activation='tanh'))
-            self.model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+            self.model.add(Dense(16, activation='relu'))
+            self.model.add(Dense(16, activation='relu'))
+            self.model.add(Dense(7, activation='softmax'))
+            self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
     def predict(self, state):
         return self.model.predict([state])
 
-    def train(self, states, outputs):
-        self.model.fit(states, outputs, epochs=1)
+    def train(self, data):
+        states = []
+        outputs = []
+        for game, outcome in data:
+            for position, distribution in game:
+                states.append(position)
+                outputs.append(distribution)
+
+        self.model.fit(np.stack(states, axis=0), np.stack(outputs, axis=0), epochs=1)
 
     def save(self, path):
         self.model.save(path)
-
-
-if __name__ == '__main__':
-    from src.games.Connect4 import Connect4
-    print(Connect4.STATE_SHAPE)
-    net = Network(Connect4.STATE_SHAPE)
-    print(net)
