@@ -1,6 +1,6 @@
 import numpy as np
 from multiprocessing import Process, Pipe, Pool
-from time import time
+from time import time, sleep
 
 
 class AsyncMCTSRoot:
@@ -9,16 +9,23 @@ class AsyncMCTSRoot:
     This is achieved using multiprocessing, and a Pipe for transferring data to and from the worker process.
     The parallelization is done by doing several distinct MCTS searches completely in parallel, and aggregating the
     results when a move is requested.
+
+    UI Pipe protocol: send user's move, send dummy message to request move, receive move, repeat
+    Worker Pipe protocol: send root node, send dummy message to request results, receive results, repeat
     """
-    def __init__(self, GameClass, position, c=np.sqrt(2), threads=7):
-        self.ui_pipe, manager_pipe = Pipe()
-        manager_pipes, worker_pipes = zip(*[Pipe() for _ in range(threads)])
-        self.manger_process = Process(target=self.manager_loop_func, args=(manager_pipe, manager_pipes))
+    def __init__(self, GameClass, position, c=np.sqrt(2), threads=7, time_limit=5):
+        self.time_limit = time_limit
+        self.ui_pipe, manager_ui_pipe = Pipe()
+        manager_worker_pipes, worker_pipes = zip(*[Pipe() for _ in range(threads)])
+        self.manager_process = Process(target=self.manager_loop_func,
+                                       args=(manager_ui_pipe, manager_worker_pipes, GameClass, position))
         self.worker_processes = [Process(target=self.worker_loop_func,
-                                         args=(worker_pipe, GameClass, c)) for worker_pipe in worker_pipes]
+                                         args=(worker_pipe, c)) for worker_pipe in worker_pipes]
 
     def start(self):
-        self.worker_process.start()
+        self.manager_process.start()
+        for worker_process in self.worker_processes:
+            worker_process.start()
 
     def choose_move(self, user_chosen_position):
         """
@@ -26,71 +33,84 @@ class AsyncMCTSRoot:
         The worker thread will then continue thinking for time_limit, and then return its chosen move.
 
         :param user_chosen_position: The board position resulting from the user's move.
+        :param time_limit: The time to wait before requesting a move.
         :return: The move chosen by monte carlo tree search.
         """
-        self.parent_pipe.send(user_chosen_position)
-        return self.parent_pipe.recv()
+        self.ui_pipe.send(user_chosen_position)
+        sleep(self.time_limit)
+        self.ui_pipe.send(None)
+        return self.ui_pipe.recv()
 
     def terminate(self):
-        self.worker_process.terminate()
-        self.worker_process.join()
+        self.manager_process.terminate()
+        for worker_process in self.worker_processes:
+            worker_process.terminate()
+
+        self.manager_process.join()
+        for worker_process in self.worker_processes:
+            worker_process.join()
 
     @staticmethod
     def manager_loop_func(ui_pipe, worker_pipes, GameClass, position):
         root = Node(position, None, GameClass)
 
-        while True:
-            best_child = root.choose_rollout_node(c)
+        while not GameClass.is_over(root.position):
+            for worker_pipe in worker_pipes:
+                worker_pipe.send(root)
 
-            if best_child is not None:
-                best_child.rollout(threads, pool)
+            user_move_index = ui_pipe.recv()
+            root.ensure_children()
+            root = root.children[user_move_index]
+            root.parent = None
 
-            if root.children is not None and worker_pipe.poll():
-                user_chosen_position = worker_pipe.recv()
+            if GameClass.is_over(root.position):
+                break
+            for worker_pipe in worker_pipes:
+                worker_pipe.send(user_move_index)
 
-                for child in root.children:
-                    if np.all(child.position == user_chosen_position):
-                        root = child
-                        root.parent = None
-                        break
-                else:
-                    print(user_chosen_position)
-                    raise Exception('Invalid user chosen move!')
+            ui_pipe.recv()  # dummy message
+            for worker_pipe in worker_pipes:
+                worker_pipe.send(None)
 
-                if GameClass.is_over(root.position):
-                    print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
-                    break
+            clones = [worker_pipe.recv() for worker_pipe in worker_pipes]
+            root.merge(clones)
+            root = root.choose_best_node()
+            ui_pipe.send(root.position)
+            root.parent = None
 
-                start_time = time()
-                while time() - start_time < time_limit:
-                    best_node = root.choose_rollout_node(c)
-
-                    # best_node will be None if the tree is fully expanded
-                    if best_node is None:
-                        break
-
-                    best_node.rollout(threads, pool)
-
-                print(f'MCTS choosing move based on {root.count_expanded_nodes()} expanded nodes and '
-                      f'{root.rollout_count} rollouts!')
-                root = root.choose_best_node()
-                root.parent = None
-                worker_pipe.send(root.position)
-                if GameClass.is_over(root.position):
-                    print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
-                    break
-
-        if pool is not None:
-            pool.close()
-            pool.join()
+        print('Game Over in Async MCTS Root: ', GameClass.get_winner(root.position))
 
     @staticmethod
-    def worker_loop_func(worker_pipe, GameClass, c):
+    def worker_loop_func(worker_pipe, c):
         """
         Worker thread workflow: receive MCTS root node, start doing MCTS, once a dummy message is receive,
         return root result, wait for new MCTS root node.
         """
-        pass
+        while True:
+            root = worker_pipe.recv()
+
+            while (not worker_pipe.poll()) or root.children is None:
+                best_child = root.choose_rollout_node(c)
+                if best_child is None:
+                    break
+
+                best_child.rollout(rollouts=1, pool=None)
+
+            user_move_index = worker_pipe.recv()
+            root = root.children[user_move_index]
+            root.parent = None
+
+            # should in theory check to ensure that game is not over,
+            # but manager_process would have done that already, so its redundant
+
+            while not worker_pipe.poll():
+                best_child = root.choose_rollout_node(c)
+                if best_child is None:
+                    break
+
+                best_child.rollout(rollouts=1, pool=None)
+            worker_pipe.recv()  # flush dummy message indicated that results should be returned
+            worker_pipe.send(root)
 
 
 class AsyncMCTS:
@@ -301,3 +321,29 @@ class Node:
             state = sub_states[np.random.randint(len(sub_states))]
 
         return self.GameClass.get_winner(state)
+
+    def merge(self, clones):
+        additional_rollouts = 0
+        additional_rollout_sum = 0
+        for clone in clones:
+            if clone.rollout_count > self.rollout_count:
+                additional_rollouts += clone.rollout_count - self.rollout_count
+                additional_rollout_sum += clone.rollout_sum - self.rollout_sum
+        self.rollout_count += additional_rollouts
+        self.rollout_sum += additional_rollout_sum
+
+        if self.children is None:
+            for i, clone in enumerate(clones):
+                if clone.children is not None:
+                    # copy the clone's children to self's children, remove all clones with no children
+                    self.children = clone.children
+                    clones = clones[i + 1:]
+                    break
+            else:
+                # neither self nor any clones have children so we're done
+                return
+
+        # self has children (either because it originally had them,
+        # or they were copied from the first clone that had them
+        for i, child in enumerate(self.children):
+            child.merge([clone.children[i] for clone in clones if clone.children is not None])
