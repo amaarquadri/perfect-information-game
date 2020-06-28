@@ -4,7 +4,7 @@ from time import time
 import pickle
 from src.games.Connect4 import Connect4
 from src.move_selection.MCTS import Node
-from src.heuristics.Network import Network
+from src.ui.pygame_ui import PygameUI
 
 
 def simulate_games_worker_process(GameClass, rollouts_per_move=500, c=np.sqrt(2), time_limit=2 * 3600):
@@ -37,15 +37,26 @@ def training(threads=14):
         pool.map(simulate_games_worker_process, [Connect4 for _ in range(threads)])
 
 
+def view_game(path):
+    with open(path, 'rb') as fin:
+        training_data, result = pickle.load(fin)
+    print('Result: ', result)
+    ui = PygameUI(Connect4)
+    i = 0
+    while True:
+        val = ui.click_left_or_right()
+        if val is None:
+            return
+        if val:
+            i = min(i + 1, len(training_data) - 1)
+        else:
+            i = max(i - 1, 0)
 
-def training(time_limit=10*3600, threads=7):
-    data = []
-    start_time = time()
-    pool = Pool(7) if threads > 1 else None
-    while time() - start_time < time_limit:
-        data.append(simulate_game(Connect4, threads=threads, pool=pool))
-    with open('data.pickle') as fout:
-        pickle.dump(data, fout)
-    net = Network(input_shape=Connect4.STATE_SHAPE)
-    net.train(data)
-    net.save('model.h5')
+        position, distribution = training_data[i]
+        ui.draw(position)
+        print(distribution)
+
+
+if __name__ == '__main__':
+    training()
+    # view_game('mcts_games/game1593296639.1298165.pickle')
