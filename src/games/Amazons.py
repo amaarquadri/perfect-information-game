@@ -10,6 +10,10 @@ class Amazons(Game):
                                      [0, 0, 0, 0, 0, 0],
                                      [0, 0, 0, 0, 0, 0],
                                      [0, 0, 1, 0, 0, 0]])
+    WHITE_STARTING_BOARD_4X4 = np.array([[0, 0, 1, 0],
+                                         [0, 0, 0, 0],
+                                         [0, 0, 0, 0],
+                                         [0, 1, 0, 0]])
     BLACK_STARTING_BOARD = np.rot90(WHITE_STARTING_BOARD)
     STARTING_STATE = np.stack([WHITE_STARTING_BOARD,
                                BLACK_STARTING_BOARD,
@@ -27,14 +31,7 @@ class Amazons(Game):
     CLICKS_PER_MOVE = 3
 
     def __init__(self, state=STARTING_STATE):
-        super().__init__()
-        self.state = np.copy(state)
-
-    def get_state(self):
-        return self.state
-
-    def set_state(self, state):
-        self.state = np.copy(state)
+        super().__init__(state)
 
     def perform_user_move(self, clicks):
         (piece_from_i, piece_from_j), (piece_to_i, piece_to_j), (shot_i, shot_j) = clicks
@@ -50,36 +47,6 @@ class Amazons(Game):
             raise ValueError('Illegal Move')
 
         self.state = new_state
-
-    def draw(self, canvas=None, move_prompt=False):
-        if canvas is None:
-            matrix = Amazons.get_human_readable_representation(self.state)
-            for i in range(matrix.shape[0]):
-                print(' '.join(matrix[i, :]))
-        else:
-            raise NotImplementedError()
-
-    @classmethod
-    def get_representation_shape(cls):
-        return cls.STATE_SHAPE
-
-    @classmethod
-    def get_human_readable_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, '_', dtype=str)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
-        return representation
-
-    @classmethod
-    def get_img_index_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, 0)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = i + 1
-        return representation
-
-    @classmethod
-    def get_starting_state(cls):
-        return np.copy(cls.STARTING_STATE)
 
     @staticmethod
     def is_valid(i, j):

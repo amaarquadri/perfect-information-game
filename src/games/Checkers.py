@@ -22,12 +22,6 @@ class Checkers(Game):
         super().__init__()
         self.state = np.copy(state)
 
-    def get_state(self):
-        return self.state
-
-    def set_state(self, state):
-        self.state = np.copy(state)
-
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
         new_state = self.null_move(self.state)
@@ -48,34 +42,6 @@ class Checkers(Game):
             raise ValueError('Invalid Move!')
 
         self.state = new_state
-
-    def draw(self, canvas=None, move_prompt=False):
-        if canvas is None:
-            print(Checkers.get_human_readable_representation(self.state))
-        else:
-            raise NotImplementedError()
-
-    @classmethod
-    def get_representation_shape(cls):
-        return cls.STATE_SHAPE
-
-    @classmethod
-    def get_human_readable_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, ' ', dtype=str)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
-        return representation
-
-    @classmethod
-    def get_img_index_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, 0)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = i + 1
-        return representation
-
-    @classmethod
-    def get_starting_state(cls):
-        return cls.STARTING_STATE
 
     @classmethod
     def get_possible_moves(cls, state):

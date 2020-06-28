@@ -2,11 +2,13 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 
+# noinspection PyUnresolvedReferences
 class Game(ABC):
-    def __init__(self):
-        pass
+    # INSTANCE FUNCTIONS
 
-    @abstractmethod
+    def __init__(self, state=None):
+        self.state = np.copy(state if state is not None else self.STARTING_STATE)
+
     def get_state(self):
         """
         The result will be a matrix with shape (n, m, k) where the board has dimensions of nxm and
@@ -20,75 +22,42 @@ class Game(ABC):
 
         :return: A numpy matrix representation of the current state of this Game.
         """
-        pass
+        return self.state
 
-    @abstractmethod
     def set_state(self, state):
         """
         Set the state of this Game.
 
         :param state: The state in the format specified by get_ML_representation
         """
-        pass
-
-    def perform_user_move(self, move):
-        """
-        Performs the move specified by the string move, on the specified state and returns the resulting state.
-        """
-        raise NotImplementedError()
+        self.state = np.copy(state)
 
     def reset_game(self):
-        self.set_state(self.get_starting_state())
+        self.set_state(self.STARTING_BOARD)
 
-    @abstractmethod
-    def draw(self, canvas, move_prompt=False):
+    def __repr__(self):
         """
         The board should be drawn in book-reading fashion. i.e. The first index represents the row from top to bottom
         and the second index represents the column from left to right.
-        If canvas is None, then the class will print a representation to the screen.
-        If move_prompt is True, then additional information specified by get_human_move_prompt will be shown.
-        This allows the user to more easily input a string which can be interpreted as a move using perform_user_move
+        """
+        representation = np.full(cls.BOARD_SHAPE, '_', dtype=str)
+        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
+            representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
 
-        :param canvas:
-        :param move_prompt: Whether or not to show additional data for prompting the user to make a move.
+        return '\n'.join([' '.join(representation[i, :]) for i in range(representation.shape[0])])
+
+    @abstractmethod
+    def perform_user_move(self, clicks):
+        """
+        Performs the move specified by the clicks, on the specified state and returns the resulting state.
         """
         pass
+
+    # CLASS LEVEL GAME SPECIFIC ABSTRACT FUNCTIONS
 
     @classmethod
-    @abstractmethod
-    def get_representation_shape(cls):
-        """
-        :return: The shape of the result of get_ML_representation
-        """
-        pass
-
-    @classmethod
-    @abstractmethod
-    def get_human_readable_representation(cls, state):
-        """
-        The result will be a matrix with shape (n, m) and dtype=str. Each element will be a single character which
-        aggregates as much information as possible from the features.
-
-        :return: A human readable numpy matrix representation of the current state of this Game.
-        """
-        pass
-
-    @classmethod
-    @abstractmethod
-    def get_img_index_representation(cls, state):
-        """
-        The result will be a matrix with shape (n, m) and dtype=int. Each element will be an integer corresponding to
-        which image to use to represent that square. The mapping from indices to file names should be provided in a
-        class-level constant list called REPRESENTATION_FILES.
-
-        :return: A numpy matrix indicating which images to use for each square in the grid.
-        """
-        pass
-
-    @classmethod
-    @abstractmethod
-    def get_starting_state(cls):
-        pass
+    def is_player_1_turn(cls, state):
+        return np.all(state[:, :, -1])
 
     @classmethod
     @abstractmethod
@@ -99,10 +68,6 @@ class Game(ABC):
         :return: A list of all possible board states that could result from the given state.
         """
         pass
-
-    @classmethod
-    def is_player_1_turn(cls, state):
-        return np.all(state[:, :, -1])
 
     @classmethod
     @abstractmethod
@@ -118,8 +83,29 @@ class Game(ABC):
         pass
 
     @classmethod
+    def get_img_index_representation(cls, state):
+        """
+        The result will be a matrix with shape (n, m) and dtype=int. Each element will be an integer corresponding to
+        which image to use to represent that square. The mapping from indices to file names should be provided in a
+        class-level constant list called REPRESENTATION_FILES.
+
+        :return: A numpy matrix indicating which images to use for each square in the grid.
+        """
+        representation = np.full(cls.BOARD_SHAPE, 0)
+        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
+            representation[state[:, :, i] == 1] = i + 1
+        return representation
+
+    @classmethod
     def null_move(cls, state):
         move = np.copy(state)
         move[:, :, -1] = np.zeros_like(state[:, :, -1]) if cls.is_player_1_turn(state) \
             else np.ones_like(state[:, :, -1])
         return move
+
+    @staticmethod
+    def is_board_full(state):
+        combined_board = state[:, :, 0]
+        for i in range(1, state.shape[2] - 1):
+            combined_board = np.logical_or(combined_board, state[:, :, i])
+        return np.all(combined_board == 1)

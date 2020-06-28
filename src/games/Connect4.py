@@ -14,14 +14,7 @@ class Connect4(Game):
     CLICKS_PER_MOVE = 1
 
     def __init__(self, state=STARTING_STATE):
-        super().__init__()
-        self.state = np.copy(state)
-
-    def get_state(self):
-        return self.state
-
-    def set_state(self, state):
-        self.state = np.copy(state)
+        super().__init__(state)
 
     def perform_user_move(self, clicks):
         j = clicks[0][1]
@@ -30,44 +23,12 @@ class Connect4(Game):
         new_state = self.null_move(self.state)
         new_state[max_empty_i, j, :2] = [1, 0] if self.is_player_1_turn(self.state) else [0, 1]
 
-        for legal_move in Connect4.get_possible_moves(self.state):
+        for i, legal_move in enumerate(Connect4.get_possible_moves(self.state)):
             if np.all(legal_move == new_state):
-                break
+                self.state = new_state
+                return i
         else:
             raise ValueError('Illegal Move')
-
-        self.state = new_state
-
-    def draw(self, canvas=None, move_prompt=False):
-        if canvas is None:
-            matrix = Connect4.get_human_move_prompt_representation(self.state) if move_prompt else \
-                Connect4.get_human_readable_representation(self.state)
-            for i in range(matrix.shape[0]):
-                print(' '.join(matrix[i, :]))
-        else:
-            raise NotImplementedError()
-
-    @classmethod
-    def get_representation_shape(cls):
-        return cls.STATE_SHAPE
-
-    @classmethod
-    def get_human_readable_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, '_', dtype=str)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
-        return representation
-
-    @classmethod
-    def get_img_index_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, 0)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = i + 1
-        return representation
-
-    @classmethod
-    def get_starting_state(cls):
-        return np.copy(cls.STARTING_STATE)
 
     @classmethod
     def get_possible_moves(cls, state):
@@ -103,13 +64,9 @@ class Connect4(Game):
 
         return False
 
-    @staticmethod
-    def full_board(state):
-        return np.all(np.logical_or(state[:, :, 0], state[:, :, 1]) == 1)
-
     @classmethod
     def is_over(cls, state):
-        return cls.check_win(state[:, :, 0]) or cls.check_win(state[:, :, 1]) or cls.full_board(state)
+        return cls.check_win(state[:, :, 0]) or cls.check_win(state[:, :, 1]) or cls.is_board_full(state)
 
     @classmethod
     def get_winner(cls, state):
@@ -117,5 +74,5 @@ class Connect4(Game):
             return 1
         if cls.check_win(state[:, :, 1]):
             return -1
-        if cls.full_board(state):
+        if cls.is_board_full(state):
             return 0
