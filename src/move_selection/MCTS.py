@@ -131,7 +131,7 @@ class Node:
             self.children = [Node(move, self, self.GameClass) for move in
                              self.GameClass.get_possible_moves(self.position)]
 
-    def choose_best_node(self):
+    def choose_best_node(self, return_probability_distribution=False):
         best_heuristic = -np.inf if self.is_maximizing else np.inf
         best_child = None
         for child in self.children:
@@ -141,6 +141,11 @@ class Node:
                         (not self.is_maximizing and child_heuristic < best_heuristic):
                     best_heuristic = child_heuristic
                     best_child = child
+
+        if return_probability_distribution:
+            distribution = np.array([child.rollout_count for child in self.children])
+            distribution = distribution / np.sum(distribution)
+            return best_child, distribution
         return best_child
 
     def choose_rollout_node(self, c=np.sqrt(2)):
