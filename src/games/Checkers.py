@@ -20,8 +20,7 @@ class Checkers(Game):
                             'black_circle_dark_square', 'black_circle_k_dark_square']
 
     def __init__(self, state=STARTING_STATE):
-        super().__init__()
-        self.state = np.copy(state)
+        super().__init__(state)
 
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
