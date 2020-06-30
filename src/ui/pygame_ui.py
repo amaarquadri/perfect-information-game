@@ -1,74 +1,83 @@
-from src.games.TicTacToe import TicTacToe as Game
-from src.move_selection.MCTS import AsyncMCTS
 import pygame
 from src.utils.Utils import iter_product
 
 
-def get_user_clicks(count=1):
-    clicks = []
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                return None
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = event.pos
-                clicks.append((y // 64, x // 64))  # Note pygame inverst x and y
-                if len(clicks) == count:
-                    return clicks
+class PygameUI:
+    def __init__(self, GameClass, starting_position=None):
+        self.GameClass = GameClass
+        pygame.init()
+        # Note pygame inverts x and y
+        self.canvas = pygame.display.set_mode((64 * GameClass.COLUMNS, 64 * GameClass.ROWS))
+        self.imgs = [pygame.image.load(f'../../resources/{file_name}.png')
+                     for file_name in GameClass.REPRESENTATION_FILES]
+        if starting_position is None:
+            starting_position = GameClass.STARTING_STATE
+        self.board = GameClass(starting_position)
+        self.draw()
 
+    def get_position(self):
+        return self.board.get_state()
 
-def quit_on_x():
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                return
+    def draw(self, position=None):
+        if position is not None:
+            self.board.set_state(position)
+        else:
+            position = self.board.get_state()
 
-
-def main():
-    pygame.init()
-    canvas = pygame.display.set_mode((64 * Game.COLUMNS, 64 * Game.ROWS))  # Note pygame inverst x and y
-    imgs = [pygame.image.load(f'../../resources/{file_name}.png') for file_name in Game.REPRESENTATION_FILES]
-
-    board = Game()
-    move_chooser = AsyncMCTS(Game, board.get_state(), time_limit=3, threads=1)
-    move_chooser.start()
-
-    def draw_board():
-        indices = Game.get_img_index_representation(board.get_state())
-        for i, j in iter_product(Game.BOARD_SHAPE):
-            img = imgs[indices[i, j]]
-            canvas.blit(img, (64 * j, 64 * i))  # Note pygame inverst x and y
+        indices = self.GameClass.get_img_index_representation(position)
+        for i, j in iter_product(self.GameClass.BOARD_SHAPE):
+            img = self.imgs[indices[i, j]]
+            self.canvas.blit(img, (64 * j, 64 * i))  # Note pygame inverts x and y
         pygame.display.flip()
 
-    draw_board()
-    while True:
-        # get user move
-        clicks = get_user_clicks(count=Game.CLICKS_PER_MOVE)
-        if clicks is None:
-            move_chooser.terminate()
-            pygame.quit()
-            return
-        try:
-            board.perform_user_move(clicks)
-        except ValueError:
-            print('Illegal Move! Try again.')
-            continue
+    def get_user_move(self):
+        pygame.event.clear(pygame.MOUSEBUTTONDOWN)
 
-        draw_board()
-        if Game.is_over(board.get_state()):
-            break
+        clicks = []
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return None
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    x, y = event.pos
+                    clicks.append((y // 64, x // 64))  # Note pygame inverst x and y
+                    if len(clicks) == self.GameClass.CLICKS_PER_MOVE:
+                        try:
+                            self.board.perform_user_move(clicks)
+                            self.draw()
+                            return self.board.get_state()
+                        except ValueError:
+                            print('Invalid Move! Try again.')
+                            return self.get_user_move()  # recurse
 
-        # ai move
-        board.set_state(move_chooser.choose_move(board.get_state()))
-        draw_board()
-        if Game.is_over(board.get_state()):
-            break
-    print('Winner: ', Game.get_winner(board.get_state()))
+    @staticmethod
+    def quit_on_x():
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
 
-    move_chooser.terminate()
-    quit_on_x()
+    @staticmethod
+    def click_to_continue():
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return False
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    return True
 
-
-if __name__ == '__main__':
-    main()
+    @staticmethod
+    def click_left_or_right():
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return None
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == pygame.BUTTON_LEFT:
+                        return True
+                    if event.button == pygame.BUTTON_RIGHT:
+                        return False

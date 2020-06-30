@@ -1,3 +1,5 @@
 /venv
 /.idea
 *__pycache__
+/src/heuristics/games/
+/src/heuristics/models/
