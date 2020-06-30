@@ -26,10 +26,11 @@ class Connect4(Game):
 
         for i, legal_move in enumerate(Connect4.get_possible_moves(self.state)):
             if np.all(legal_move == new_state):
-                self.state = new_state
-                return i
+                break
         else:
             raise ValueError('Illegal Move')
+
+        self.state = new_state
 
     @classmethod
     def get_possible_moves(cls, state):
