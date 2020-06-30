@@ -10,6 +10,7 @@ class TicTacToe(Game):
     ROWS, COLUMNS = BOARD_SHAPE
     BOARD_LENGTH = BOARD_SHAPE[0]  # 3
     FEATURE_COUNT = STATE_SHAPE[-1]  # 3
+    MOVE_SHAPE = BOARD_SHAPE
     REPRESENTATION_LETTERS = ['X', 'O']
     CLICKS_PER_MOVE = 1
     REPRESENTATION_FILES = ['dark_square', 'white_circle_dark_square', 'black_circle_dark_square']
@@ -37,6 +38,11 @@ class TicTacToe(Game):
         return moves
 
     @classmethod
+    def get_legal_moves(cls, state):
+        return np.array([[1 if np.all(state[i, j, :2] == 0) else 0 for j in range(cls.COLUMNS)]
+                         for i in range(cls.ROWS)])
+
+    @classmethod
     def is_over(cls, state):
         return cls.check_win(state[:, :, 0]) or cls.check_win(state[:, :, 1]) or cls.is_board_full(state)
 
@@ -52,7 +58,7 @@ class TicTacToe(Game):
     @staticmethod
     def check_win(pieces):
         # Check vertical and horizontal
-        for k in range(3):
+        for k in range(TicTacToe.ROWS):
             if np.all(pieces[k, :]) or np.all(pieces[:, k]):
                 return True
 

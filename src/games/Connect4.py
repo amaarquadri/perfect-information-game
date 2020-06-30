@@ -9,6 +9,7 @@ class Connect4(Game):
     BOARD_SHAPE = STATE_SHAPE[:-1]  # 6, 7
     ROWS, COLUMNS = BOARD_SHAPE
     FEATURE_COUNT = STATE_SHAPE[-1]  # 3
+    MOVE_SHAPE = (COLUMNS,)
     REPRESENTATION_LETTERS = ['y', 'r']
     REPRESENTATION_FILES = ['dark_square', 'yellow_circle_dark_square', 'red_circle_dark_square']
     CLICKS_PER_MOVE = 1
@@ -43,6 +44,10 @@ class Connect4(Game):
                 move[max_empty_i, j, :2] = [1, 0] if cls.is_player_1_turn(state) else [0, 1]
                 moves.append(move)
         return moves
+
+    @classmethod
+    def get_legal_moves(cls, state):
+        return np.array([1 if np.all(state[0, j, :2] == 0) else 0 for j in cls.COLUMNS])
 
     @classmethod
     def check_win(cls, pieces):

@@ -4,6 +4,16 @@ import numpy as np
 
 # noinspection PyUnresolvedReferences
 class Game(ABC):
+    # REQUIRED CLASS VARIABLES
+    # STARTING_STATE = ndarray
+    # STATE_SHAPE = STARTING_STATE.shape
+    # MOVE_SHAPE = ()
+    # ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE
+    # BOARD_SHAPE = (ROWS, COLUMNS)
+    # REPRESENTATION_LETTERS = []
+    # REPRESENTATION_FILES = []
+    # CLICKS_PER_MOVE = int
+
     # INSTANCE FUNCTIONS
 
     def __init__(self, state=None):
@@ -35,7 +45,8 @@ class Game(ABC):
     def reset_game(self):
         self.set_state(self.STARTING_BOARD)
 
-    def __repr__(self):
+    @classmethod
+    def to_string(cls, state):
         """
         The board should be drawn in book-reading fashion. i.e. The first index represents the row from top to bottom
         and the second index represents the column from left to right.
@@ -63,9 +74,18 @@ class Game(ABC):
     @abstractmethod
     def get_possible_moves(cls, state):
         """
-        Each resulting board state will be in the form specified by get_ML_representation
+        The order of the returned states must be sorted based on the flattened versions of MOVE_SHAPE.
 
         :return: A list of all possible board states that could result from the given state.
+        """
+        pass
+
+    @classmethod
+    @abstractmethod
+    def get_legal_moves(cls, state):
+        """
+        :return: A numpy array with shape=MOVE_SHAPE where 0 corresponds to an illegal move
+                 and 1 corresponds to a legal move.
         """
         pass
 

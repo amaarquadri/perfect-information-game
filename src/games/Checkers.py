@@ -13,6 +13,7 @@ class Checkers(Game):
     ROWS, COLUMNS = BOARD_SHAPE
     BOARD_LENGTH = BOARD_SHAPE[0]  # 8
     FEATURE_COUNT = STATE_SHAPE[-1]  # 5
+    MOVE_SHAPE = (ROWS // 2, COLUMNS // 2, 4)
     REPRESENTATION_LETTERS = ['r', 'R', 'b', 'B']
     CLICKS_PER_MOVE = 2
     REPRESENTATION_FILES = ['dark_square', 'red_circle_dark_square', 'red_circle_k_dark_square',
@@ -88,6 +89,10 @@ class Checkers(Game):
                         move[i + di, j + dj, :2] = [0, 0]
                         moves.append(move)
         return moves
+
+    @classmethod
+    def get_legal_moves(cls, state):
+        raise NotImplementedError()
 
     @classmethod
     def is_over(cls, state):
