@@ -26,7 +26,7 @@ class Amazons(Game):
     BOARD_LENGTH = BOARD_SHAPE[0]
     FEATURE_COUNT = STATE_SHAPE[-1]  # 3
     # TODO: figure out how to deal with very sparse arrays
-    MOVE_SHAPE = (ROWS, COLUMNS, 8 * (ROWS - 1), 8 * (ROWS - 1))  # assumes rows == columns
+    MOVE_SHAPE = (ROWS, COLUMNS, 8 * (ROWS - 1), 8 * (ROWS - 1))  # assumes ROWS == COLUMNS
     REPRESENTATION_LETTERS = ['W', 'B', 'X']
     REPRESENTATION_FILES = ['dark_square', 'white_circle_dark_square',
                             'black_circle_dark_square', 'red_circle_dark_square']
