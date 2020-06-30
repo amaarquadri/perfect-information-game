@@ -10,19 +10,13 @@ class TicTacToe(Game):
     ROWS, COLUMNS = BOARD_SHAPE
     BOARD_LENGTH = BOARD_SHAPE[0]  # 3
     FEATURE_COUNT = STATE_SHAPE[-1]  # 3
+    MOVE_SHAPE = BOARD_SHAPE
     REPRESENTATION_LETTERS = ['X', 'O']
     CLICKS_PER_MOVE = 1
     REPRESENTATION_FILES = ['dark_square', 'white_circle_dark_square', 'black_circle_dark_square']
 
     def __init__(self, state=STARTING_STATE):
-        super().__init__()
-        self.state = state
-
-    def get_state(self):
-        return self.state
-
-    def set_state(self, state):
-        self.state = state
+        super().__init__(state)
 
     def perform_user_move(self, clicks):
         i, j = clicks[0]
@@ -32,34 +26,6 @@ class TicTacToe(Game):
         new_state = self.null_move(self.state)
         new_state[i, j, :2] = [1, 0] if self.is_player_1_turn(self.state) else [0, 1]
         self.state = new_state
-
-    def draw(self, canvas=None, move_prompt=False):
-        if canvas is None:
-            print(TicTacToe.get_human_readable_representation(self.state))
-        else:
-            raise NotImplementedError()
-
-    @classmethod
-    def get_representation_shape(cls):
-        return cls.STATE_SHAPE
-
-    @classmethod
-    def get_human_readable_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, '_', dtype=str)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
-        return representation
-
-    @classmethod
-    def get_img_index_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, 0)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = i + 1
-        return representation
-
-    @classmethod
-    def get_starting_state(cls):
-        return cls.STARTING_STATE
 
     @classmethod
     def get_possible_moves(cls, state):
@@ -72,8 +38,13 @@ class TicTacToe(Game):
         return moves
 
     @classmethod
+    def get_legal_moves(cls, state):
+        return np.array([[1 if np.all(state[i, j, :2] == 0) else 0 for j in range(cls.COLUMNS)]
+                         for i in range(cls.ROWS)])
+
+    @classmethod
     def is_over(cls, state):
-        return cls.check_win(state[:, :, 0]) or cls.check_win(state[:, :, 1]) or cls.full_board(state)
+        return cls.check_win(state[:, :, 0]) or cls.check_win(state[:, :, 1]) or cls.is_board_full(state)
 
     @classmethod
     def get_winner(cls, state):
@@ -81,20 +52,16 @@ class TicTacToe(Game):
             return 1
         if cls.check_win(state[:, :, 1]):
             return -1
-        if cls.full_board(state):
+        if cls.is_board_full(state):
             return 0
 
     @staticmethod
     def check_win(pieces):
         # Check vertical and horizontal
-        for k in range(3):
+        for k in range(TicTacToe.ROWS):
             if np.all(pieces[k, :]) or np.all(pieces[:, k]):
                 return True
 
         # Check diagonals
         flipped_pieces = np.fliplr(pieces)
         return np.all(np.diag(pieces)) or np.all(np.diag(flipped_pieces))
-
-    @staticmethod
-    def full_board(state):
-        return np.all(np.logical_or(state[:, :, 0], state[:, :, 1]) == 1)

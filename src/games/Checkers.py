@@ -13,20 +13,14 @@ class Checkers(Game):
     ROWS, COLUMNS = BOARD_SHAPE
     BOARD_LENGTH = BOARD_SHAPE[0]  # 8
     FEATURE_COUNT = STATE_SHAPE[-1]  # 5
+    MOVE_SHAPE = (ROWS // 2, COLUMNS // 2, 4)
     REPRESENTATION_LETTERS = ['r', 'R', 'b', 'B']
     CLICKS_PER_MOVE = 2
     REPRESENTATION_FILES = ['dark_square', 'red_circle_dark_square', 'red_circle_k_dark_square',
                             'black_circle_dark_square', 'black_circle_k_dark_square']
 
     def __init__(self, state=STARTING_STATE):
-        super().__init__()
-        self.state = np.copy(state)
-
-    def get_state(self):
-        return self.state
-
-    def set_state(self, state):
-        self.state = np.copy(state)
+        super().__init__(state)
 
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
@@ -48,34 +42,6 @@ class Checkers(Game):
             raise ValueError('Invalid Move!')
 
         self.state = new_state
-
-    def draw(self, canvas=None, move_prompt=False):
-        if canvas is None:
-            print(Checkers.get_human_readable_representation(self.state))
-        else:
-            raise NotImplementedError()
-
-    @classmethod
-    def get_representation_shape(cls):
-        return cls.STATE_SHAPE
-
-    @classmethod
-    def get_human_readable_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, ' ', dtype=str)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
-        return representation
-
-    @classmethod
-    def get_img_index_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, 0)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = i + 1
-        return representation
-
-    @classmethod
-    def get_starting_state(cls):
-        return cls.STARTING_STATE
 
     @classmethod
     def get_possible_moves(cls, state):
@@ -122,6 +88,10 @@ class Checkers(Game):
                         move[i + di, j + dj, :2] = [0, 0]
                         moves.append(move)
         return moves
+
+    @classmethod
+    def get_legal_moves(cls, state):
+        raise NotImplementedError()
 
     @classmethod
     def is_over(cls, state):
