@@ -24,7 +24,7 @@ class Connect4(Game):
         new_state = self.null_move(self.state)
         new_state[max_empty_i, j, :2] = [1, 0] if self.is_player_1_turn(self.state) else [0, 1]
 
-        for i, legal_move in enumerate(Connect4.get_possible_moves(self.state)):
+        for legal_move in Connect4.get_possible_moves(self.state):
             if np.all(legal_move == new_state):
                 break
         else:
