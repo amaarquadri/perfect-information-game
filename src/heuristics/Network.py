@@ -61,9 +61,7 @@ class Network:
             self.evaluation_model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
 
     def choose_move(self, position):
-        distribution = self.policy(position)[self.GameClass.get_legal_moves(position) == 1]
-        distribution = distribution / np.sum(distribution)
-
+        distribution = self.policy(position)
         idx = np.random.choice(np.arange(len(distribution)), p=distribution)
         return self.GameClass.get_possible_moves(position)[idx]
 
