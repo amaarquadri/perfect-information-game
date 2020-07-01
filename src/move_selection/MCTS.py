@@ -170,12 +170,12 @@ class AbstractNode(ABC):
 
         if self.fully_expanded:
             optimal_value = 1 if self.is_maximizing else -1
-            # if self.get_evaluation() == optimal_value:
-            #     print('I\'m going to win')
-            # elif self.get_evaluation() == 0:
-            #     print('It\'s a draw')
-            # else:
-            #     print('I resign')
+            if self.get_evaluation() == optimal_value:
+                print('I\'m going to win')
+            elif self.get_evaluation() == 0:
+                print('It\'s a draw')
+            else:
+                print('I resign')
 
             for child in self.children:
                 # only consider children that result in the optimal outcome
@@ -236,8 +236,8 @@ class AbstractNode(ABC):
 
         # if nothing was found because all children are fully expanded
         if best_child is None:
-            # if not self.fully_expanded and self.parent is None:
-            #     print('Fully expanded tree!')
+            if not self.fully_expanded and self.parent is None:
+                print('Fully expanded tree!')
 
             minimax_evaluation = max([child.get_evaluation() for child in self.children]) if self.is_maximizing \
                 else min([child.get_evaluation() for child in self.children])
