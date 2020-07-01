@@ -45,10 +45,12 @@ class MiniMax:
 
             if is_maximizing and heuristic > best_heuristic:
                 if heuristic > value_to_beat:
+                    # prune
                     return heuristic
                 best_heuristic = heuristic
             if not is_maximizing and heuristic < best_heuristic:
                 if heuristic < value_to_beat:
+                    # prune
                     return heuristic
                 best_heuristic = heuristic
 
