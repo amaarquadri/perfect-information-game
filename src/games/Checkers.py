@@ -10,55 +10,38 @@ class Checkers(Game):
     STARTING_STATE = np.stack([RED, np.zeros((8, 8)), BLACK, np.zeros((8, 8)), np.ones((8, 8))], axis=-1)
     STATE_SHAPE = STARTING_STATE.shape  # 8, 8, 5
     BOARD_SHAPE = STATE_SHAPE[:-1]  # 8, 8
+    ROWS, COLUMNS = BOARD_SHAPE
     BOARD_LENGTH = BOARD_SHAPE[0]  # 8
     FEATURE_COUNT = STATE_SHAPE[-1]  # 5
+    MOVE_SHAPE = (ROWS // 2, COLUMNS // 2, 4)
     REPRESENTATION_LETTERS = ['r', 'R', 'b', 'B']
     CLICKS_PER_MOVE = 2
     REPRESENTATION_FILES = ['dark_square', 'red_circle_dark_square', 'red_circle_k_dark_square',
                             'black_circle_dark_square', 'black_circle_k_dark_square']
 
     def __init__(self, state=STARTING_STATE):
-        super().__init__()
-        self.state = np.copy(state)
-
-    def get_state(self):
-        return self.state
-
-    def set_state(self, state):
-        self.state = np.copy(state)
+        super().__init__(state)
 
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
         new_state = self.null_move(self.state)
-        # TODO
 
-    def draw(self, canvas=None, move_prompt=False):
-        if canvas is None:
-            print(Checkers.get_human_readable_representation(self.state))
+        is_king = np.any(self.state[start_i, start_j, [1, 3]] == 1) or \
+            end_j == 0 or end_j == Checkers.ROWS - 1
+        new_piece = [0] * 4
+        new_piece[2 * (not self.is_player_1_turn(self.state)) + is_king] = 1
+        new_state[end_i, end_j, :4] = new_piece
+        new_state[start_i, start_j, :4] = [0] * 4
+        if np.abs(end_j - start_j) == 2:
+            new_state[(start_i + end_i) // 2, (start_j + end_j) // 2, :4] = [0] * 4
+
+        for move in self.get_possible_moves(self.state):
+            if np.all(move == new_state):
+                break
         else:
-            raise NotImplementedError()
+            raise ValueError('Invalid Move!')
 
-    @classmethod
-    def get_representation_shape(cls):
-        return cls.STATE_SHAPE
-
-    @classmethod
-    def get_human_readable_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, ' ', dtype=str)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
-        return representation
-
-    @classmethod
-    def get_img_index_representation(cls, state):
-        representation = np.full(cls.BOARD_SHAPE, 0)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = i + 1
-        return representation
-
-    @classmethod
-    def get_starting_state(cls):
-        return cls.STARTING_STATE
+        self.state = new_state
 
     @classmethod
     def get_possible_moves(cls, state):
@@ -105,6 +88,10 @@ class Checkers(Game):
                         move[i + di, j + dj, :2] = [0, 0]
                         moves.append(move)
         return moves
+
+    @classmethod
+    def get_legal_moves(cls, state):
+        raise NotImplementedError()
 
     @classmethod
     def is_over(cls, state):
