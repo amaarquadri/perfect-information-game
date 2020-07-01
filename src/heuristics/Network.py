@@ -1,8 +1,10 @@
+from time import time
+from multiprocessing import Process, Pipe
 import numpy as np
 import keras
 from keras.models import Sequential
 from keras.layers import Dense, Conv3D, Flatten
-from multiprocessing import Process, Pipe
+from keras.callbacks import TensorBoard
 
 
 class Network:
@@ -52,13 +54,13 @@ class Network:
                 raise Exception('input shape of loaded model doesn\'t match')
         else:
             self.evaluation_model = Sequential()
-            self.evaluation_model.add(Conv3D(32, (3, 3, 1), input_shape=input_shape + (1,), activation='relu'))
-            self.evaluation_model.add(Conv3D(32, (3, 3, input_shape[2] - 1), activation='relu'))
+            self.evaluation_model.add(Conv3D(8, (3, 3, 1), input_shape=input_shape + (1,), activation='relu'))
+            # self.evaluation_model.add(Conv3D(16, (3, 3, input_shape[2] - 1), activation='relu'))
             self.evaluation_model.add(Flatten())
-            self.evaluation_model.add(Dense(16, activation='relu'))
-            self.evaluation_model.add(Dense(16, activation='relu'))
+            # self.evaluation_model.add(Dense(8, activation='relu'))
+            # self.evaluation_model.add(Dense(16, activation='relu'))
             self.evaluation_model.add(Dense(1, activation='tanh'))
-            self.evaluation_model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+            self.evaluation_model.compile(optimizer='adam', loss='mean_squared_error', metrics=['mean_absolute_error'])
 
     def choose_move(self, position):
         distribution = self.policy(position)
@@ -68,25 +70,40 @@ class Network:
     def policy(self, state):
         raw_policy = np.squeeze(self.policy_model.predict(state[np.newaxis, :, :, :, np.newaxis]))
 
-        filtered_policy = raw_policy[self.GameClass.get_legal_moves(state) == 1]
+        filtered_policy = raw_policy[self.GameClass.get_legal_moves(state)]
         filtered_policy = filtered_policy / np.sum(filtered_policy)
         return filtered_policy
 
     def evaluation(self, state):
         return np.squeeze(self.evaluation_model.predict(state[np.newaxis, :, :, :, np.newaxis]))
 
-    def train(self, data):
+    def train(self, data, validation_fraction=0.2):
+        split = int((1 - validation_fraction) * len(data))
+        train_input, train_policy, train_value = self.process_data(data[:split])
+        test_input, test_policy, test_value = self.process_data(data[split:])
+        print('Training Samples:', train_input.shape[0])
+        print('Validation Samples:', test_input.shape[0])
+
+        # self.policy_model.fit(train_input, train_policy, epochs=20, validation_data=(test_input, test_policy),
+        #                       callbacks=[TensorBoard(log_dir=f'../heuristics/logs/policy_model-{time()}')])
+        self.evaluation_model.fit(train_input, train_value, epochs=20, validation_data=(test_input, test_value),
+                                  callbacks=[TensorBoard(log_dir=f'../heuristics/logs/evaluation_model-{time()}')])
+
+    def process_data(self, data):
         states = []
         policy_outputs = []
         value_outputs = []
 
         for game, outcome in data:
             for position, distribution in game:
-                if type(distribution) == list:
-                    continue
                 legal_moves = self.GameClass.get_legal_moves(position)
-                policy = np.zeros_like(legal_moves)
-                policy[legal_moves == 1] = distribution
+                policy = np.zeros_like(legal_moves, dtype=float)
+                policy[legal_moves] = distribution
+
+                # convert policy to one-hot
+                idx = np.unravel_index(policy.argmax(), policy.shape)
+                policy = np.zeros_like(policy)
+                policy[idx] = 1
 
                 states.append(position)
                 # policy outputs are flattened to match policy output's flat dense output layer
@@ -96,7 +113,6 @@ class Network:
         input_data = np.stack(states, axis=0)[:, :, :, :, np.newaxis]
         policy_outputs = np.stack(policy_outputs, axis=0)
         value_outputs = np.array(value_outputs)
-        print('Samples:', input_data.shape[0])
 
         shuffle = np.arange(input_data.shape[0])
         np.random.shuffle(shuffle)
@@ -104,8 +120,7 @@ class Network:
         policy_outputs = policy_outputs[shuffle, ...]
         value_outputs = value_outputs[shuffle, ...]
 
-        self.policy_model.fit(input_data, policy_outputs, epochs=100)
-        self.evaluation_model.fit(input_data, value_outputs, epochs=100)
+        return input_data, policy_outputs, value_outputs
 
     def save(self, policy_path, evaluation_path):
         self.policy_model.save(policy_path)
@@ -127,18 +142,13 @@ class Network:
         network = Network(GameClass, policy_path, evaluation_path)
         network.initialize()
 
-        with tf.device('/GPU:0'):
-            while True:
-                for policy_pipe in policy_pipes:
-                    if policy_pipe.poll():
-                        position = policy_pipe.recv()
-                        filtered_distribution = network.policy(position)
-                        policy_pipe.send(filtered_distribution)
-                for evaluation_pipe in evaluation_pipes:
-                    if evaluation_pipe.poll():
-                        position = evaluation_pipe.recv()
-                        evaluation = network.evaluation(position)
-                        evaluation_pipe.send(evaluation)
+        while True:
+            for policy_pipe in policy_pipes:
+                if policy_pipe.poll():
+                    policy_pipe.send(network.policy(policy_pipe.recv()))
+            for evaluation_pipe in evaluation_pipes:
+                if evaluation_pipe.poll():
+                    evaluation_pipe.send(network.evaluation(evaluation_pipe.recv()))
 
 
 class ProxyNetwork:
@@ -165,14 +175,14 @@ def train():
     from src.games.Connect4 import Connect4
     import os
     import pickle
-    net = Network(Connect4, '../heuristics/models/policy0.h5', '../heuristics/models/evaluation0.h5')
+    net = Network(Connect4)
     net.initialize()
     print('Policy network size: ', net.policy_model.count_params())
     print('Evaluation network size: ', net.evaluation_model.count_params())
 
     data = []
-    for file in os.listdir('../heuristics/games/mcts_network0_games'):
-        with open(f'../heuristics/games/mcts_network0_games/{file}', 'rb') as fin:
+    for file in os.listdir('../heuristics/games/raw_mcts_games'):
+        with open(f'../heuristics/games/raw_mcts_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
     net.train(data)
     net.save('../heuristics/models/policy_test.h5', '../heuristics/models/evaluation_test.h5')

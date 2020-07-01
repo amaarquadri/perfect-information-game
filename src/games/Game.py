@@ -84,8 +84,8 @@ class Game(ABC):
     @abstractmethod
     def get_legal_moves(cls, state):
         """
-        :return: A numpy array with shape=MOVE_SHAPE where 0 corresponds to an illegal move
-                 and 1 corresponds to a legal move.
+        :return: A numpy array with shape=MOVE_SHAPE where False corresponds to an illegal move
+                 and True corresponds to a legal move.
         """
         pass
 

@@ -39,8 +39,7 @@ class TicTacToe(Game):
 
     @classmethod
     def get_legal_moves(cls, state):
-        return np.array([[1 if np.all(state[i, j, :2] == 0) else 0 for j in range(cls.COLUMNS)]
-                         for i in range(cls.ROWS)])
+        return np.array([[np.all(state[i, j, :2] == 0) for j in range(cls.COLUMNS)] for i in range(cls.ROWS)])
 
     @classmethod
     def is_over(cls, state):
