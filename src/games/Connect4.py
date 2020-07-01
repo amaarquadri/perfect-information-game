@@ -48,7 +48,7 @@ class Connect4(Game):
 
     @classmethod
     def get_legal_moves(cls, state):
-        return np.array([1 if np.all(state[0, j, :2] == 0) else 0 for j in cls.COLUMNS])
+        return np.array([1 if np.all(state[0, j, :2] == 0) else 0 for j in range(cls.COLUMNS)])
 
     @classmethod
     def check_win(cls, pieces):
