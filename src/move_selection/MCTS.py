@@ -223,13 +223,18 @@ class AbstractNode(ABC):
                 # continue searching other children, there may be another child that is more optimal
                 continue
 
+            # check puct heuristic before calling child.get_evaluation() because it may result in division by 0
+            puct_heuristic = self.get_puct_heuristic_for_child(i)
+            if np.isinf(puct_heuristic):
+                return child
+
             if self.is_maximizing:
-                combined_heuristic = child.get_evaluation() + self.get_puct_heuristic_for_child(i)
+                combined_heuristic = child.get_evaluation() + puct_heuristic
                 if combined_heuristic > best_heuristic:
                     best_heuristic = combined_heuristic
                     best_child = child
             else:
-                combined_heuristic = child.get_evaluation() - self.get_puct_heuristic_for_child(i)
+                combined_heuristic = child.get_evaluation() - puct_heuristic
                 if combined_heuristic < best_heuristic:
                     best_heuristic = combined_heuristic
                     best_child = child
