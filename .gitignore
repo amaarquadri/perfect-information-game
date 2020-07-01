@@ -3,3 +3,4 @@
 *__pycache__
 /src/heuristics/games/
 /src/heuristics/models/
+/src/heuristics/logs/
