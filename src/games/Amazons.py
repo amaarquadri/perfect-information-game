@@ -18,7 +18,7 @@ class Amazons(Game):
     STARTING_STATE = np.stack([WHITE_STARTING_BOARD,
                                BLACK_STARTING_BOARD,
                                np.zeros_like(WHITE_STARTING_BOARD),
-                               np.ones_like(WHITE_STARTING_BOARD)], axis=-1)
+                               np.ones_like(WHITE_STARTING_BOARD)], axis=-1).astype(np.uint8)
 
     STATE_SHAPE = STARTING_STATE.shape  # 6, 6, 4
     BOARD_SHAPE = STATE_SHAPE[:-1]  # 6, 6

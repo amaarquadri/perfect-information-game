@@ -1,4 +1,3 @@
-from itertools import product
 from src.games.Game import Game
 import numpy as np
 from src.utils.Utils import iter_product
@@ -7,7 +6,9 @@ from src.utils.Utils import iter_product
 class Checkers(Game):
     RED = np.array(5 * [8 * [0]] + [4 * [1, 0]] + [4 * [0, 1]] + [4 * [1, 0]])
     BLACK = np.array([4 * [0, 1]] + [4 * [1, 0]] + [4 * [0, 1]] + 5 * [8 * [0]])
-    STARTING_STATE = np.stack([RED, np.zeros((8, 8)), BLACK, np.zeros((8, 8)), np.ones((8, 8))], axis=-1)
+    STARTING_STATE = np.stack([RED, np.zeros((8, 8)),
+                               BLACK, np.zeros((8, 8)),
+                               np.ones((8, 8))], axis=-1).astype(np.uint8)
     STATE_SHAPE = STARTING_STATE.shape  # 8, 8, 5
     BOARD_SHAPE = STATE_SHAPE[:-1]  # 8, 8
     ROWS, COLUMNS = BOARD_SHAPE

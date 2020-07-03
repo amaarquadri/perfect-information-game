@@ -4,7 +4,7 @@ from src.utils.Utils import iter_product
 
 
 class Connect4(Game):
-    STARTING_STATE = np.stack([np.zeros((6, 7)), np.zeros((6, 7)), np.ones((6, 7))], axis=-1)
+    STARTING_STATE = np.stack([np.zeros((6, 7)), np.zeros((6, 7)), np.ones((6, 7))], axis=-1).astype(np.uint8)
     STATE_SHAPE = STARTING_STATE.shape  # 6, 7, 3
     BOARD_SHAPE = STATE_SHAPE[:-1]  # 6, 7
     ROWS, COLUMNS = BOARD_SHAPE

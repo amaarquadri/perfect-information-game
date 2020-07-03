@@ -4,7 +4,7 @@ from src.utils.Utils import iter_product
 
 
 class TicTacToe(Game):
-    STARTING_STATE = np.stack([np.zeros((3, 3)), np.zeros((3, 3)), np.ones((3, 3))], axis=-1)
+    STARTING_STATE = np.stack([np.zeros((3, 3)), np.zeros((3, 3)), np.ones((3, 3))], axis=-1).astype(np.uint8)
     STATE_SHAPE = STARTING_STATE.shape  # 3, 3, 3
     BOARD_SHAPE = STATE_SHAPE[:-1]  # 3, 3
     ROWS, COLUMNS = BOARD_SHAPE
