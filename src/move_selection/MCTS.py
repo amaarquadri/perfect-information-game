@@ -206,6 +206,10 @@ class AbstractNode(ABC):
         return (best_child, distribution) if return_probability_distribution else best_child
 
     def choose_expansion_node(self):
+        # TODO: continue tree search in case the user makes a mistake and the game continues
+        if self.fully_expanded:
+            return None
+
         if self.count_expansions() == 0:
             return self
 
@@ -327,7 +331,7 @@ class RolloutNode(AbstractNode):
 
 
 class HeuristicNode(AbstractNode):
-    def __init__(self, position, parent, GameClass, network, c=np.sqrt(2), d=1):
+    def __init__(self, position, parent, GameClass, network, c=np.sqrt(2), d=1, network_call_results=None):
         super().__init__(position, parent, GameClass, c)
         self.network = network
         self.d = d
@@ -337,8 +341,8 @@ class HeuristicNode(AbstractNode):
             self.policy = None
             self.expansions = np.inf
         else:
-            self.heuristic = network.evaluation(position)
-            self.policy = None  # policy is lazily evaluated
+            self.policy, self.heuristic = network.call(position[np.newaxis, ...])[0] if network_call_results is None \
+                else network_call_results
             self.expansions = 0
 
     def count_expansions(self):
@@ -347,13 +351,13 @@ class HeuristicNode(AbstractNode):
     def get_evaluation(self):
         return self.heuristic
 
-    def expand(self):
+    def expand(self, moves=None, network_call_results=None):
         if self.children is not None:
             raise Exception('Node already has children!')
         if self.fully_expanded:
             raise Exception('Node is terminal!')
 
-        self.ensure_children()
+        self.ensure_children(moves, network_call_results)
         if self.children is None:
             raise Exception('Failed to create children!')
 
@@ -391,9 +395,12 @@ class HeuristicNode(AbstractNode):
         policy_term = self.d * self.policy[i]
         return exploration_term + policy_term
 
-    def ensure_children(self):
+    def ensure_children(self, moves=None, network_call_results=None):
         if self.children is None:
-            self.children = [HeuristicNode(move, self, self.GameClass, self.network, self.c, self.d)
-                             for move in self.GameClass.get_possible_moves(self.position)]
-            self.policy = self.network.policy(self.position)
+            moves = self.GameClass.get_possible_moves(self.position) if moves is None else moves
+            network_call_results = self.network.call(np.stack(moves, axis=0)) if network_call_results is None \
+                else network_call_results
+            self.children = [HeuristicNode(move, self, self.GameClass, self.network, self.c, self.d,
+                                           network_call_results=network_call_result)
+                             for move, network_call_result in zip(moves, network_call_results)]
             self.expansions = 1
