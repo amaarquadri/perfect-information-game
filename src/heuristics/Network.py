@@ -38,7 +38,7 @@ class Network:
         else:
             self.model = self.create_model()
 
-    def create_model(self):
+    def create_model(self, kernel_size=(3, 3), residual_layers=3):
         """
         https://www.youtube.com/watch?v=OPgRNY3FaxA
         """
@@ -53,16 +53,16 @@ class Network:
         input_tensor = Input(input_shape)
 
         # convolutional layer
-        x = Conv2D(16, (3, 3), padding='same')(input_tensor)
+        x = Conv2D(16, kernel_size, padding='same')(input_tensor)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
 
         # residual layers
-        for _ in range(3):
-            y = Conv2D(16, (3, 3), padding='same')(x)
+        for _ in range(residual_layers):
+            y = Conv2D(16, kernel_size, padding='same')(x)
             y = BatchNormalization()(y)
             y = Activation('relu')(y)
-            y = Conv2D(16, (3, 3), padding='same')(y)
+            y = Conv2D(16, kernel_size, padding='same')(y)
             y = BatchNormalization()(y)
             # noinspection PyTypeChecker
             x = Add()([x, y])
