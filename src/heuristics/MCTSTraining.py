@@ -25,13 +25,11 @@ def simulate_game_batches_worker_process(GameClass, response_pipe, network, path
         for i in range(game_batch_count):
             root = roots[i]
             if root.count_expansions() >= expansions_per_move:
-                print('Making move')
                 best_node, distribution = root.choose_best_node(return_probability_distribution=True)
                 training_data_sets[i].append((root.position, distribution))
                 root = best_node
                 root.parent = None
                 if GameClass.is_over(root.position):
-                    print('Saving game')
                     game = (training_data_sets[i], GameClass.get_winner(root.position))
                     with open(f'{path}/game{time()}.pickle', 'wb') as fout:
                         pickle.dump(game, fout)
@@ -139,13 +137,13 @@ def create_training_games(GameClass, num_games=10_000, threads=14, network_itera
     return games
 
 
-def create_dual_architecture_training_games(GameClass, num_games=10_000, threads_per_section=14,
-                                            game_batch_count=4, network_iteration=0, c=np.sqrt(2), d=1):
-    path = f'../heuristics/games/mcts_network{network_iteration}_games'
-    model_path = f'../heuristics/models/model{network_iteration}.h5'
-    network_process, network_a_proxies, network_b_proxies = Network.spawn_dual_architecture_process(GameClass,
-                                                                                                    model_path,
-                                                                                                    threads_per_section)
+def create_dual_architecture_training_games(GameClass, cycles=50, threads_per_section=14,
+                                            game_batch_count=50, c=np.sqrt(2), d=1):
+    path = f'../heuristics/games/rolling_mcts_network_games'
+    model_path = f'../heuristics/models/model4.h5'
+    network_process, network_a_proxies, network_b_proxies, network_training_data_pipe = \
+        Network.spawn_dual_architecture_process(GameClass, model_path, threads_per_section)
+
     parent_training_data_pipe, worker_training_data_pipe = Pipe(duplex=False)
     worker_a_processes = [Process(target=simulate_game_batches_worker_process,
                                   args=(GameClass, worker_training_data_pipe, network_proxy, path, 800,
@@ -163,7 +161,10 @@ def create_dual_architecture_training_games(GameClass, num_games=10_000, threads
     for worker_process in worker_b_processes:
         worker_process.start()
 
-    games = [parent_training_data_pipe.recv() for _ in range(num_games)]
+    for _ in range(cycles):
+        games = [parent_training_data_pipe.recv() for _ in range(2 * threads_per_section * game_batch_count)]
+        network_training_data_pipe.send(games)
+        print('Finished Cycle')
 
     # terminate and join all processes
     for worker_process in worker_a_processes + worker_b_processes:
@@ -172,8 +173,6 @@ def create_dual_architecture_training_games(GameClass, num_games=10_000, threads
         worker_process.join()
     network_process.terminate()
     network_process.join()
-
-    return games
 
 
 def train_network(GameClass=Connect4, iterations=8, threads=14):
@@ -213,7 +212,5 @@ def view_game(path):
 
 
 if __name__ == '__main__':
-    create_dual_architecture_training_games(Connect4, network_iteration=1,
-                                            threads_per_section=14, game_batch_count=50, num_games=10_000)
+    create_dual_architecture_training_games(Connect4, threads_per_section=14, game_batch_count=50)
     # train_network(Connect4, 1, threads=14)
-    # view_game('../heuristics/games/raw_mcts_game/game.pickle')

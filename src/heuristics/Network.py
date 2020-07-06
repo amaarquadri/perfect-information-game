@@ -186,14 +186,15 @@ class Network:
     def spawn_dual_architecture_process(GameClass, model_path=None, pipes_per_section=1):
         parent_a_pipes, worker_a_pipes = zip(*[Pipe() for _ in range(pipes_per_section)])
         parent_b_pipes, worker_b_pipes = zip(*[Pipe() for _ in range(pipes_per_section)])
+        worker_training_data_pipe, parent_training_data_pipe = Pipe(duplex=False)
         process = Process(target=Network.dual_architecture_process_loop,
-                          args=(GameClass, model_path, worker_a_pipes, worker_b_pipes))
+                          args=(GameClass, model_path, worker_a_pipes, worker_b_pipes, worker_training_data_pipe))
         proxy_a_networks = [ProxyNetwork(parent_a_pipe) for parent_a_pipe in parent_a_pipes]
         proxy_b_networks = [ProxyNetwork(parent_b_pipe) for parent_b_pipe in parent_b_pipes]
-        return process, proxy_a_networks, proxy_b_networks
+        return process, proxy_a_networks, proxy_b_networks, parent_training_data_pipe
 
     @staticmethod
-    def dual_architecture_process_loop(GameClass, model_path, worker_a_pipes, worker_b_pipes):
+    def dual_architecture_process_loop(GameClass, model_path, worker_a_pipes, worker_b_pipes, training_data_pipe):
         network = Network(GameClass, model_path)
         network.initialize()
 
@@ -209,6 +210,11 @@ class Network:
         results_a = network.call(np.concatenate(requests_a, axis=0))
 
         while True:
+            if training_data_pipe.poll():
+                # hot-swap the network
+                network.train(training_data_pipe.recv())
+                network.save(f'../heuristics/models/model-{time()}.h5')
+
             # receive B requests
             # start_time = time()
             requests_b = [worker_b_pipe.recv() for worker_b_pipe in worker_b_pipes]
@@ -252,6 +258,8 @@ class ProxyNetwork:
 
     def call(self, state):
         self.model_pipe.send(state)
+        # TODO: change proxy network pipe architecture to receive the raw output from the network,
+        #  do post-processing here on the caller's process. This will decrease latency of the network.
         return self.model_pipe.recv()
 
 
@@ -259,17 +267,38 @@ def train():
     from src.games.Connect4 import Connect4
     import os
     import pickle
-    net = Network(Connect4, '../heuristics/models/model0.h5')
+    net = Network(Connect4)
     net.initialize()
     print('Network size: ', net.model.count_params())
 
     data = []
-    for file in os.listdir('../heuristics/games/mcts_network0_games'):
+    for file in sorted(os.listdir('../heuristics/games/raw_mcts_games')):
+        with open(f'../heuristics/games/raw_mcts_games/{file}', 'rb') as fin:
+            data.append(pickle.load(fin))
+    net.train(data)
+
+    data = []
+    for file in sorted(os.listdir('../heuristics/games/mcts_network0_games')):
         with open(f'../heuristics/games/mcts_network0_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
     net.train(data)
-    net.save('../heuristics/models/model1.h5')
+
+    data = []
+    for file in sorted(os.listdir('../heuristics/games/rolling_mcts_network_games')):
+        with open(f'../heuristics/games/rolling_mcts_network_games/{file}', 'rb') as fin:
+            data.append(pickle.load(fin))
+
+    sets = int(len(data) / 1200)
+    for k in range(sets):
+        net.train(data[k * len(data) // sets:(k + 1) * len(data) // sets])
+
+    net.save('../heuristics/models/model-4x4-6-residual.h5')
 
 
 if __name__ == '__main__':
-    train()
+    from src.games.Connect4 import Connect4
+    m1 = Network(Connect4)
+    m1.initialize()
+    m2 = Network(Connect4, '../heuristics/models/model11.h5')
+    m2.initialize()
+    print(m1.model.get_config() == m2.model.get_config())
