@@ -3,16 +3,17 @@ from time import time
 import pickle
 from multiprocessing import Process, Pipe
 from src.games.Connect4 import Connect4
-from src.ui.pygame_ui import PygameUI
 from src.move_selection.MCTS import RolloutNode, HeuristicNode
 from src.heuristics.Network import Network
 
 
-def simulate_game_batches_worker_process(GameClass, response_pipe, network, path='../heuristics/games/raw_mcts_games',
+def simulate_game_batches_worker_process(GameClass, response_pipe, network, path=None,
                                          expansions_per_move=800, game_batch_count=3, c=np.sqrt(2), d=1):
     """
     Simulates several games in series, and aggregates and batches all their network call requests.
     """
+    if path is None:
+        path = f'../heuristics/{GameClass.__name__}/games/raw_mcts_games'
     network.initialize()
     training_data_sets = [[] for _ in range(game_batch_count)]
     starting_policy, starting_evaluation = network.call(GameClass.STARTING_STATE[np.newaxis, ...])[0]
@@ -70,9 +71,12 @@ def simulate_game_batches_worker_process(GameClass, response_pipe, network, path
             pos = new_pos
 
 
-def simulate_games_worker_process(GameClass, response_pipe, path='../heuristics/games/raw_mcts_games',
+def simulate_games_worker_process(GameClass, response_pipe, path=None,
                                   expansions_per_move=800, network=None, c=np.sqrt(2), d=1):
     # format for each game file: ([(position, [pi_0, pi_1, ...]), ...], result)
+    if path is None:
+        path = f'../heuristics/{GameClass.__name__}/games/raw_mcts_games'
+
     if network is not None:
         network.initialize()
 
@@ -109,13 +113,13 @@ def create_training_games(GameClass, num_games=10_000, threads=14, network_itera
                           model_path=None, c=np.sqrt(2), d=1):
     parent_training_data_pipe, worker_training_data_pipe = Pipe(duplex=False)
     if model_path is None:
-        path = '../heuristics/games/raw_mcts_games'
+        path = f'../heuristics/{GameClass.__name__}/games/raw_mcts_games'
         worker_processes = [Process(target=simulate_games_worker_process,
                                     args=(GameClass, worker_training_data_pipe, path, 800))
                             for _ in range(threads)]
         network_process = None
     else:
-        path = f'../heuristics/games/mcts_network{network_iteration}_games'
+        path = f'../heuristics/{GameClass.__name__}/games/mcts_network{network_iteration}_games'
         network_process, network_proxies = Network.spawn_process(GameClass, model_path, threads)
         worker_processes = [Process(target=simulate_games_worker_process,
                                     args=(GameClass, worker_training_data_pipe, path, 800, network_proxy, c, d))
@@ -139,8 +143,8 @@ def create_training_games(GameClass, num_games=10_000, threads=14, network_itera
 
 def create_dual_architecture_training_games(GameClass, cycles=50, threads_per_section=14,
                                             game_batch_count=50, c=np.sqrt(2), d=1):
-    path = f'../heuristics/games/rolling_mcts_network_games'
-    model_path = f'../heuristics/models/model4.h5'
+    path = f'../heuristics/{GameClass.__name__}/games/rolling_mcts_network_games'
+    model_path = f'../heuristics/{GameClass.__name__}/models/model11.h5'
     network_process, network_a_proxies, network_b_proxies, network_training_data_pipe = \
         Network.spawn_dual_architecture_process(GameClass, model_path, threads_per_section)
 
@@ -173,42 +177,6 @@ def create_dual_architecture_training_games(GameClass, cycles=50, threads_per_se
         worker_process.join()
     network_process.terminate()
     network_process.join()
-
-
-def train_network(GameClass=Connect4, iterations=8, threads=14):
-    import os
-    for iteration in range(iterations):
-        create_training_games(GameClass, threads=threads, network_iteration=iteration,
-                              model_path=f'../heuristics/models/model{iteration}.h5')
-
-        data = []
-        for file in os.listdir('../heuristics/games/raw_mcts_games'):
-            with open(f'../heuristics/games/raw_mcts_games/{file}', 'rb') as fin:
-                data.append(pickle.load(fin))
-
-        network = Network(GameClass, f'../heuristics/models/model{iteration}.h5')
-        network.train(data)
-        network.save(f'../heuristics/models/model{iteration + 1}.h5')
-
-
-def view_game(path):
-    with open(path, 'rb') as fin:
-        training_data, result = pickle.load(fin)
-    print('Result: ', result)
-    ui = PygameUI(Connect4)
-    i = 0
-    while True:
-        val = ui.click_left_or_right()
-        if val is None:
-            return
-        if val:
-            i = min(i + 1, len(training_data) - 1)
-        else:
-            i = max(i - 1, 0)
-
-        position, distribution = training_data[i]
-        ui.draw(position)
-        print(distribution)
 
 
 if __name__ == '__main__':

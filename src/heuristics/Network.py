@@ -126,7 +126,7 @@ class Network:
         print('Validation Samples:', test_input.shape[0])
 
         self.model.fit(train_input, train_output, epochs=100, validation_data=(test_input, test_output),
-                       callbacks=[TensorBoard(log_dir=f'../heuristics/logs/model-{time()}'),
+                       callbacks=[TensorBoard(log_dir=f'../heuristics/{self.GameClass.__name__}/logs/model-{time()}'),
                                   EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)])
 
     def process_data(self, data, one_hot=False):
@@ -213,7 +213,7 @@ class Network:
             if training_data_pipe.poll():
                 # hot-swap the network
                 network.train(training_data_pipe.recv())
-                network.save(f'../heuristics/models/model-{time()}.h5')
+                network.save(f'../heuristics/{GameClass.__name__}/models/model-{time()}.h5')
 
             # receive B requests
             # start_time = time()
@@ -264,41 +264,36 @@ class ProxyNetwork:
 
 
 def train():
-    from src.games.Connect4 import Connect4
+    from src.games.Connect4 import Connect4 as GameClass
     import os
     import pickle
-    net = Network(Connect4)
+    net = Network(GameClass)
     net.initialize()
     print('Network size: ', net.model.count_params())
 
     data = []
-    for file in sorted(os.listdir('../heuristics/games/raw_mcts_games')):
-        with open(f'../heuristics/games/raw_mcts_games/{file}', 'rb') as fin:
+    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}games/raw_mcts_games')):
+        with open(f'../heuristics/{GameClass.__name__}games/raw_mcts_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
     net.train(data)
 
     data = []
-    for file in sorted(os.listdir('../heuristics/games/mcts_network0_games')):
-        with open(f'../heuristics/games/mcts_network0_games/{file}', 'rb') as fin:
+    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}games/mcts_network0_games')):
+        with open(f'../heuristics/{GameClass.__name__}games/mcts_network0_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
     net.train(data)
 
     data = []
-    for file in sorted(os.listdir('../heuristics/games/rolling_mcts_network_games')):
-        with open(f'../heuristics/games/rolling_mcts_network_games/{file}', 'rb') as fin:
+    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}games/rolling_mcts_network_games')):
+        with open(f'../heuristics/{GameClass.__name__}games/rolling_mcts_network_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
 
     sets = int(len(data) / 1200)
     for k in range(sets):
         net.train(data[k * len(data) // sets:(k + 1) * len(data) // sets])
 
-    net.save('../heuristics/models/model-4x4-6-residual.h5')
+    net.save(f'../heuristics/{GameClass.__name__}models/model-4x4-6-residual.h5')
 
 
 if __name__ == '__main__':
-    from src.games.Connect4 import Connect4
-    m1 = Network(Connect4)
-    m1.initialize()
-    m2 = Network(Connect4, '../heuristics/models/model11.h5')
-    m2.initialize()
-    print(m1.model.get_config() == m2.model.get_config())
+    train()
