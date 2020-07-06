@@ -164,6 +164,14 @@ class Network:
     def save(self, model_path):
         self.model.save(model_path)
 
+    def equal_model_architecture(self, network):
+        """
+        Both networks must be initialized.
+
+        :return: True if this Network's model and the given network's model have the same architecture.
+        """
+        return self.model.get_config() == network.model.get_config()
+
     @staticmethod
     def spawn_process(GameClass, model_path=None, pipes=1):
         parent_pipes, worker_pipes = zip(*[Pipe() for _ in range(pipes)])
@@ -216,34 +224,22 @@ class Network:
                 network.save(f'../heuristics/{GameClass.__name__}/models/model-{time()}.h5')
 
             # receive B requests
-            # start_time = time()
             requests_b = [worker_b_pipe.recv() for worker_b_pipe in worker_b_pipes]
-            # print('Network received B requests in ', time() - start_time)
 
             # return A results
-            # start_time = time()
             send_results(requests_a, results_a, worker_a_pipes)
-            # print('Network sent A results in ', time() - start_time)
 
             # compute B results
-            # start_time = time()
             results_b = network.call(np.concatenate(requests_b, axis=0))
-            # print('Network computed B results in', time() - start_time)
 
             # receive A requests
-            # start_time = time()
             requests_a = [worker_a_pipe.recv() for worker_a_pipe in worker_a_pipes]
-            # print('Network received A requests in ', time() - start_time)
 
             # return B results
-            # start_time = time()
             send_results(requests_b, results_b, worker_b_pipes)
-            # print('Network sent B results in ', time() - start_time)
 
             # compute A results
-            # start_time = time()
             results_a = network.call(np.concatenate(requests_a, axis=0))
-            # print('Network computed A results in', time() - start_time)
 
 
 class ProxyNetwork:
