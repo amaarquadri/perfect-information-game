@@ -44,10 +44,11 @@ class AsyncMCTS:
     def loop_func(GameClass, position, time_limit, network, c, d, threads, worker_pipe):
         if network is None:
             pool = Pool(threads) if threads > 1 else None
-            root = RolloutNode(position, parent=None, GameClass=GameClass, c=c, rollout_batch_size=threads, pool=pool)
+            root = RolloutNode(position, parent=None, GameClass=GameClass, c=c, rollout_batch_size=threads, pool=pool,
+                               verbose=True)
         else:
             network.initialize()
-            root = HeuristicNode(position, None, GameClass, network, c, d)
+            root = HeuristicNode(position, None, GameClass, network, c, d, verbose=True)
 
         while True:
             best_node = root.choose_expansion_node()
@@ -113,9 +114,9 @@ class MCTS:
 
         if self.network is None:
             root = RolloutNode(position, parent=None, GameClass=self.GameClass, c=self.c,
-                               rollout_batch_size=self.threads, pool=self.pool)
+                               rollout_batch_size=self.threads, pool=self.pool, verbose=True)
         else:
-            root = HeuristicNode(position, None, self.GameClass, self.network, self.c, self.d)
+            root = HeuristicNode(position, None, self.GameClass, self.network, self.c, self.d, verbose=True)
 
         start_time = time()
         while time() - start_time < time_limit:
@@ -132,7 +133,7 @@ class MCTS:
 
 
 class AbstractNode(ABC):
-    def __init__(self, position, parent, GameClass, c=np.sqrt(2)):
+    def __init__(self, position, parent, GameClass, c=np.sqrt(2), verbose=False):
         self.position = position
         self.parent = parent
         self.GameClass = GameClass
@@ -140,6 +141,7 @@ class AbstractNode(ABC):
         self.fully_expanded = GameClass.is_over(position)
         self.is_maximizing = GameClass.is_player_1_turn(position)
         self.children = None
+        self.verbose = verbose
 
     @abstractmethod
     def get_evaluation(self):
@@ -170,12 +172,13 @@ class AbstractNode(ABC):
 
         if self.fully_expanded:
             optimal_value = 1 if self.is_maximizing else -1
-            if self.get_evaluation() == optimal_value:
-                print('I\'m going to win')
-            elif self.get_evaluation() == 0:
-                print('It\'s a draw')
-            else:
-                print('I resign')
+            if self.verbose:
+                if self.get_evaluation() == optimal_value:
+                    print('I\'m going to win')
+                elif self.get_evaluation() == 0:
+                    print('It\'s a draw')
+                else:
+                    print('I resign')
 
             for child in self.children:
                 # only consider children that result in the optimal outcome
@@ -245,7 +248,7 @@ class AbstractNode(ABC):
 
         # if nothing was found because all children are fully expanded
         if best_child is None:
-            if not self.fully_expanded and self.parent is None:
+            if self.verbose and not self.fully_expanded and self.parent is None:
                 print('Fully expanded tree!')
 
             minimax_evaluation = max([child.get_evaluation() for child in self.children]) if self.is_maximizing \
@@ -276,8 +279,8 @@ class AbstractNode(ABC):
 
 
 class RolloutNode(AbstractNode):
-    def __init__(self, position, parent, GameClass, c=np.sqrt(2), rollout_batch_size=1, pool=None):
-        super().__init__(position, parent, GameClass, c)
+    def __init__(self, position, parent, GameClass, c=np.sqrt(2), rollout_batch_size=1, pool=None, verbose=False):
+        super().__init__(position, parent, GameClass, c, verbose)
         self.rollout_batch_size = rollout_batch_size
         self.pool = pool
 
@@ -331,8 +334,9 @@ class RolloutNode(AbstractNode):
 
 
 class HeuristicNode(AbstractNode):
-    def __init__(self, position, parent, GameClass, network, c=np.sqrt(2), d=1, network_call_results=None):
-        super().__init__(position, parent, GameClass, c)
+    def __init__(self, position, parent, GameClass, network, c=np.sqrt(2), d=1, network_call_results=None,
+                 verbose=False):
+        super().__init__(position, parent, GameClass, c, verbose)
         self.network = network
         self.d = d
 
