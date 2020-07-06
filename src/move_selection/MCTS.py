@@ -51,6 +51,7 @@ class AsyncMCTS:
             root = HeuristicNode(position, None, GameClass, network, c, d, verbose=True)
 
         while True:
+            # TODO: modify so that moves can be made by the user and ai in arbitrary order
             best_node = root.choose_expansion_node()
 
             if best_node is not None:
