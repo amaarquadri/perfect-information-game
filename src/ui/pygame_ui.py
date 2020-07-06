@@ -24,6 +24,9 @@ class PygameUI:
         return self.board.get_state()
 
     def draw(self, position=None):
+        """
+        Draws the given position to the screen. If no position is given, then the current position will be drawn.
+        """
         if position is not None:
             self.board.set_state(position)
         else:
@@ -36,7 +39,14 @@ class PygameUI:
         pygame.display.flip()
 
     def get_user_move(self):
-        pygame.event.clear(pygame.MOUSEBUTTONDOWN)
+        """
+        Get user input to perform the next move.
+        The user performs a number of clicks specified by GameClass.CLICKS_PER_MOVE.
+        If the move is invalid, the user is prompted to re-enter a valid move recursively.
+
+        :return: The resulting board state after the user's move, or None if the user quit the game.
+        """
+        self.flush()
 
         clicks = []
         while True:
@@ -46,7 +56,7 @@ class PygameUI:
                     return None
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     x, y = event.pos
-                    clicks.append((y // 64, x // 64))  # Note pygame inverst x and y
+                    clicks.append((y // 64, x // 64))  # Note pygame inverts x and y
                     if len(clicks) == self.GameClass.CLICKS_PER_MOVE:
                         try:
                             self.board.perform_user_move(clicks)
@@ -57,6 +67,15 @@ class PygameUI:
                             clicks = []
 
     def set_user_position(self):
+        """
+        Allows the user to make an arbitrary number of moves from the current position.
+        Each move consists of GameClass.CLICKS_PER_MOVE left clicks.
+        Anytime an invalid move is entered, the user is notified and prompted to try again.
+        The function terminates once the user right clicks to indicate that they have made as many moves as desired.
+
+        :return: True if the user made any number of moves (including 0) and then clicked the right button,
+                 and False if the user quit pygame.
+        """
         self.flush()
 
         clicks = []
@@ -64,11 +83,11 @@ class PygameUI:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    return None
+                    return False
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == pygame.BUTTON_LEFT:
                         x, y = event.pos
-                        clicks.append((y // 64, x // 64))  # Note pygame inverst x and y
+                        clicks.append((y // 64, x // 64))  # Note pygame inverts x and y
                         if len(clicks) == self.GameClass.CLICKS_PER_MOVE:
                             try:
                                 self.board.perform_user_move(clicks)
@@ -77,14 +96,49 @@ class PygameUI:
                                 print('Invalid Move! Try again.')
                             clicks = []
                     elif event.button == pygame.BUTTON_RIGHT:
-                        return
+                        return True
+
+    def show_game(self, positions, starting_index=0, messages=None):
+        """
+        Shows the given sequence of positions to the user. The user can right and left click to navigate through them.
+        This function blocks until the user decides to close the program via the X button.
+
+        :param positions: The list of positions to show.
+        :param starting_index: The index in the list of positions to start at. Negative indices are not supported.
+        :param messages: An optional list of messages to print with each position.
+                         If provided, it must be the same length as positions.
+        """
+        if messages is not None and len(messages) != len(positions):
+            raise Exception('Length of messages must match length of positions!')
+
+        i = starting_index
+        while True:
+            val = self.click_left_or_right()
+            if val is None:
+                return
+            if val:
+                i = min(i + 1, len(positions) - 1)
+            else:
+                i = max(i - 1, 0)
+
+            self.draw(positions[i])
+            if messages is not None:
+                print(messages[i])
 
     @staticmethod
     def flush():
+        """
+        Clears all pending mouse clicks events from pygame's queue.
+        This is useful for removing queued up clicks before asking the user for a new click.
+        This is also useful for preventing a 'Not Responding' dialog.
+        """
         pygame.event.clear(pygame.MOUSEBUTTONDOWN)
 
     @staticmethod
     def quit_on_x():
+        """
+        Waits for the user to quit.
+        """
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -93,6 +147,10 @@ class PygameUI:
 
     @staticmethod
     def click_to_continue():
+        """
+        :return: True if the user clicks, and False if the user quits.
+        """
+        PygameUI.flush()
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -103,6 +161,10 @@ class PygameUI:
 
     @staticmethod
     def click_left_or_right():
+        """
+        :return: True if the user left clicks, False if the user right clicks, and None if the user quits.
+        """
+        PygameUI.flush()
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
