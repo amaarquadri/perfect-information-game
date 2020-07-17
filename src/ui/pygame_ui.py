@@ -5,6 +5,11 @@ import pygame
 
 
 class PygameUI:
+    """
+    The highlight image must have a transparent background (https://onlinepngtools.com/create-transparent-png).
+    """
+    HIGHLIGHT_IMAGE_PATH = '../../resources/blue_border.png'
+
     def __init__(self, GameClass, starting_position=None):
         self.GameClass = GameClass
         pygame.init()
@@ -12,9 +17,11 @@ class PygameUI:
         self.canvas = pygame.display.set_mode((64 * GameClass.COLUMNS, 64 * GameClass.ROWS))
         self.imgs = [pygame.image.load(f'../../resources/{file_name}.png')
                      for file_name in GameClass.REPRESENTATION_FILES]
+        self.highlight_img = pygame.image.load(PygameUI.HIGHLIGHT_IMAGE_PATH)
         if starting_position is None:
             starting_position = GameClass.STARTING_STATE
         self.board = GameClass(starting_position)
+        self.last_indices = GameClass.get_img_index_representation(starting_position)
         self.draw()
 
     def reset_board(self):
@@ -33,9 +40,16 @@ class PygameUI:
             position = self.board.get_state()
 
         indices = self.GameClass.get_img_index_representation(position)
+        changed_indices = indices != self.last_indices
+        self.last_indices = indices
+
         for i, j in iter_product(self.GameClass.BOARD_SHAPE):
             img = self.imgs[indices[i, j]]
             self.canvas.blit(img, (64 * j, 64 * i))  # Note pygame inverts x and y
+
+            # noinspection PyUnresolvedReferences
+            if changed_indices[i, j]:
+                self.canvas.blit(self.highlight_img, (64 * j, 64 * i))
         pygame.display.flip()
 
     def get_user_move(self):
