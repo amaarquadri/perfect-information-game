@@ -118,14 +118,16 @@ class PygameUI:
         This function blocks until the user decides to close the program via the X button.
 
         :param positions: The list of positions to show.
-        :param starting_index: The index in the list of positions to start at. Negative indices are not supported.
+        :param starting_index: The index in the list of positions to start at. Negative indices are supported.
         :param messages: An optional list of messages to print with each position.
                          If provided, it must be the same length as positions.
         """
         if messages is not None and len(messages) != len(positions):
             raise Exception('Length of messages must match length of positions!')
+        if not -len(positions) <= starting_index < len(positions):
+            raise Exception('starting_index out of bounds!')
 
-        i = starting_index
+        i = starting_index if starting_index >= 0 else len(positions) + starting_index
         while True:
             val = self.click_left_or_right()
             if val is None:
