@@ -1,4 +1,4 @@
-from src.games.Checkers import Checkers as GameClass
+from src.games.checkers import Checkers as GameClass
 from src.move_selection.mcts import AsyncMCTS
 from src.move_selection.random import RandomMoveChooser
 from src.heuristics.network import Network
