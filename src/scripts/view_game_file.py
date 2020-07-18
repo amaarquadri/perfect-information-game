@@ -16,4 +16,5 @@ def view_game(path):
 
 
 if __name__ == '__main__':
-    view_game(f'../../training/{GameClass.__name__}/games/reinforcement_learning_games/game1593991058.990748.pickle')
+    view_game(f'../../training/{GameClass.__name__}/games/reinforcement_learning_games/game1595094819.10189.pickle')
+    view_game(f'../../training/{GameClass.__name__}/games/rollout_mcts_games/game1593815499.7633.pickle')
