@@ -1,6 +1,8 @@
 from time import time
 import numpy as np
 from multiprocessing import Process, Pipe
+import sys
+from signal import signal, SIGTERM
 
 
 class Network:
@@ -13,16 +15,21 @@ class Network:
     It will internally handle conversion too and from move distribution matrices using GameClass.get_legal_moves
     """
 
-    def __init__(self, GameClass, model_path=None):
+    def __init__(self, GameClass, model_path=None, reinforcement_training=False):
         self.GameClass = GameClass
         self.model_path = model_path
 
         # lazily initialized so Network can be passed between processes before being initialized
         self.model = None
 
+        self.reinforcement_training = reinforcement_training
+        self.tensor_board = None
+        self.epoch = 0
+
     def initialize(self):
         # Note: keras imports are within functions to prevent initializing keras in processes that import from this file
         from keras.models import load_model
+        from keras.callbacks import TensorBoard
 
         if self.model is not None:
             return
@@ -38,7 +45,13 @@ class Network:
         else:
             self.model = self.create_model()
 
-    def create_model(self, kernel_size=(3, 3), residual_layers=3):
+        if self.reinforcement_training:
+            self.tensor_board = TensorBoard(log_dir=f'../heuristics/{self.GameClass.__name__}/logs/'
+                                                    f'model-reinforcement-{time()}',
+                                            histogram_freq=0, batch_size=256, write_graph=True, write_grads=True)
+            self.tensor_board.set_model(self.model)
+
+    def create_model(self, kernel_size=(4, 4), residual_layers=6):
         """
         https://www.youtube.com/watch?v=OPgRNY3FaxA
         """
@@ -98,9 +111,7 @@ class Network:
         :return: A list of length k. Each element of the list is a tuple where the 0th element is the probability
                  distribution on legal moves, and the 1st element is the evaluation (a float in (-1, 1)).
         """
-        # start_time = time()
         raw_policies, evaluations = self.predict(states)
-        # print('Prediction time', time() - start_time)
 
         filtered_policies = [raw_policy[self.GameClass.get_legal_moves(state)]
                              for state, raw_policy in zip(states, raw_policies)]
@@ -109,9 +120,9 @@ class Network:
         evaluations = evaluations.reshape(states.shape[0])
         return [(filtered_policy, evaluation) for filtered_policy, evaluation in zip(filtered_policies, evaluations)]
 
-    def choose_move(self, position, return_evaluation=False):
+    def choose_move(self, position, return_evaluation=False, optimal=False):
         distribution, evaluation = self.call(position[np.newaxis, ...])[0]
-        idx = np.random.choice(np.arange(len(distribution)), p=distribution)
+        idx = np.argmin(distribution) if optimal else np.random.choice(np.arange(len(distribution)), p=distribution)
         move = self.GameClass.get_possible_moves(position)[idx]
         return (move, evaluation) if return_evaluation else move
 
@@ -120,8 +131,8 @@ class Network:
         from keras.callbacks import TensorBoard, EarlyStopping
 
         split = int((1 - validation_fraction) * len(data))
-        train_input, train_output = self.process_data(data[:split])
-        test_input, test_output = self.process_data(data[split:])
+        train_input, train_output = self.process_data(self.GameClass, data[:split])
+        test_input, test_output = self.process_data(self.GameClass, data[split:])
         print('Training Samples:', train_input.shape[0])
         print('Validation Samples:', test_input.shape[0])
 
@@ -129,14 +140,34 @@ class Network:
                        callbacks=[TensorBoard(log_dir=f'../heuristics/{self.GameClass.__name__}/logs/model-{time()}'),
                                   EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)])
 
-    def process_data(self, data, one_hot=False):
+    def train_step(self, states, policies, values):
+        logs = self.model.train_on_batch(states, [policies, values], return_dict=True)
+        self.tensor_board.on_epoch_end(self.epoch, logs)
+        self.epoch += 1
+
+    def finish_training(self):
+        self.tensor_board.on_train_end()
+
+    def save(self, model_path):
+        self.model.save(model_path)
+
+    def equal_model_architecture(self, network):
+        """
+        Both networks must be initialized.
+
+        :return: True if this Network's model and the given network's model have the same architecture.
+        """
+        return self.model.get_config() == network.model.get_config()
+
+    @classmethod
+    def process_data(cls, GameClass, data, one_hot=False, shuffle=True):
         states = []
         policy_outputs = []
         value_outputs = []
 
         for game, outcome in data:
             for position, distribution in game:
-                legal_moves = self.GameClass.get_legal_moves(position)
+                legal_moves = GameClass.get_legal_moves(position)
                 policy = np.zeros_like(legal_moves, dtype=float)
                 policy[legal_moves] = distribution
 
@@ -153,42 +184,14 @@ class Network:
         policy_outputs = np.stack(policy_outputs, axis=0)
         value_outputs = np.array(value_outputs)
 
-        shuffle = np.arange(input_data.shape[0])
-        np.random.shuffle(shuffle)
-        input_data = input_data[shuffle, ...]
-        policy_outputs = policy_outputs[shuffle, ...]
-        value_outputs = value_outputs[shuffle, ...]
+        if shuffle:
+            shuffle_indices = np.arange(input_data.shape[0])
+            np.random.shuffle(shuffle_indices)
+            input_data = input_data[shuffle_indices, ...]
+            policy_outputs = policy_outputs[shuffle_indices, ...]
+            value_outputs = value_outputs[shuffle_indices]
 
         return input_data, [policy_outputs, value_outputs]
-
-    def save(self, model_path):
-        self.model.save(model_path)
-
-    def equal_model_architecture(self, network):
-        """
-        Both networks must be initialized.
-
-        :return: True if this Network's model and the given network's model have the same architecture.
-        """
-        return self.model.get_config() == network.model.get_config()
-
-    @staticmethod
-    def spawn_process(GameClass, model_path=None, pipes=1):
-        parent_pipes, worker_pipes = zip(*[Pipe() for _ in range(pipes)])
-        process = Process(target=Network.process_loop, args=(GameClass, model_path, worker_pipes))
-
-        proxy_networks = [ProxyNetwork(parent_pipe) for parent_pipe in parent_pipes]
-        return process, proxy_networks
-
-    @staticmethod
-    def process_loop(GameClass, model_path, worker_pipes):
-        network = Network(GameClass, model_path)
-        network.initialize()
-
-        while True:
-            for worker_pipe in worker_pipes:
-                if worker_pipe.poll():
-                    worker_pipe.send(network.call(worker_pipe.recv()))
 
     @staticmethod
     def spawn_dual_architecture_process(GameClass, model_path=None, pipes_per_section=1):
@@ -197,31 +200,43 @@ class Network:
         worker_training_data_pipe, parent_training_data_pipe = Pipe(duplex=False)
         process = Process(target=Network.dual_architecture_process_loop,
                           args=(GameClass, model_path, worker_a_pipes, worker_b_pipes, worker_training_data_pipe))
-        proxy_a_networks = [ProxyNetwork(parent_a_pipe) for parent_a_pipe in parent_a_pipes]
-        proxy_b_networks = [ProxyNetwork(parent_b_pipe) for parent_b_pipe in parent_b_pipes]
+        proxy_a_networks = [ProxyNetwork(GameClass, parent_a_pipe) for parent_a_pipe in parent_a_pipes]
+        proxy_b_networks = [ProxyNetwork(GameClass, parent_b_pipe) for parent_b_pipe in parent_b_pipes]
         return process, proxy_a_networks, proxy_b_networks, parent_training_data_pipe
 
     @staticmethod
     def dual_architecture_process_loop(GameClass, model_path, worker_a_pipes, worker_b_pipes, training_data_pipe):
-        network = Network(GameClass, model_path)
+        network = Network(GameClass, model_path, reinforcement_training=True)
         network.initialize()
 
+        def on_terminate_process(_):
+            network.finish_training()
+            network.save(model_path)
+            sys.exit(0)
+        signal(SIGTERM, on_terminate_process)
+
         def send_results(requests, results, pipes):
+            raw_policies, evaluations = results
             pos = 0
             for request, pipe in zip(requests, pipes):
                 new_pos = pos + request.shape[0]
-                pipe.send(results[pos:new_pos])
+                # This send call will not block because the receiver will always be waiting to read the result
+                pipe.send((raw_policies[pos:new_pos], evaluations[pos:new_pos]))
                 pos = new_pos
 
         requests_a = [worker_a_pipe.recv() for worker_a_pipe in worker_a_pipes]
         # concatenate is used instead of stack because each request already has shape (k,) + GameClass.STATE_SHAPE
-        results_a = network.call(np.concatenate(requests_a, axis=0))
+        results_a = network.predict(np.concatenate(requests_a, axis=0))
 
+        last_save = time()
         while True:
             if training_data_pipe.poll():
-                # hot-swap the network
-                network.train(training_data_pipe.recv())
-                network.save(f'../heuristics/{GameClass.__name__}/models/model-{time()}.h5')
+                data = training_data_pipe.recv()
+                states, policies, values = data
+                network.train_step(states, policies, values)
+                if time() - last_save > 5 * 60:
+                    network.save(model_path)
+                    last_save = time()
 
             # receive B requests
             requests_b = [worker_b_pipe.recv() for worker_b_pipe in worker_b_pipes]
@@ -230,7 +245,7 @@ class Network:
             send_results(requests_a, results_a, worker_a_pipes)
 
             # compute B results
-            results_b = network.call(np.concatenate(requests_b, axis=0))
+            results_b = network.predict(np.concatenate(requests_b, axis=0))
 
             # receive A requests
             requests_a = [worker_a_pipe.recv() for worker_a_pipe in worker_a_pipes]
@@ -239,27 +254,35 @@ class Network:
             send_results(requests_b, results_b, worker_b_pipes)
 
             # compute A results
-            results_a = network.call(np.concatenate(requests_a, axis=0))
+            results_a = network.predict(np.concatenate(requests_a, axis=0))
 
 
-class ProxyNetwork:
-    def __init__(self, model_pipe):
+class ProxyNetwork(Network):
+    def __init__(self, GameClass, model_pipe):
+        super().__init__(GameClass)
         self.model_pipe = model_pipe
 
     def initialize(self):
-        """
-        Added so that a ProxyNetwork can be used in place of a regular Network with no issues when initialize is called.
-        """
         pass
 
-    def call(self, state):
-        self.model_pipe.send(state)
-        # TODO: change proxy network pipe architecture to receive the raw output from the network,
-        #  do post-processing here on the caller's process. This will decrease latency of the network.
+    def predict(self, states):
+        self.model_pipe.send(states)
         return self.model_pipe.recv()
 
+    def create_model(self, kernel_size=(4, 4), residual_layers=6):
+        raise NotImplementedError('ProxyNetwork does not support this operation!')
 
-def train():
+    def train(self, data, validation_fraction=0.2):
+        raise NotImplementedError('ProxyNetwork does not support this operation!')
+
+    def save(self, model_path):
+        raise NotImplementedError('ProxyNetwork does not support this operation!')
+
+    def equal_model_architecture(self, network):
+        raise NotImplementedError('ProxyNetwork does not support this operation!')
+
+
+def train_from_scratch():
     from src.games.Connect4 import Connect4 as GameClass
     import os
     import pickle
@@ -268,28 +291,34 @@ def train():
     print('Network size: ', net.model.count_params())
 
     data = []
-    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}games/raw_mcts_games')):
-        with open(f'../heuristics/{GameClass.__name__}games/raw_mcts_games/{file}', 'rb') as fin:
+    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}/games/raw_mcts_games')):
+        if file[-7:] != '.pickle':
+            continue
+        with open(f'../heuristics/{GameClass.__name__}/games/raw_mcts_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
     net.train(data)
 
     data = []
-    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}games/mcts_network0_games')):
-        with open(f'../heuristics/{GameClass.__name__}games/mcts_network0_games/{file}', 'rb') as fin:
+    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}/games/mcts_network0_games')):
+        if file[-7:] != '.pickle':
+            continue
+        with open(f'../heuristics/{GameClass.__name__}/games/mcts_network0_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
     net.train(data)
 
     data = []
-    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}games/rolling_mcts_network_games')):
-        with open(f'../heuristics/{GameClass.__name__}games/rolling_mcts_network_games/{file}', 'rb') as fin:
+    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}/games/rolling_mcts_network_games')):
+        if file[-7:] != '.pickle':
+            continue
+        with open(f'../heuristics/{GameClass.__name__}/games/rolling_mcts_network_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
 
     sets = int(len(data) / 1200)
     for k in range(sets):
         net.train(data[k * len(data) // sets:(k + 1) * len(data) // sets])
 
-    net.save(f'../heuristics/{GameClass.__name__}models/model-4x4-6-residual.h5')
+    net.save(f'../heuristics/{GameClass.__name__}/models/model-reinforcement.h5')
 
 
 if __name__ == '__main__':
-    train()
+    train_from_scratch()
