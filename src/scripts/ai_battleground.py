@@ -1,3 +1,4 @@
+from time import time
 import numpy as np
 from src.games.Connect4 import Connect4 as Game
 from src.ui.pygame_ui import PygameUI
@@ -23,7 +24,8 @@ def play_games(GameClass, network1, network2, count=1000):
         result = Game.get_winner(position)
         # net1_rms = np.mean((np.array(net1_evals) - result) ** 2) ** 0.5
         # net2_rms = np.mean((np.array(net2_evals) - result) ** 2) ** 0.5
-        print(f'Winner {i}: {result}')  # , net 1 rms: {net1_rms}, net 2 rms: {net2_rms}')
+        # print(f'Winner {i}: {result}')  # , net 1 rms: {net1_rms}, net 2 rms: {net2_rms}')
+        print(f'Player 1 wins {net1_wins}, player 2 wins {net2_wins}, draws {draws}')
         if result == 1:
             net1_wins += 1
         elif result == 0:
@@ -36,6 +38,7 @@ def play_games(GameClass, network1, network2, count=1000):
 
 
 def play_game_with_ui(GameClass, pygame_ui, move_chooser1, move_chooser2):
+    start_time = time()
     position = pygame_ui.get_position()
     board_states = [position]
 
@@ -52,31 +55,24 @@ def play_game_with_ui(GameClass, pygame_ui, move_chooser1, move_chooser2):
         pygame_ui.draw(position)
         board_states.append(position)
 
-    i = len(board_states) - 1
-    while True:
-        click = pygame_ui.click_left_or_right()
-        if click is None:
-            return
-        if click:
-            i = min(i + 1, len(board_states) - 1)
-        else:
-            i = max(i - 1, 0)
-
-        position = board_states[i]
-        pygame_ui.draw(position)
+    print('Winner: ', GameClass.get_winner(position))
+    pygame_ui.show_game(board_states, starting_index=0 if time() - start_time < 15 else -1)
 
 
 def main(GameClass):
-    pygame_ui = PygameUI(GameClass)
-    network1 = Network(Game, f'../heuristics/{GameClass.__name__}/models/model_test.h5')
+    # pygame_ui = PygameUI(GameClass)
+    network1 = Network(Game, f'../heuristics/{GameClass.__name__}/models/model19.h5')
     network1.initialize()
+    # move_chooser1 = AsyncMCTS(GameClass, GameClass.STARTING_STATE, time_limit=3, network=network1)
+    # move_chooser1.start()
 
-    network2 = Network(Game, f'../heuristics/{GameClass.__name__}/models/model_test.h5')
-    move_chooser2 = AsyncMCTS(GameClass, GameClass.STARTING_STATE, time_limit=3, network=network2)
-    move_chooser2.start()
+    network2 = Network(Game, f'../heuristics/{GameClass.__name__}/models/model-reinforcement.h5')
+    network2.initialize()
+    # move_chooser2 = AsyncMCTS(GameClass, GameClass.STARTING_STATE, time_limit=3, network=network2)
+    # move_chooser2.start()
 
-    play_game_with_ui(GameClass, pygame_ui, network1, move_chooser2)
-    # play_games(Game, network1, network2)
+    # play_game_with_ui(GameClass, pygame_ui, move_chooser1, move_chooser2)
+    play_games(Game, network1, network2)
 
 
 if __name__ == '__main__':
