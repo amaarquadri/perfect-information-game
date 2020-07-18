@@ -1,6 +1,15 @@
+# Perfect Information Game
 Creating 2D perfect information board games, and playing them with machine learning systems.
 
-Relevant Resources
+## Getting Started
+- Install requirements:\
+`pip install -r requirements.txt`
+- Play a game of Connect 4 against the ai:\
+`python src/scripts/play_vs_ai.py`
+- View games files that were generated during training:\
+`python src/scripts/view_game_file.py`
+
+## Relevant Resources
 https://webdocs.cs.ualberta.ca/~mmueller/ps/enzenberger-mueller-acg12.pdf
 http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.159.4373&rep=rep1&type=pdf
 https://arxiv.org/pdf/1905.13521.pdf
