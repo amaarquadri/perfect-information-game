@@ -291,26 +291,18 @@ def train_from_scratch():
     print('Network size: ', net.model.count_params())
 
     data = []
-    for file in sorted(os.listdir(f'../../training/{GameClass.__name__}/games/raw_mcts_games')):
+    for file in sorted(os.listdir(f'../../training/{GameClass.__name__}/games/rollout_mcts_games')):
         if file[-7:] != '.pickle':
             continue
-        with open(f'../../training/{GameClass.__name__}/games/raw_mcts_games/{file}', 'rb') as fin:
+        with open(f'../../training/{GameClass.__name__}/games/rollout_mcts_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
     net.train(data)
 
     data = []
-    for file in sorted(os.listdir(f'../../training/{GameClass.__name__}/games/mcts_network0_games')):
+    for file in sorted(os.listdir(f'../../training/{GameClass.__name__}/games/reinforcement_learning_games')):
         if file[-7:] != '.pickle':
             continue
-        with open(f'../../training/{GameClass.__name__}/games/mcts_network0_games/{file}', 'rb') as fin:
-            data.append(pickle.load(fin))
-    net.train(data)
-
-    data = []
-    for file in sorted(os.listdir(f'../../training/{GameClass.__name__}/games/rolling_mcts_network_games')):
-        if file[-7:] != '.pickle':
-            continue
-        with open(f'../../training/{GameClass.__name__}/games/rolling_mcts_network_games/{file}', 'rb') as fin:
+        with open(f'../../training/{GameClass.__name__}/games/reinforcement_learning_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
 
     sets = int(len(data) / 1200)

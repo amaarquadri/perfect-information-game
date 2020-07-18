@@ -12,9 +12,9 @@ class SelfPlayReinforcementLearning:
                  c=np.sqrt(2), d=1):
         """
         If network is None, then self play will be done using random MCTS rollouts and saved to
-        src/heuristics/GameClass.__name__/games/rolling_mcts_network_games/
+        src/heuristics/GameClass.__name__/games/reinforcement_learning_games/
         """
-        path = f'../../training/{GameClass.__name__}/games/rolling_mcts_network_games'
+        path = f'../../training/{GameClass.__name__}/games/reinforcement_learning_games'
         self.network_process, network_a_proxies, network_b_proxies, network_training_data_pipe = \
             Network.spawn_dual_architecture_process(GameClass, model_path, threads_per_section)
 
@@ -169,7 +169,7 @@ class SelfPlayReinforcementLearning:
 
 class MCTSRolloutGameGenerator:
     def __init__(self, GameClass, threads=14, c=np.sqrt(2)):
-        path = f'../../training/{GameClass.__name__}/games/raw_mcts_games'
+        path = f'../../training/{GameClass.__name__}/games/rollout_mcts_games'
         self.termination_event = Event()
         self.worker_processes = [Process(target=MCTSRolloutGameGenerator.simulate_games_worker_process,
                                          args=(GameClass, self.termination_event, path, 600, c))

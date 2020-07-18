@@ -16,25 +16,5 @@ def main():
     trainer.terminate()
 
 
-def sanitize():
-    import os
-    import pickle
-    from shutil import copyfile
-    for file in os.listdir(f'../../training/{GameClass.__name__}/games/mcts_network0_games'):
-        error = False
-        try:
-            with open(f'../../training/{GameClass.__name__}/games/mcts_network0_games' + '/' + file, 'rb') as fin:
-                pickle.load(fin)
-        except:
-            error = True
-        if error:
-            pass
-            # copyfile(f'../../training/{GameClass.__name__}/games/raw_mcts_games/' + file,
-            #          f'../../training/{GameClass.__name__}/games/raw_mcts_games/dead/' + file)
-        else:
-            copyfile(f'../../training/{GameClass.__name__}/games/mcts_network0_games/' + file,
-                     f'../../training/{GameClass.__name__}/games/mcts_network0_games/temp/' + file)
-
-
 if __name__ == '__main__':
     main()
