@@ -3,4 +3,4 @@
 # Except these files
 !.gitignore
 # This the best pretrained neural network I have trained so far
-!model19.h5
+!model-best.h5

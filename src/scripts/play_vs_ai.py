@@ -8,7 +8,7 @@ def main():
     pygame_ui = PygameUI(GameClass)
     # pygame_ui.set_user_position()
 
-    network = Network(GameClass, f'../../training/{GameClass.__name__}/models/model19.h5')
+    network = Network(GameClass, f'../../training/{GameClass.__name__}/models/model-best.h5')
     move_chooser = AsyncMCTS(GameClass, pygame_ui.get_position(), time_limit=5, network=network, threads=1)
     move_chooser.start()
 

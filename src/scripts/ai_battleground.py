@@ -61,7 +61,7 @@ def play_game_with_ui(GameClass, pygame_ui, move_chooser1, move_chooser2):
 
 def main(GameClass):
     # pygame_ui = PygameUI(GameClass)
-    network1 = Network(Game, f'../../training/{GameClass.__name__}/models/model19.h5')
+    network1 = Network(Game, f'../../training/{GameClass.__name__}/models/model-best.h5')
     network1.initialize()
     # move_chooser1 = AsyncMCTS(GameClass, GameClass.STARTING_STATE, time_limit=3, network=network1)
     # move_chooser1.start()
