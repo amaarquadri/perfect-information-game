@@ -1,5 +1,5 @@
 import os
-from src.games.Connect4 import Connect4
+from src.games.connect4 import Connect4
 
 
 def start_tensor_board(GameClass, enable_venv_manually=False):

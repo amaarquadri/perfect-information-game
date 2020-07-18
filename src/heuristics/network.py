@@ -283,7 +283,7 @@ class ProxyNetwork(Network):
 
 
 def train_from_scratch():
-    from src.games.Connect4 import Connect4 as GameClass
+    from src.games.connect4 import Connect4 as GameClass
     import os
     import pickle
     net = Network(GameClass)

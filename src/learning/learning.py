@@ -3,8 +3,8 @@ import pickle
 from time import time
 from multiprocessing import Process, Queue, Event
 import numpy as np
-from src.move_selection.MCTS import RolloutNode, HeuristicNode
-from src.heuristics.Network import Network
+from src.move_selection.mcts import RolloutNode, HeuristicNode
+from src.heuristics.network import Network
 
 
 class SelfPlayReinforcementLearning:

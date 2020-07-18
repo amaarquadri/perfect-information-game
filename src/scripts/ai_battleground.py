@@ -1,9 +1,9 @@
 from time import time
 import numpy as np
-from src.games.Connect4 import Connect4 as Game
+from src.games.connect4 import Connect4 as Game
 from src.ui.pygame_ui import PygameUI
-from src.heuristics.Network import Network
-from src.move_selection.MCTS import AsyncMCTS
+from src.heuristics.network import Network
+from src.move_selection.mcts import AsyncMCTS
 
 
 def play_games(GameClass, network1, network2, count=1000):

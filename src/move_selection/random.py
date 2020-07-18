@@ -1,4 +1,4 @@
-from src.utils.Utils import choose_random
+from src.utils.utils import choose_random
 
 
 class RandomMoveChooser:

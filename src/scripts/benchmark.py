@@ -3,8 +3,8 @@ import numpy as np
 import tensorflow as tf
 from keras import Sequential
 from keras.layers import Conv2D, Flatten, Dense
-from src.move_selection.MCTS import RolloutNode
-from src.games.Connect4 import Connect4
+from src.move_selection.mcts import RolloutNode
+from src.games.connect4 import Connect4
 
 
 def get_model():

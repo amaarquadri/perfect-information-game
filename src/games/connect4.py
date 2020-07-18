@@ -1,6 +1,6 @@
-from src.games.Game import Game
+from src.games.game import Game
 import numpy as np
-from src.utils.Utils import iter_product
+from src.utils.utils import iter_product
 
 
 class Connect4(Game):
