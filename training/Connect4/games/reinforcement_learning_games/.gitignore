@@ -1,4 +1,6 @@
 # Ignore everything in this directory
 *
-# Except this file
+# Except these files
 !.gitignore
+# Upload a single game file as an example
+!game1595094819.10189.pickle
