@@ -46,7 +46,7 @@ class Network:
             self.model = self.create_model()
 
         if self.reinforcement_training:
-            self.tensor_board = TensorBoard(log_dir=f'../heuristics/{self.GameClass.__name__}/logs/'
+            self.tensor_board = TensorBoard(log_dir=f'../../training/{self.GameClass.__name__}/logs/'
                                                     f'model-reinforcement-{time()}',
                                             histogram_freq=0, batch_size=256, write_graph=True, write_grads=True)
             self.tensor_board.set_model(self.model)
@@ -137,7 +137,7 @@ class Network:
         print('Validation Samples:', test_input.shape[0])
 
         self.model.fit(train_input, train_output, epochs=100, validation_data=(test_input, test_output),
-                       callbacks=[TensorBoard(log_dir=f'../heuristics/{self.GameClass.__name__}/logs/model-{time()}'),
+                       callbacks=[TensorBoard(log_dir=f'../../training/{self.GameClass.__name__}/logs/model-{time()}'),
                                   EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)])
 
     def train_step(self, states, policies, values):
@@ -291,33 +291,33 @@ def train_from_scratch():
     print('Network size: ', net.model.count_params())
 
     data = []
-    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}/games/raw_mcts_games')):
+    for file in sorted(os.listdir(f'../../training/{GameClass.__name__}/games/raw_mcts_games')):
         if file[-7:] != '.pickle':
             continue
-        with open(f'../heuristics/{GameClass.__name__}/games/raw_mcts_games/{file}', 'rb') as fin:
+        with open(f'../../training/{GameClass.__name__}/games/raw_mcts_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
     net.train(data)
 
     data = []
-    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}/games/mcts_network0_games')):
+    for file in sorted(os.listdir(f'../../training/{GameClass.__name__}/games/mcts_network0_games')):
         if file[-7:] != '.pickle':
             continue
-        with open(f'../heuristics/{GameClass.__name__}/games/mcts_network0_games/{file}', 'rb') as fin:
+        with open(f'../../training/{GameClass.__name__}/games/mcts_network0_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
     net.train(data)
 
     data = []
-    for file in sorted(os.listdir(f'../heuristics/{GameClass.__name__}/games/rolling_mcts_network_games')):
+    for file in sorted(os.listdir(f'../../training/{GameClass.__name__}/games/rolling_mcts_network_games')):
         if file[-7:] != '.pickle':
             continue
-        with open(f'../heuristics/{GameClass.__name__}/games/rolling_mcts_network_games/{file}', 'rb') as fin:
+        with open(f'../../training/{GameClass.__name__}/games/rolling_mcts_network_games/{file}', 'rb') as fin:
             data.append(pickle.load(fin))
 
     sets = int(len(data) / 1200)
     for k in range(sets):
         net.train(data[k * len(data) // sets:(k + 1) * len(data) // sets])
 
-    net.save(f'../heuristics/{GameClass.__name__}/models/model-reinforcement.h5')
+    net.save(f'../../training/{GameClass.__name__}/models/model-reinforcement.h5')
 
 
 if __name__ == '__main__':
