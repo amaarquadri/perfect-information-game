@@ -1,9 +1,5 @@
 Creating 2D perfect information board games, and playing them with machine learning systems.
 
-Training process:
-raw_mcts_games: 500 rollouts per move, c=sqrt2, no network
-policy0 and evaluation0 models: trained on raw_mcts_games data for 100 epochs each
-
 Relevant Resources
 https://webdocs.cs.ualberta.ca/~mmueller/ps/enzenberger-mueller-acg12.pdf
 http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.159.4373&rep=rep1&type=pdf
