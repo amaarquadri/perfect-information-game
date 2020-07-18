@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-import numpy as np
-from multiprocessing import Process, Pipe, Pool
 from time import time
+from multiprocessing import Process, Pipe, Pool
+import numpy as np
 
 
 class AsyncMCTS:
@@ -9,14 +9,15 @@ class AsyncMCTS:
     Implementation of Monte Carlo Tree Search that uses the other player's time to continue thinking.
     This is achieved using multiprocessing, and a Pipe for transferring data to and from the worker process.
     """
+
     def __init__(self, GameClass, position, time_limit=3, network=None, c=np.sqrt(2), d=1, threads=1):
         """
         Either:
-        If policy_pipe and evaluation_pipe are provided, threads will be ignored.
-        If neither policy_pope nor evaluation_pipe are provided, then threads will be used for leaf parallelization
+        If network is provided, threads must be 1.
+        If network is not provided, then threads will be used for leaf parallelization
         """
         if network is not None and threads != 1:
-            raise Exception('Threads != 1 with Network based constructor parameters!')
+            raise Exception('Threads != 1 with Network != None')
 
         self.parent_pipe, worker_pipe = Pipe()
         self.worker_process = Process(target=self.loop_func,
@@ -84,7 +85,7 @@ class AsyncMCTS:
                     best_node.expand()
 
                 print(f'MCTS choosing move based on {root.count_expansions()} expansions!')
-                root = root.choose_best_node()
+                root = root.choose_best_node(optimal=True)
                 print('Expected outcome: ', root.get_evaluation())
                 root.parent = None
                 worker_pipe.send(root.position)
@@ -98,12 +99,20 @@ class MCTS:
     Implementation of Monte Carlo Tree Search
     https://www.youtube.com/watch?v=UXW2yZndl7U
     """
+
     def __init__(self, GameClass, network=None, c=np.sqrt(2), d=1, threads=1):
+        """
+        Either:
+        If network is provided, threads must be 1.
+        If network is not provided, then threads will be used for leaf parallelization
+        """
         if network is not None and threads != 1:
-            raise Exception('Threads != 1 with Network based constructor parameters!')
+            raise Exception('Threads != 1 with Network != None')
 
         self.GameClass = GameClass
         self.network = network
+        if network is not None:
+            network.initialize()
         self.c = c
         self.d = d
         self.threads = threads
@@ -129,7 +138,7 @@ class MCTS:
 
             best_node.expand()
 
-        best_child = root.choose_best_node()
+        best_child = root.choose_best_node(optimal=True)
         return best_child.position
 
 
@@ -168,7 +177,7 @@ class AbstractNode(ABC):
     def set_fully_expanded(self, minimax_evaluation):
         pass
 
-    def choose_best_node(self, return_probability_distribution=False):
+    def choose_best_node(self, return_probability_distribution=False, optimal=False):
         distribution = []
 
         if self.fully_expanded:
@@ -184,6 +193,7 @@ class AbstractNode(ABC):
             for child in self.children:
                 # only consider children that result in the optimal outcome
                 if child.fully_expanded and child.get_evaluation() == self.get_evaluation():
+                    # TODO: when losing, consider the number of ways the opponent can win in response to a move
                     depth_to_endgame = child.depth_to_end_game()
                     # if we are winning, weight smaller depths much more strongly by using e^-x
                     # if we are losing or drawing, weight larger depths much more strongly by using e^x
@@ -206,7 +216,8 @@ class AbstractNode(ABC):
                     distribution.append(self.count_expansions() * (1 - winning_chance))
 
         distribution = np.array(distribution) / sum(distribution)
-        best_child = self.children[np.random.choice(np.arange(len(distribution)), p=distribution)]
+        idx = np.argmax(distribution) if optimal else np.random.choice(np.arange(len(distribution)), p=distribution)
+        best_child = self.children[idx]
         return (best_child, distribution) if return_probability_distribution else best_child
 
     def choose_expansion_node(self):
