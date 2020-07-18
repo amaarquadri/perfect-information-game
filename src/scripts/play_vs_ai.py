@@ -1,6 +1,5 @@
-from src.games.checkers import Checkers as GameClass
+from src.games.connect4 import Connect4 as GameClass
 from src.move_selection.mcts import AsyncMCTS
-from src.move_selection.random import RandomMoveChooser
 from src.heuristics.network import Network
 from src.ui.pygame_ui import PygameUI
 
@@ -9,10 +8,8 @@ def main():
     pygame_ui = PygameUI(GameClass)
     # pygame_ui.set_user_position()
 
-    # network = Network(GameClass, f'../../training/{GameClass.__name__}/models/model-reinforcement.h5')
-    # network.initialize()
-    move_chooser = RandomMoveChooser(GameClass)
-    # move_chooser = AsyncMCTS(GameClass, pygame_ui.get_position(), time_limit=5, network=network, threads=1)
+    network = Network(GameClass, f'../../training/{GameClass.__name__}/models/model19.h5')
+    move_chooser = AsyncMCTS(GameClass, pygame_ui.get_position(), time_limit=5, network=network, threads=1)
     move_chooser.start()
 
     while True:
