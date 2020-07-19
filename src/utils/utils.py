@@ -2,6 +2,9 @@ import numpy as np
 from itertools import product
 
 
+DIRECTIONS_8 = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+
+
 def choose_random(values):
     return values[np.random.randint(len(values))]
 

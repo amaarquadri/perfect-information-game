@@ -1,6 +1,6 @@
 from src.games.game import Game
 import numpy as np
-from src.utils.utils import iter_product
+from src.utils.utils import iter_product, DIRECTIONS_8
 
 
 class Amazons(Game):
@@ -25,7 +25,8 @@ class Amazons(Game):
     ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 6, 6, 3 or 4, 4, 3
     BOARD_SHAPE = (ROWS, COLUMNS)  # 6, 6 or 4, 4
     # TODO: figure out how to deal with very sparse arrays
-    MOVE_SHAPE = (ROWS, COLUMNS, 8 * (ROWS - 1), 8 * (ROWS - 1))  # 6, 6, 40, 40 or 4, 4, 24, 24 assumes ROWS == COLUMNS
+    # assumes ROWS == COLUMNS
+    MOVE_SHAPE = (ROWS, COLUMNS, 8, (ROWS - 1), 8, (ROWS - 1))  # 6, 6, 8, 5, 8, 5 or 4, 4, 8, 3, 8, 3
     REPRESENTATION_LETTERS = ['W', 'B', 'X']
     REPRESENTATION_FILES = ['dark_square', 'white_circle_dark_square',
                             'black_circle_dark_square', 'red_circle_dark_square']
@@ -56,7 +57,7 @@ class Amazons(Game):
     @staticmethod
     def shoot(state, i, j):
         targets = []
-        for di, dj in [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]:
+        for di, dj in DIRECTIONS_8:
             p_x, p_y = i + di, j + dj
             while Amazons.is_valid(p_x, p_y) and np.all(state[p_x, p_y, :3] == 0):
                 targets.append((p_x, p_y))
@@ -83,7 +84,26 @@ class Amazons(Game):
 
     @classmethod
     def get_legal_moves(cls, state):
-        raise NotImplementedError()
+        legal_moves = np.full(Amazons.MOVE_SHAPE, False)
+
+        player_index = 0 if cls.is_player_1_turn(state) else 1
+        for i, j in iter_product(Amazons.BOARD_SHAPE):
+            if state[i, j, player_index] == 1:
+                for p_x, p_y in Amazons.shoot(state, i, j):
+                    partial_move = cls.null_move(state)
+                    partial_move[i, j, player_index] = 0
+                    partial_move[p_x, p_y, player_index] = 1
+                    p_direction, p_distance = Amazons.parse(p_x - i, p_y - j)
+                    for t_x, t_y in Amazons.shoot(partial_move, p_x, p_y):
+                        t_direction, t_distance = Amazons.parse(t_x - p_x, t_y - p_y)
+                        legal_moves[i, j, p_direction, p_distance, t_direction, t_distance] = True
+        return legal_moves
+
+    @staticmethod
+    def parse(di, dj):
+        direction = DIRECTIONS_8.index((np.sign(di), np.sign(dj)))
+        distance = np.maximum(np.abs(di), np.abs(dj)) - 1
+        return direction, distance
 
     @classmethod
     def is_over(cls, state):
