@@ -1,6 +1,10 @@
 import numpy as np
 from itertools import product
 
+# This is imported here so that all the files in src/scripts can reference it
+# noinspection PyUnresolvedReferences
+from src.games.amazons import Amazons as ActiveGame
+
 
 def choose_random(values):
     return values[np.random.randint(len(values))]

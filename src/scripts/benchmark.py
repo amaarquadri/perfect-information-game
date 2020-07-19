@@ -4,7 +4,7 @@ import tensorflow as tf
 from keras import Sequential
 from keras.layers import Conv2D, Flatten, Dense
 from src.move_selection.mcts import RolloutNode
-from src.games.connect4 import Connect4
+from src.utils.utils import ActiveGame as GameClass
 
 
 def get_model():
@@ -32,7 +32,7 @@ def benchmark_inference(target='gpu'):
             model.predict(arg)
 
 
-def benchmark_rollouts(GameClass, trials=5):
+def benchmark_rollouts(trials=5):
     times = []
     for _ in range(trials):
         start_time = time()
@@ -48,4 +48,4 @@ if __name__ == '__main__':
     tf.config.experimental.list_physical_devices()
     # tf.debugging.set_log_device_placement(True)
     benchmark_inference()
-    # benchmark_rollouts(Connect4)
+    # benchmark_rollouts()

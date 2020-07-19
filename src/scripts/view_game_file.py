@@ -1,6 +1,6 @@
 import pickle
 from src.ui.pygame_ui import PygameUI
-from src.games.connect4 import Connect4 as GameClass
+from src.utils.utils import ActiveGame as GameClass
 
 
 def view_game(path):
