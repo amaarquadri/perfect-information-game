@@ -4,6 +4,7 @@ from src.utils.active_game import ActiveGame as GameClass
 from src.ui.pygame_ui import PygameUI
 from src.heuristics.network import Network
 from src.move_selection.mcts import AsyncMCTS
+from src.utils.utils import get_training_path
 
 
 def play_games(network1, network2, count=1000):
@@ -61,12 +62,12 @@ def play_game_with_ui(pygame_ui, move_chooser1, move_chooser2):
 
 def main():
     # pygame_ui = PygameUI(GameClass)
-    network1 = Network(GameClass, f'../../training/{GameClass.__name__}/models/model-best.h5')
+    network1 = Network(GameClass, f'{get_training_path(GameClass)}/models/model-best.h5')
     network1.initialize()
     # move_chooser1 = AsyncMCTS(GameClass, GameClass.STARTING_STATE, time_limit=3, network=network1)
     # move_chooser1.start()
 
-    network2 = Network(GameClass, f'../../training/{GameClass.__name__}/models/model-reinforcement.h5')
+    network2 = Network(GameClass, f'{get_training_path(GameClass)}/models/model-reinforcement.h5')
     network2.initialize()
     # move_chooser2 = AsyncMCTS(GameClass, GameClass.STARTING_STATE, time_limit=3, network=network2)
     # move_chooser2.start()

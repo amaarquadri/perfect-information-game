@@ -1,9 +1,10 @@
 import os
 from src.utils.active_game import ActiveGame as GameClass
+from src.utils.utils import get_training_path
 
 
 def start_tensor_board(enable_venv_manually=False):
-    tensor_board_command = f'tensorboard --logdir ../../training/{GameClass.__name__}/logs'
+    tensor_board_command = f'tensorboard --logdir {get_training_path(GameClass)}/logs'
     if enable_venv_manually:
         venv_command = 'cd ../../venv/Scripts && activate && cd ../../src/scripts'
         command = f'cmd /k "{venv_command} && {tensor_board_command}"'

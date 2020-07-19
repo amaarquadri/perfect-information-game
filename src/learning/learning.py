@@ -5,6 +5,7 @@ from multiprocessing import Process, Queue, Event
 import numpy as np
 from src.move_selection.mcts import RolloutNode, HeuristicNode
 from src.heuristics.network import Network
+from src.utils.utils import get_training_path
 
 
 class SelfPlayReinforcementLearning:
@@ -14,7 +15,7 @@ class SelfPlayReinforcementLearning:
         If network is None, then self play will be done using random MCTS rollouts and saved to
         src/heuristics/GameClass.__name__/games/reinforcement_learning_games/
         """
-        path = f'../../training/{GameClass.__name__}/games/reinforcement_learning_games'
+        path = f'{get_training_path(GameClass)}/games/reinforcement_learning_games'
         self.network_process, network_a_proxies, network_b_proxies, network_training_data_pipe = \
             Network.spawn_dual_architecture_process(GameClass, model_path, threads_per_section)
 
@@ -169,7 +170,7 @@ class SelfPlayReinforcementLearning:
 
 class MCTSRolloutGameGenerator:
     def __init__(self, GameClass, threads=14, expansions_per_move=1000, c=np.sqrt(2)):
-        path = f'../../training/{GameClass.__name__}/games/rollout_mcts_games'
+        path = f'{get_training_path(GameClass)}/games/rollout_mcts_games'
         self.termination_event = Event()
         self.worker_processes = [Process(target=MCTSRolloutGameGenerator.simulate_games_worker_process,
                                          args=(GameClass, self.termination_event, path, expansions_per_move, c))

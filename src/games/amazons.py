@@ -99,6 +99,10 @@ class Amazons(Game):
                         legal_moves[i, j, p_direction, p_distance, t_direction, t_distance] = True
         return legal_moves
 
+    @classmethod
+    def get_ruleset(cls):
+        return f'{Amazons.ROWS}x{Amazons.COLUMNS}'
+
     @staticmethod
     def parse(di, dj):
         direction = DIRECTIONS_8.index((np.sign(di), np.sign(dj)))

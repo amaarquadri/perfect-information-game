@@ -117,6 +117,14 @@ class Game(ABC):
         return representation
 
     @classmethod
+    def get_ruleset(cls):
+        """
+        Returns the ruleset that the game is configured to be using. For example, the board size.
+        If only 1 ruleset is configured for the game, then None will be returned.
+        """
+        return None
+
+    @classmethod
     def null_move(cls, state):
         move = np.copy(state)
         move[:, :, -1] = np.zeros_like(state[:, :, -1]) if cls.is_player_1_turn(state) \

@@ -5,6 +5,12 @@ from itertools import product
 DIRECTIONS_8 = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]
 
 
+def get_training_path(GameClass):
+    path = f'../../training/{GameClass.__name__}'
+    ruleset = GameClass.get_ruleset()
+    return path if ruleset is None else f'{path}/{ruleset}'
+
+
 def choose_random(values):
     return values[np.random.randint(len(values))]
 

@@ -1,6 +1,7 @@
 import pickle
 from src.ui.pygame_ui import PygameUI
 from src.utils.active_game import ActiveGame as GameClass
+from src.utils.utils import get_training_path
 
 
 def view_game(path):
@@ -16,5 +17,5 @@ def view_game(path):
 
 
 if __name__ == '__main__':
-    view_game(f'../../training/{GameClass.__name__}/games/reinforcement_learning_games/game1595094819.10189.pickle')
-    view_game(f'../../training/{GameClass.__name__}/games/rollout_mcts_games/game1593815499.7633.pickle')
+    view_game(f'{get_training_path(GameClass)}/games/reinforcement_learning_games/game1595094819.10189.pickle')
+    view_game(f'{get_training_path(GameClass)}/games/rollout_mcts_games/game1593815499.7633.pickle')
