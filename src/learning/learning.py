@@ -159,11 +159,18 @@ class SelfPlayReinforcementLearning:
     @staticmethod
     def load_games(GameClass, path, count=1000):
         games = []
-        for file in [file for file in sorted(os.listdir(path)) if file[-7:] == '.pickle'][-count:]:
+        game_files = [file for file in sorted(os.listdir(path)) if file[-7:] == '.pickle']
+        for file in game_files[-count:]:
             with open(os.path.join(path, file), 'rb') as fin:
                 games.append(pickle.load(fin))
         if len(games) < count:
-            raise Exception('Not enough games to fill replay buffer!')
+            backup_path = f'{get_training_path(GameClass)}/games/rollout_mcts_games'
+            game_files = [file for file in sorted(os.listdir(backup_path)) if file[-7:] == '.pickle']
+            for file in game_files[-(count - len(games)):]:
+                with open(os.path.join(backup_path, file), 'rb') as fin:
+                    games.append(pickle.load(fin))
+            if len(games) < count:
+                raise Exception('Not enough games to fill replay buffer!')
         game_lengths = [len(game[0]) for game in games]
         return Network.process_data(GameClass, games, shuffle=False), game_lengths
 
