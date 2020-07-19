@@ -1,5 +1,5 @@
 import os
-from src.utils.utils import ActiveGame as GameClass
+from src.utils.active_game import ActiveGame as GameClass
 
 
 def start_tensor_board(enable_venv_manually=False):

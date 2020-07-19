@@ -1,6 +1,6 @@
 from time import time
 import numpy as np
-from src.utils.utils import ActiveGame as GameClass
+from src.utils.active_game import ActiveGame as GameClass
 from src.ui.pygame_ui import PygameUI
 from src.heuristics.network import Network
 from src.move_selection.mcts import AsyncMCTS

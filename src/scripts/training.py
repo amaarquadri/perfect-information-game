@@ -1,6 +1,6 @@
 import numpy as np
 import easygui
-from src.utils.utils import ActiveGame as GameClass
+from src.utils.active_game import ActiveGame as GameClass
 from src.learning.learning import SelfPlayReinforcementLearning, MCTSRolloutGameGenerator
 
 
