@@ -4,16 +4,17 @@ from src.utils.utils import iter_product
 
 
 class Amazons(Game):
-    WHITE_STARTING_BOARD = np.array([[0, 0, 0, 1, 0, 0],
-                                     [0, 0, 0, 0, 0, 0],
-                                     [0, 0, 0, 0, 0, 0],
-                                     [0, 0, 0, 0, 0, 0],
-                                     [0, 0, 0, 0, 0, 0],
-                                     [0, 0, 1, 0, 0, 0]])
-    WHITE_STARTING_BOARD_4X4 = np.array([[0, 0, 1, 0],
+    WHITE_STARTING_BOARD_6x6 = np.array([[0, 0, 0, 1, 0, 0],
+                                         [0, 0, 0, 0, 0, 0],
+                                         [0, 0, 0, 0, 0, 0],
+                                         [0, 0, 0, 0, 0, 0],
+                                         [0, 0, 0, 0, 0, 0],
+                                         [0, 0, 1, 0, 0, 0]])
+    WHITE_STARTING_BOARD_4x4 = np.array([[0, 0, 1, 0],
                                          [0, 0, 0, 0],
                                          [0, 0, 0, 0],
                                          [0, 1, 0, 0]])
+    WHITE_STARTING_BOARD = WHITE_STARTING_BOARD_4x4
     BLACK_STARTING_BOARD = np.rot90(WHITE_STARTING_BOARD)
     STARTING_STATE = np.stack([WHITE_STARTING_BOARD,
                                BLACK_STARTING_BOARD,
