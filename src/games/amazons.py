@@ -21,11 +21,11 @@ class Amazons(Game):
                                np.zeros_like(WHITE_STARTING_BOARD),
                                np.ones_like(WHITE_STARTING_BOARD)], axis=-1).astype(np.uint8)
 
-    STATE_SHAPE = STARTING_STATE.shape  # 6, 6, 4
-    ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 6, 6, 3
-    BOARD_SHAPE = (ROWS, COLUMNS)  # 6, 6
+    STATE_SHAPE = STARTING_STATE.shape  # 6, 6, 4 or 4, 4, 4
+    ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 6, 6, 3 or 4, 4, 3
+    BOARD_SHAPE = (ROWS, COLUMNS)  # 6, 6 or 4, 4
     # TODO: figure out how to deal with very sparse arrays
-    MOVE_SHAPE = (ROWS, COLUMNS, 8 * (ROWS - 1), 8 * (ROWS - 1))  # assumes ROWS == COLUMNS
+    MOVE_SHAPE = (ROWS, COLUMNS, 8 * (ROWS - 1), 8 * (ROWS - 1))  # 6, 6, 40, 40 or 4, 4, 24, 24 assumes ROWS == COLUMNS
     REPRESENTATION_LETTERS = ['W', 'B', 'X']
     REPRESENTATION_FILES = ['dark_square', 'white_circle_dark_square',
                             'black_circle_dark_square', 'red_circle_dark_square']
