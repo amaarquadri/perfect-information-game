@@ -10,11 +10,10 @@ class Checkers(Game):
                                BLACK, np.zeros((8, 8)),
                                np.ones((8, 8))], axis=-1).astype(np.uint8)
     STATE_SHAPE = STARTING_STATE.shape  # 8, 8, 5
-    BOARD_SHAPE = STATE_SHAPE[:-1]  # 8, 8
-    ROWS, COLUMNS = BOARD_SHAPE
-    BOARD_LENGTH = BOARD_SHAPE[0]  # 8
-    FEATURE_COUNT = STATE_SHAPE[-1]  # 5
-    MOVE_SHAPE = (ROWS // 2, COLUMNS // 2, 4)
+    ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 8, 8, 5
+    BOARD_SHAPE = (ROWS, COLUMNS)  # 8, 8
+    MOVE_SHAPE = (ROWS, COLUMNS // 2, 4)  # 8, 4, 4
+    MOVE_DIRECTIONS = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
     REPRESENTATION_LETTERS = ['r', 'R', 'b', 'B']
     CLICKS_PER_MOVE = 2
     REPRESENTATION_FILES = ['dark_square', 'red_circle_dark_square', 'red_circle_k_dark_square',

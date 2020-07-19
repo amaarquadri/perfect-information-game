@@ -6,10 +6,8 @@ from src.utils.utils import iter_product
 class TicTacToe(Game):
     STARTING_STATE = np.stack([np.zeros((3, 3)), np.zeros((3, 3)), np.ones((3, 3))], axis=-1).astype(np.uint8)
     STATE_SHAPE = STARTING_STATE.shape  # 3, 3, 3
-    BOARD_SHAPE = STATE_SHAPE[:-1]  # 3, 3
-    ROWS, COLUMNS = BOARD_SHAPE
-    BOARD_LENGTH = BOARD_SHAPE[0]  # 3
-    FEATURE_COUNT = STATE_SHAPE[-1]  # 3
+    ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 3, 3, 3
+    BOARD_SHAPE = (ROWS, COLUMNS)  # 3, 3
     MOVE_SHAPE = BOARD_SHAPE
     REPRESENTATION_LETTERS = ['X', 'O']
     CLICKS_PER_MOVE = 1

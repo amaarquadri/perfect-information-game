@@ -6,9 +6,8 @@ from src.utils.utils import iter_product
 class Connect4(Game):
     STARTING_STATE = np.stack([np.zeros((6, 7)), np.zeros((6, 7)), np.ones((6, 7))], axis=-1).astype(np.uint8)
     STATE_SHAPE = STARTING_STATE.shape  # 6, 7, 3
-    BOARD_SHAPE = STATE_SHAPE[:-1]  # 6, 7
-    ROWS, COLUMNS = BOARD_SHAPE
-    FEATURE_COUNT = STATE_SHAPE[-1]  # 3
+    ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 6, 7, 3
+    BOARD_SHAPE = (ROWS, COLUMNS)  # 6, 7
     MOVE_SHAPE = (COLUMNS,)
     REPRESENTATION_LETTERS = ['y', 'r']
     REPRESENTATION_FILES = ['dark_square', 'yellow_circle_dark_square', 'red_circle_dark_square']

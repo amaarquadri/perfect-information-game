@@ -21,10 +21,8 @@ class Amazons(Game):
                                np.ones_like(WHITE_STARTING_BOARD)], axis=-1).astype(np.uint8)
 
     STATE_SHAPE = STARTING_STATE.shape  # 6, 6, 4
-    BOARD_SHAPE = STATE_SHAPE[:-1]  # 6, 6
-    ROWS, COLUMNS = BOARD_SHAPE
-    BOARD_LENGTH = BOARD_SHAPE[0]
-    FEATURE_COUNT = STATE_SHAPE[-1]  # 3
+    ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 6, 6, 3
+    BOARD_SHAPE = (ROWS, COLUMNS)  # 6, 6
     # TODO: figure out how to deal with very sparse arrays
     MOVE_SHAPE = (ROWS, COLUMNS, 8 * (ROWS - 1), 8 * (ROWS - 1))  # assumes ROWS == COLUMNS
     REPRESENTATION_LETTERS = ['W', 'B', 'X']
@@ -52,18 +50,17 @@ class Amazons(Game):
 
     @staticmethod
     def is_valid(i, j):
-        return 0 <= i < Amazons.BOARD_LENGTH and 0 <= j < Amazons.BOARD_LENGTH
+        return 0 <= i < Amazons.ROWS and 0 <= j < Amazons.COLUMNS
 
     @staticmethod
     def shoot(state, i, j):
         targets = []
-        for v_x, v_y in [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]:
-            for t in range(1, Amazons.BOARD_LENGTH):
-                p_x, p_y = i + t * v_x, j + t * v_y
-                if Amazons.is_valid(p_x, p_y) and np.all(state[p_x, p_y, :3] == 0):
-                    targets.append((p_x, p_y))
-                else:
-                    break
+        for di, dj in [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]:
+            p_x, p_y = i + di, j + dj
+            while Amazons.is_valid(p_x, p_y) and np.all(state[p_x, p_y, :3] == 0):
+                targets.append((p_x, p_y))
+                p_x += di
+                p_y += dj
         return targets
 
     @classmethod
