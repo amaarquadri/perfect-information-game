@@ -107,6 +107,9 @@ class Network:
 
     def call(self, states):
         """
+        For any of the given states, if no moves are legal, then the corresponding probability distribution will be a
+        list with a single 1. This is done to allow for pass moves which are not encapsulated by GameClass.MOVE_SHAPE.
+
         :param states: The input positions with shape (k,) + GameClass.State_Shape, where k is the number of positions.
         :return: A list of length k. Each element of the list is a tuple where the 0th element is the probability
                  distribution on legal moves, and the 1st element is the evaluation (a float in (-1, 1)).
@@ -115,7 +118,8 @@ class Network:
 
         filtered_policies = [raw_policy[self.GameClass.get_legal_moves(state)]
                              for state, raw_policy in zip(states, raw_policies)]
-        filtered_policies = [filtered_policy / np.sum(filtered_policy) for filtered_policy in filtered_policies]
+        filtered_policies = [filtered_policy / np.sum(filtered_policy) if len(filtered_policy) > 0 else [1]
+                             for filtered_policy in filtered_policies]
 
         evaluations = evaluations.reshape(states.shape[0])
         return [(filtered_policy, evaluation) for filtered_policy, evaluation in zip(filtered_policies, evaluations)]
