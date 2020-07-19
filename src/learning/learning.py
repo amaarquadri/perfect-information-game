@@ -175,11 +175,11 @@ class MCTSRolloutGameGenerator:
                                          args=(GameClass, self.termination_event, path, 600, c))
                                  for _ in range(threads)]
 
-    def create_raw_mcts_training_games(self):
+    def start(self):
         for worker_process in self.worker_processes:
             worker_process.start()
 
-    def terminate(self, timeout=5):
+    def terminate(self, timeout=10):
         # gently terminate, allowing each child process a specified amount of time to finish its current task
         self.termination_event.set()
         start_time = time()
