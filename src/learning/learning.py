@@ -168,11 +168,11 @@ class SelfPlayReinforcementLearning:
 
 
 class MCTSRolloutGameGenerator:
-    def __init__(self, GameClass, threads=14, c=np.sqrt(2)):
+    def __init__(self, GameClass, threads=14, expansions_per_move=1000, c=np.sqrt(2)):
         path = f'../../training/{GameClass.__name__}/games/rollout_mcts_games'
         self.termination_event = Event()
         self.worker_processes = [Process(target=MCTSRolloutGameGenerator.simulate_games_worker_process,
-                                         args=(GameClass, self.termination_event, path, 600, c))
+                                         args=(GameClass, self.termination_event, path, expansions_per_move, c))
                                  for _ in range(threads)]
 
     def start(self):
