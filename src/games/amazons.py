@@ -4,22 +4,22 @@ from src.utils.utils import iter_product
 
 
 class Amazons(Game):
-    WHITE_STARTING_BOARD_6x6 = np.array([[0, 0, 0, 1, 0, 0],
-                                         [0, 0, 0, 0, 0, 0],
-                                         [0, 0, 0, 0, 0, 0],
-                                         [0, 0, 0, 0, 0, 0],
-                                         [0, 0, 0, 0, 0, 0],
-                                         [0, 0, 1, 0, 0, 0]])
-    WHITE_STARTING_BOARD_4x4 = np.array([[0, 0, 1, 0],
-                                         [0, 0, 0, 0],
-                                         [0, 0, 0, 0],
-                                         [0, 1, 0, 0]])
-    WHITE_STARTING_BOARD = WHITE_STARTING_BOARD_4x4
-    BLACK_STARTING_BOARD = np.rot90(WHITE_STARTING_BOARD)
-    STARTING_STATE = np.stack([WHITE_STARTING_BOARD,
-                               BLACK_STARTING_BOARD,
-                               np.zeros_like(WHITE_STARTING_BOARD),
-                               np.ones_like(WHITE_STARTING_BOARD)], axis=-1).astype(np.uint8)
+    PLAYER_1_STARTING_BOARD_6x6 = np.array([[0, 0, 0, 1, 0, 0],
+                                            [0, 0, 0, 0, 0, 0],
+                                            [0, 0, 0, 0, 0, 0],
+                                            [0, 0, 0, 0, 0, 0],
+                                            [0, 0, 0, 0, 0, 0],
+                                            [0, 0, 1, 0, 0, 0]])
+    PLAYER_1_STARTING_BOARD_4x4 = np.array([[0, 0, 1, 0],
+                                            [0, 0, 0, 0],
+                                            [0, 0, 0, 0],
+                                            [0, 1, 0, 0]])
+    PLAYER_1_STARTING_BOARD = PLAYER_1_STARTING_BOARD_4x4
+    PLAYER_2_STARTING_BOARD = np.rot90(PLAYER_1_STARTING_BOARD)
+    STARTING_STATE = np.stack([PLAYER_1_STARTING_BOARD,
+                               PLAYER_2_STARTING_BOARD,
+                               np.zeros_like(PLAYER_1_STARTING_BOARD),
+                               np.ones_like(PLAYER_1_STARTING_BOARD)], axis=-1).astype(np.uint8)
 
     STATE_SHAPE = STARTING_STATE.shape  # 6, 6, 4 or 4, 4, 4
     ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 6, 6, 3 or 4, 4, 3
