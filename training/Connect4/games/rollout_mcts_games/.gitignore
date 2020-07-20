@@ -2,5 +2,4 @@
 *
 # Except these files
 !.gitignore
-# Upload a single game file as an example
-!game1593815499.7633.pickle
+!sample_game.pickle
