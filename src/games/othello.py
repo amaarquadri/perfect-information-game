@@ -14,7 +14,7 @@ class Othello(Game):
                                         [0, 0, 0, 0, 0, 0, 0, 0]])
     PLAYER_2_STARTING_BOARD = np.rot90(PLAYER_1_STARTING_BOARD)
     STARTING_STATE = np.stack([PLAYER_1_STARTING_BOARD, PLAYER_2_STARTING_BOARD,
-                               np.ones((8, 8))], axis=-1).astype(np.uint8)
+                               np.ones_like(PLAYER_1_STARTING_BOARD)], axis=-1).astype(np.uint8)
 
     STATE_SHAPE = STARTING_STATE.shape  # 8, 8, 3
     ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 8, 8, 3
@@ -28,7 +28,14 @@ class Othello(Game):
         super().__init__(state)
 
     def perform_user_move(self, clicks):
+        # check for forced pass due to no legal moves
+        if np.all(np.logical_not(self.get_legal_moves(self.state))):
+            self.state = self.null_move(self.state)
+            return
+
         i, j = clicks[0]
+        if np.any(self.state[i, j, :2] == 1):
+            raise ValueError('Illegal Move: square is occupied!')
 
         friendly_index = 0 if self.is_player_1_turn(self.state) else 1
         enemy_index = 1 - friendly_index
@@ -59,10 +66,8 @@ class Othello(Game):
             new_state[i, j, :2] = player_piece
             new_state[flip_squares, :2] = player_piece
             self.state = new_state
-        elif np.all(np.logical_not(self.get_legal_moves(self.state))):
-            self.state = self.null_move(self.state)
         else:
-            raise ValueError('Illegal Move')
+            raise ValueError('Illegal Move: no pieces are captured by that move!')
 
     @staticmethod
     def is_valid(i, j):
