@@ -4,6 +4,7 @@ from src.utils.active_game import ActiveGame as GameClass
 from src.ui.pygame_ui import PygameUI
 from src.heuristics.network import Network
 from src.move_selection.mcts import AsyncMCTS
+from src.move_selection.raw_network import RawNetwork
 from src.utils.utils import get_training_path
 
 
@@ -39,6 +40,9 @@ def play_games(network1, network2, count=1000):
 
 
 def play_game_with_ui(pygame_ui, move_chooser1, move_chooser2):
+    move_chooser1.start()
+    move_chooser2.start()
+
     start_time = time()
     position = pygame_ui.get_position()
     board_states = [position]
@@ -62,18 +66,16 @@ def play_game_with_ui(pygame_ui, move_chooser1, move_chooser2):
 
 def main():
     # pygame_ui = PygameUI(GameClass)
-    network1 = Network(GameClass, f'{get_training_path(GameClass)}/models/model-best.h5')
-    network1.initialize()
+    network1 = Network(GameClass, f'{get_training_path(GameClass)}/models/model_best.h5')
+    move_chooser1 = RawNetwork(network1, delay=0)
     # move_chooser1 = AsyncMCTS(GameClass, GameClass.STARTING_STATE, time_limit=3, network=network1)
-    # move_chooser1.start()
 
-    network2 = Network(GameClass, f'{get_training_path(GameClass)}/models/model-reinforcement.h5')
-    network2.initialize()
+    network2 = Network(GameClass, f'{get_training_path(GameClass)}/models/model_reinforcement.h5')
+    move_chooser2 = RawNetwork(network2, delay=0)
     # move_chooser2 = AsyncMCTS(GameClass, GameClass.STARTING_STATE, time_limit=3, network=network2)
-    # move_chooser2.start()
 
     # play_game_with_ui(GameClass, pygame_ui, move_chooser1, move_chooser2)
-    play_games(network1, network2)
+    play_games(move_chooser1, move_chooser2)
 
 
 if __name__ == '__main__':

@@ -87,7 +87,7 @@ class SelfPlayReinforcementLearning:
                     # practically speaking this will never happen
                     if GameClass.is_over(root.position):
                         game = (training_data_sets[i], GameClass.get_winner(root.position))
-                        with open(f'{path}/game{time()}.pickle', 'wb') as fout:
+                        with open(f'{path}/game_{time()}.pickle', 'wb') as fout:
                             pickle.dump(game, fout)
                         response_queue.put(network.process_data(GameClass, [game], shuffle=False))
 
@@ -106,7 +106,7 @@ class SelfPlayReinforcementLearning:
                         root = best_node
                         root.parent = None
                     game = (training_data_sets[i], GameClass.get_winner(root.position))
-                    with open(f'{path}/game{time()}.pickle', 'wb') as fout:
+                    with open(f'{path}/game_{time()}.pickle', 'wb') as fout:
                         pickle.dump(game, fout)
                     response_queue.put(network.process_data(GameClass, [game], shuffle=False))
                     training_data_sets[i] = []
@@ -225,5 +225,5 @@ class MCTSRolloutGameGenerator:
                 root.parent = None
 
             game = (training_data, GameClass.get_winner(root.position))
-            with open(f'{path}/game{time()}.pickle', 'wb') as fout:
+            with open(f'{path}/game_{time()}.pickle', 'wb') as fout:
                 pickle.dump(game, fout)

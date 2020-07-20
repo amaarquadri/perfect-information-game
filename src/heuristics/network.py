@@ -48,7 +48,7 @@ class Network:
 
         if self.reinforcement_training:
             self.tensor_board = TensorBoard(log_dir=f'{get_training_path(self.GameClass)}/logs/'
-                                                    f'model-reinforcement-{time()}',
+                                                    f'model_reinforcement_{time()}',
                                             histogram_freq=0, batch_size=256, write_graph=True, write_grads=True)
             self.tensor_board.set_model(self.model)
 
@@ -142,7 +142,7 @@ class Network:
         print('Validation Samples:', test_input.shape[0])
 
         self.model.fit(train_input, train_output, epochs=100, validation_data=(test_input, test_output),
-                       callbacks=[TensorBoard(log_dir=f'{get_training_path(self.GameClass)}/logs/model-{time()}'),
+                       callbacks=[TensorBoard(log_dir=f'{get_training_path(self.GameClass)}/logs/model_{time()}'),
                                   EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)])
 
     def train_step(self, states, policies, values):
@@ -314,7 +314,7 @@ def train_from_scratch():
     for k in range(sets):
         net.train(data[k * len(data) // sets:(k + 1) * len(data) // sets])
 
-    net.save(f'{get_training_path(GameClass)}/models/model-reinforcement.h5')
+    net.save(f'{get_training_path(GameClass)}/models/model_reinforcement.h5')
 
 
 if __name__ == '__main__':

@@ -17,5 +17,5 @@ def view_game(path):
 
 
 if __name__ == '__main__':
-    view_game(f'{get_training_path(GameClass)}/games/reinforcement_learning_games/game1595094819.10189.pickle')
-    view_game(f'{get_training_path(GameClass)}/games/rollout_mcts_games/game1593815499.7633.pickle')
+    view_game(f'{get_training_path(GameClass)}/games/reinforcement_learning_games/sample_game.pickle')
+    view_game(f'{get_training_path(GameClass)}/games/rollout_mcts_games/sample_game.pickle')
