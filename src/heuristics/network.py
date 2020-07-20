@@ -295,24 +295,21 @@ def train_from_scratch():
     net.initialize()
     print('Network size: ', net.model.count_params())
 
-    data = []
-    for file in sorted(os.listdir(f'{get_training_path(GameClass)}/games/rollout_mcts_games')):
-        if file[-7:] != '.pickle':
-            continue
-        with open(f'{get_training_path(GameClass)}/games/rollout_mcts_games/{file}', 'rb') as fin:
-            data.append(pickle.load(fin))
-    net.train(data)
+    def load_data(game_type):
+        data = []
+        for file in sorted(os.listdir(f'{get_training_path(GameClass)}/games/{game_type}')):
+            if file[-7:] != '.pickle':
+                continue
+            with open(f'{get_training_path(GameClass)}/games/{game_type}/{file}', 'rb') as fin:
+                data.append(pickle.load(fin))
+        return data
 
-    data = []
-    for file in sorted(os.listdir(f'{get_training_path(GameClass)}/games/reinforcement_learning_games')):
-        if file[-7:] != '.pickle':
-            continue
-        with open(f'{get_training_path(GameClass)}/games/reinforcement_learning_games/{file}', 'rb') as fin:
-            data.append(pickle.load(fin))
+    net.train(load_data('rollout_mcts_games'))
 
-    sets = int(len(data) / 1200)
+    reinforcement_data = load_data('reinforcement_learning_games')
+    sets = int(len(reinforcement_data) / 1200)
     for k in range(sets):
-        net.train(data[k * len(data) // sets:(k + 1) * len(data) // sets])
+        net.train(reinforcement_data[k * len(reinforcement_data) // sets:(k + 1) * len(reinforcement_data) // sets])
 
     net.save(f'{get_training_path(GameClass)}/models/model_reinforcement.h5')
 
