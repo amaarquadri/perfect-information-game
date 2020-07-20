@@ -9,6 +9,8 @@ Creating 2D perfect information board games, and playing them with machine learn
 - View games files that were generated during training: \
 `python src/scripts/view_game_file.py`
 - Switch the active game by uncommenting the corresponding line in `src/utils/active_game.py`
+- For games with multiple versions, select the desired version by opening the corresponding file under `src/games/` and 
+uncommenting the corresponding line that starts with `CONFIG = `
 
 ## Relevant Resources
 https://webdocs.cs.ualberta.ca/~mmueller/ps/enzenberger-mueller-acg12.pdf \

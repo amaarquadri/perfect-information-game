@@ -4,6 +4,9 @@ from src.utils.utils import iter_product, DIRECTIONS_8
 
 
 class Amazons(Game):
+    CONFIG = '6x6'
+    # CONFIG = '4x4'
+
     PLAYER_1_STARTING_BOARD_6x6 = np.array([[0, 0, 0, 1, 0, 0],
                                             [0, 0, 0, 0, 0, 0],
                                             [0, 0, 0, 0, 0, 0],
@@ -14,7 +17,7 @@ class Amazons(Game):
                                             [0, 0, 0, 0],
                                             [0, 0, 0, 0],
                                             [0, 1, 0, 0]])
-    PLAYER_1_STARTING_BOARD = PLAYER_1_STARTING_BOARD_4x4
+    PLAYER_1_STARTING_BOARD = PLAYER_1_STARTING_BOARD_6x6 if CONFIG == '6x6' else PLAYER_1_STARTING_BOARD_4x4
     PLAYER_2_STARTING_BOARD = np.rot90(PLAYER_1_STARTING_BOARD)
     STARTING_STATE = np.stack([PLAYER_1_STARTING_BOARD,
                                PLAYER_2_STARTING_BOARD,
