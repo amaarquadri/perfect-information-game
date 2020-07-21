@@ -14,17 +14,22 @@ class AsyncMCTSRoot:
     UI Pipe protocol: send user's move, send dummy message to request move, receive move, repeat
     Worker Pipe protocol: send root node, send dummy message to request results, receive results, repeat
     """
-    def __init__(self, GameClass, position, c=np.sqrt(2), threads=7, time_limit=5):
-        self.time_limit = time_limit
-        self.ui_pipe, manager_ui_pipe = Pipe()
-        manager_worker_pipes, worker_pipes = zip(*[Pipe() for _ in range(threads)])
-        self.manager_process = Process(target=self.manager_loop_func,
-                                       args=(manager_ui_pipe, manager_worker_pipes, GameClass, position))
+    def __init__(self, GameClass, position, time_limit=5, networks=None, c=np.sqrt(2), d=1, threads=1):
+        self.GameClass = GameClass
+        if networks is None:
+            self.root = RolloutNode(position, None, GameClass, c, rollout_batch_size=1, pool=None)
+        else:
+            self.root = HeuristicNode(position, None, GameClass, )
+        parent_worker_pipes, child_worker_pipes = zip(*[Pipe() for _ in range(threads)])
+
+        if networks is not None and threads != 1:
+            if threads != 1:
+                raise Exception()
+
         self.worker_processes = [Process(target=self.worker_loop_func,
-                                         args=(worker_pipe, c)) for worker_pipe in worker_pipes]
+                                         args=(worker_pipe, time_limit)) for worker_pipe in child_worker_pipes]
 
     def start(self):
-        self.manager_process.start()
         for worker_process in self.worker_processes:
             worker_process.start()
 
@@ -38,16 +43,12 @@ class AsyncMCTSRoot:
         :return: The move chosen by monte carlo tree search.
         """
         self.ui_pipe.send(user_chosen_position)
-        sleep(self.time_limit)
-        self.ui_pipe.send(None)
         return self.ui_pipe.recv()
 
     def terminate(self):
-        self.manager_process.terminate()
         for worker_process in self.worker_processes:
             worker_process.terminate()
 
-        self.manager_process.join()
         for worker_process in self.worker_processes:
             worker_process.join()
 
@@ -82,11 +83,14 @@ class AsyncMCTSRoot:
         print('Game Over in Async MCTS Root: ', GameClass.get_winner(root.position))
 
     @staticmethod
-    def worker_loop_func(worker_pipe, c):
+    def worker_loop_func(worker_pipe, network, time_limit):
         """
-        Worker thread workflow: receive MCTS root node, start doing MCTS, once a dummy message is receive,
+        Worker thread workflow: receive MCTS root node, do MCTS for time_limit,
         return root result, wait for new MCTS root node.
         """
+        if network is not None:
+            network.initialize()
+
         while True:
             root = worker_pipe.recv()
 
@@ -158,6 +162,7 @@ class AsyncMCTS:
             pool = Pool(threads) if threads > 1 else None
             root = RolloutNode(position, parent=None, GameClass=GameClass, c=c, rollout_batch_size=threads, pool=pool)
         else:
+            pool = None
             network.initialize()
             root = HeuristicNode(position, None, GameClass, network, c, d)
 
@@ -386,6 +391,27 @@ class AbstractNode(ABC):
             return 1 + max(child.depth_to_end_game() for child in self.children
                            if child.fully_expanded and child.get_evaluation() == self.get_evaluation())
 
+    @abstractmethod
+    def merge(self, clones):
+        pass
+
+    def merge_children_clones(self, clones):
+        if self.children is None:
+            for i, clone in enumerate(clones):
+                if clone.children is not None:
+                    # copy the clone's children to self's children, and remove it from list of clones
+                    self.children = clone.children
+                    clones = clones[i + 1:]
+                    break
+            else:
+                # neither self nor any clones have children so we're done
+                return
+
+        # self has children (either because it originally had them,
+        # or they were copied from the first clone that had them
+        for i, child in enumerate(self.children):
+            child.merge([clone.children[i] for clone in clones if clone.children is not None])
+
 
 class RolloutNode(AbstractNode):
     def __init__(self, position, parent, GameClass, c=np.sqrt(2), rollout_batch_size=1, pool=None):
@@ -440,6 +466,15 @@ class RolloutNode(AbstractNode):
             state = sub_states[np.random.randint(len(sub_states))]
 
         return self.GameClass.get_winner(state)
+
+    def merge(self, clones):
+        self.rollout_count += sum([clone.rollout_count - self.rollout_count
+                                   for clone in clones if clone.rollout_count > self.rollout_count])
+        self.rollout_sum += sum([clone.rollout_sum - self.rollout_sum
+                                 for clone in clones if clone.rollout_count > self.rollout_count])
+
+        # root nodes are cloned first, and changes propagate downwards to leafs
+        self.merge_children_clones(clones)
 
 
 class HeuristicNode(AbstractNode):
@@ -513,3 +548,11 @@ class HeuristicNode(AbstractNode):
                              for move in self.GameClass.get_possible_moves(self.position)]
             self.policy = self.network.policy(self.position)
             self.expansions = 1
+
+    def merge(self, clones):
+        # leaf nodes are cloned first, and changes propagate upwards to root
+        self.merge_children_clones(clones)
+
+        self.heuristic = max([child.heuristic for child in self.children]) if self.is_maximizing else \
+            min([child.heuristic for child in self.children])
+        self.expansions = 1 + sum([child.expansions for child in self.children])
