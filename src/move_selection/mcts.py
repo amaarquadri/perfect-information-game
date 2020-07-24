@@ -39,7 +39,6 @@ class AsyncMCTSRoot:
         The worker thread will then continue thinking for time_limit, and then return its chosen move.
 
         :param user_chosen_position: The board position resulting from the user's move.
-        :param time_limit: The time to wait before requesting a move.
         :return: The move chosen by monte carlo tree search.
         """
         self.ui_pipe.send(user_chosen_position)
@@ -83,9 +82,9 @@ class AsyncMCTSRoot:
         print('Game Over in Async MCTS Root: ', GameClass.get_winner(root.position))
 
     @staticmethod
-    def worker_loop_func(worker_pipe, network, time_limit):
+    def worker_loop_func(worker_pipe, network):
         """
-        Worker thread workflow: receive MCTS root node, do MCTS for time_limit,
+        Worker thread workflow: receive MCTS root node, do MCTS until polled,
         return root result, wait for new MCTS root node.
         """
         if network is not None:
@@ -95,11 +94,11 @@ class AsyncMCTSRoot:
             root = worker_pipe.recv()
 
             while (not worker_pipe.poll()) or root.children is None:
-                best_child = root.choose_rollout_node(c)
+                best_child = root.choose_expansion_node()
                 if best_child is None:
                     break
 
-                best_child.rollout(rollouts=1, pool=None)
+                best_child.expand()
 
             user_move_index = worker_pipe.recv()
             root = root.children[user_move_index]
@@ -109,11 +108,11 @@ class AsyncMCTSRoot:
             # but manager_process would have done that already, so its redundant
 
             while not worker_pipe.poll():
-                best_child = root.choose_rollout_node(c)
+                best_child = root.choose_expansion_node()
                 if best_child is None:
                     break
 
-                best_child.rollout(rollouts=1, pool=None)
+                best_child.expand()
             worker_pipe.recv()  # flush dummy message indicated that results should be returned
             worker_pipe.send(root)
 
@@ -427,7 +426,7 @@ class AbstractNode(ABC):
                 return
 
         # self has children (either because it originally had them,
-        # or they were copied from the first clone that had them
+        # or they were copied from the first clone that had them)
         for i, child in enumerate(self.children):
             child.merge([clone.children[i] for clone in clones if clone.children is not None])
 
