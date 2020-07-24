@@ -1,7 +1,4 @@
 import React, {Component} from "react";
-import redCircle from './resources/red_circle_dark_square.png'
-import yellowCircle from './resources/yellow_circle_dark_square.png'
-import darkSquare from './resources/dark_square.png'
 
 export default class Square extends Component {
     render() {
@@ -13,13 +10,13 @@ export default class Square extends Component {
     getImgSrc() {
         const data = this.props.squareData
         if (data.p1Piece) {
-            return yellowCircle
+            return 'http://localhost:8000/connect4/static/yellow_circle_dark_square.png'
         }
         else if (data.p2Piece) {
-            return redCircle
+            return 'http://localhost:8000/connect4/static/red_circle_dark_square.png'
         }
         else {
-            return darkSquare
+            return 'http://localhost:8000/connect4/static/dark_square.png'
         }
     }
 }
