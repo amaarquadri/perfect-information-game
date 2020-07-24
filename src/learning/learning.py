@@ -187,7 +187,7 @@ class MCTSRolloutGameGenerator:
         for worker_process in self.worker_processes:
             worker_process.start()
 
-    def terminate(self, timeout=10):
+    def terminate(self, timeout=3600):
         # gently terminate, allowing each child process a specified amount of time to finish its current task
         self.termination_event.set()
         start_time = time()
@@ -198,6 +198,7 @@ class MCTSRolloutGameGenerator:
                 if not worker_process.is_alive():
                     continue
 
+            print('Force terminating worker')
             worker_process.terminate()
             worker_process.join()
 

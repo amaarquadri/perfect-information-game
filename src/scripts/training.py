@@ -12,9 +12,20 @@ def main():
     #                                         c=np.sqrt(2), d=1)
     trainer = MCTSRolloutGameGenerator(GameClass, threads=14, expansions_per_move=1500, c=np.sqrt(2))
     trainer.start()
-    easygui.msgbox('Click to end training', title=f'{GameClass.__name__} Training', ok_button='End Training')
-    print('Ending training')
-    trainer.terminate()
+
+    text = easygui.enterbox('End Training? Timeout (seconds):', title=f'{GameClass.__name__} Training', default='120')
+    if text is None:
+        print('Timeout not given! Using default of 1 hour.')
+        timeout = 3600
+    else:
+        try:
+            timeout = int(text)
+        except ValueError:
+            print('Timeout invalid! Must be an integer. Using default of 1 hour.')
+            timeout = 3600
+
+    print(f'Ending training with timeout of {timeout}')
+    trainer.terminate(timeout)
 
 
 if __name__ == '__main__':
