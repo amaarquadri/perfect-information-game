@@ -14,6 +14,16 @@ Creating 2D perfect information board games, and playing them with machine learn
 - For games with multiple versions, select the desired version by opening the corresponding file under `src/games/` and 
 uncommenting the corresponding line that starts with `CONFIG = `
 
+## Playing using the web interface
+- First Terminal: \
+`cd backend` \
+`python manage.py runserver`
+- Second Terminal: \
+`cd frontend` \
+`npm start`
+- Open in web browser: \
+`localhost:3000`
+
 ## Relevant Resources
 https://webdocs.cs.ualberta.ca/~mmueller/ps/enzenberger-mueller-acg12.pdf \
 http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.159.4373&rep=rep1&type=pdf \
