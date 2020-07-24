@@ -3,7 +3,9 @@ Creating 2D perfect information board games, and playing them with machine learn
 
 ## Getting Started
 - Install requirements: \
-`pip install -r requirements.txt`
+`pip install -r requirements.txt` \
+`cd frontend` \
+`npm install`
 - Play a game of Connect 4 against the ai: \
 `python src/scripts/play_vs_ai.py`
 - View games files that were generated during training: \
