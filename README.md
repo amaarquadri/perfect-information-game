@@ -18,4 +18,5 @@ http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.159.4373&rep=rep1&type=
 https://arxiv.org/pdf/1905.13521.pdf \
 https://medium.com/oracledevs/lessons-from-alpha-zero-part-5-performance-optimization-664b38dc509e \
 https://medium.com/@malay.haldar/how-much-training-data-do-you-need-da8ec091e956 \
-https://cython.readthedocs.io/en/latest/src/tutorial/numpy.html
+https://cython.readthedocs.io/en/latest/src/tutorial/numpy.html \
+https://dke.maastrichtuniversity.nl/m.winands/documents/time_management_for_monte_carlo_tree_search.pdf
