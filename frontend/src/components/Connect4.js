@@ -1,6 +1,7 @@
 export default class Connect4 {
     static ROWS = 6
     static COLUMNS = 7
+    static MOVES = Connect4.COLUMNS
 
     static getStartingState() {
         return [
@@ -25,6 +26,42 @@ export default class Connect4 {
     static toTensorFlowState(reactState) {
         return reactState.map(row => row.map(square =>
             [square.p1Piece ? 1 : 0, square.p2Piece ? 1 : 0, square.p1Turn ? 1 : 0]))
+    }
+
+    static logState(state) {
+        console.log(state.map(rowData => rowData.map(squareData => {
+            if (squareData[0] === 1) {
+                return 1
+            }
+            if (squareData[1] === 1) {
+                return -1
+            }
+            return 0
+        })))
+        console.log(this.isPlayer1Turn(state) ? 'P1 Turn' : 'P2 Turn')
+    }
+
+    static flatten(state) {
+        return state.reduce(((acc, val) => acc.concat(Array.isArray(val) ? this.flatten(val) : val)), [])
+    }
+
+    static separateFlattenedPolicies(policies) {
+        //Receives a flattened array with several policies, and outputs an array of arrays of flattened policies
+        const acc =  policies.reduce(((acc, val) => {
+            acc.acc.push(val)
+            if (acc.acc.length === this.MOVES) {
+                acc.policies.push(acc.acc)
+                acc.acc = []
+            }
+            return acc
+        }), {
+            policies: [],
+            acc: []
+        })
+        if (acc.acc.length > 0) {
+            throw new Error('policies.length is not a multiple of ' + this.MOVES)
+        }
+        return acc.policies
     }
 
     static performUserMove(state, row, column) {
@@ -58,12 +95,13 @@ export default class Connect4 {
     }
 
     static getPossibleMoves(state) {
-        let moves = []
-        let isPlayer1Turn = this.isPlayer1Turn(state)
+        const moves = []
+        const isPlayer1Turn = this.isPlayer1Turn(state)
         for (let j = 0; j < this.COLUMNS; j++) {
             for (let i = this.ROWS - 1; i >= 0; i--) {
                 if (state[i][j][0] === 0 && state[i][j][1] === 0) {
                     moves.push(state.map((rowData, rowIndex) => rowData.map((columnData, columnIndex) => {
+                        columnData = columnData.slice()
                         if (rowIndex === i && columnIndex === j) {
                             if (isPlayer1Turn) {
                                 columnData[0] = 1
@@ -83,14 +121,14 @@ export default class Connect4 {
     }
 
     static getLegalMoves(state) {
-        return [0, 1, 2, 3, 4, 5, 6, 7].map(column =>
+        // Returns flattened list of legal moves
+        return [0, 1, 2, 3, 4, 5, 6].map(column =>
             (state[0][column][0] === 0 && state[0][column][1] === 0))
     }
 
     static checkWin(pieces) {
         // 4*6+3*7+2*12
-        console.log(pieces)
-        let wins = [
+        const wins = [
             // horizontal wins, grouped by row
             [[0, 0], [0, 1], [0, 2], [0, 3]],
             [[0, 1], [0, 2], [0, 3], [0, 4]],
@@ -206,7 +244,7 @@ export default class Connect4 {
     }
 
     static copy(state) {
-        let newState = this.getStartingState()
+        const newState = this.getStartingState()
         for (let k = 0; k < 3; k++) {
             for (let i = 0; i < this.ROWS; i++) {
                 for (let j = 0; j < this.COLUMNS; j++) {
@@ -218,7 +256,7 @@ export default class Connect4 {
     }
 
     static nullMove(state) {
-        let newState = this.getStartingState()
+        const newState = this.getStartingState()
         for (let k = 0; k < 3; k++) {
             for (let i = 0; i < this.ROWS; i++) {
                 for (let j = 0; j < this.COLUMNS; j++) {
