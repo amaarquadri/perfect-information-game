@@ -16,6 +16,15 @@ class MiniMax:
         self.heuristic_func = heuristic_func
         self.depth = depth
 
+    @staticmethod
+    def from_network(GameClass, network, depth):
+        network.initialize()
+
+        def heuristic_func(state):
+            _, evaluation = network.predict(state[np.newaxis, ...])[0]
+            return evaluation
+        return MiniMax(GameClass, heuristic_func, depth)
+
     def choose_move(self, position):
         if self.GameClass.is_over(position):
             raise Exception('Game Finished!')
