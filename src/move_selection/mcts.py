@@ -74,15 +74,7 @@ class AsyncMCTS:
                     print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
                     break
 
-                start_time = time()
-                while time() - start_time < time_limit:
-                    best_node = root.choose_expansion_node()
-
-                    # best_node will be None if the tree is fully expanded
-                    if best_node is None:
-                        break
-
-                    best_node.expand()
+                AsyncMCTS.manage_time(root, time_limit)
 
                 print(f'MCTS choosing move based on {root.count_expansions()} expansions!')
                 root = root.choose_best_node(optimal=True)
@@ -92,6 +84,43 @@ class AsyncMCTS:
                 if GameClass.is_over(root.position):
                     print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
                     break
+
+    @staticmethod
+    def manage_time(root, time_remaining, p_min=0.05, p_max=0.7, p_step=0.01, f_second=0.9):
+        """
+        :param root:
+        :param time_remaining: The total amount of time remaining on the AI's clock.
+        :param p_min: The minimum fraction of the remaining time that should be used for this move.
+        :param p_max: The maximum fraction of the remaining time that should be used for this move.
+        :param p_step:
+        :param f_second: An upper bound estimate of the fraction of expansions that will occur
+                         at the second most visited child of the root node.
+        """
+        start_time = time()
+        time_elapsed = 0
+        expansions = 0
+
+        for i, t_fraction in enumerate(np.concatenate(([p_min], np.linspace(p_min + p_step, p_max,
+                                                                            int(np.rint((p_max - p_min) / p_step)),
+                                                                            endpoint=True)))):
+            if i != 0:
+                visit_counts = sorted([child.count_expansions() for child in root.children])
+                if len(visit_counts) < 2:
+                    break
+                visits_to_surpass = visit_counts[-1] - visit_counts[-2]
+                if visits_to_surpass > f_second * expansions / time_elapsed * (p_max * time_remaining - time_elapsed):
+                    break
+
+            while time_elapsed < t_fraction * time_remaining:
+                best_node = root.choose_expansion_node()
+
+                # best_node will be None if the tree is fully expanded
+                if best_node is None:
+                    return
+
+                best_node.expand()
+                expansions += 1
+                time_elapsed = time() - start_time
 
 
 class MCTS:
