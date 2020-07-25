@@ -1,4 +1,4 @@
-export default class MCTS {
+class MCTS {
     static async chooseMoveRaw(GameClass, position, networkFunc) {
         return new Promise((resolve => {
             setTimeout(() => {
@@ -54,7 +54,7 @@ export default class MCTS {
     }
 }
 
-class HeuristicNode {
+export default class HeuristicNode {
     constructor(position, parent, GameClass, networkFunc, c=Math.sqrt(2), d=1,
                 networkCallResults=null, verbose=false) {
         this.position = position
