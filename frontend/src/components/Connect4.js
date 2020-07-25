@@ -16,10 +16,12 @@ export default class Connect4 {
 
     static toReactState(state) {
         return state.map((row, rowIndex) => row.map((square, columnIndex) => {
-            return  {row: rowIndex, column: columnIndex,
+            return {
+                row: rowIndex, column: columnIndex,
                 p1Piece: square[0] === 1,
                 p2Piece: square[1] === 1,
-                p1Turn: square[2] === 1}
+                p1Turn: square[2] === 1
+            }
         }))
     }
 
@@ -47,7 +49,7 @@ export default class Connect4 {
 
     static separateFlattenedPolicies(policies) {
         //Receives a flattened array with several policies, and outputs an array of arrays of flattened policies
-        const acc =  policies.reduce(((acc, val) => {
+        const acc = policies.reduce(((acc, val) => {
             acc.acc.push(val)
             if (acc.acc.length === this.MOVES) {
                 acc.policies.push(acc.acc)
@@ -80,8 +82,7 @@ export default class Connect4 {
             if (rowIndex === targetRow && columnIndex === column) {
                 if (squareData[2] === 1) {
                     squareData[0] = 1
-                }
-                else {
+                } else {
                     squareData[1] = 1
                 }
             }
@@ -105,8 +106,7 @@ export default class Connect4 {
                         if (rowIndex === i && columnIndex === j) {
                             if (isPlayer1Turn) {
                                 columnData[0] = 1
-                            }
-                            else {
+                            } else {
                                 columnData[1] = 1
                             }
                         }
@@ -241,6 +241,19 @@ export default class Connect4 {
         if (state.every(rowData => rowData.every(squareData => (squareData[0] === 1 || squareData[1] === 1)))) {
             return 0
         }
+    }
+
+    static stateEquals(firstState, secondState) {
+        for (let i = 0; i < this.ROWS; i++) {
+            for (let j = 0; j < this.COLUMNS; j++) {
+                for (let k = 0; k < 3; k++) {
+                    if (firstState[i][j][k] !== secondState[i][j][k]) {
+                        return false
+                    }
+                }
+            }
+        }
+        return true
     }
 
     static copy(state) {
