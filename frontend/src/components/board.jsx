@@ -51,19 +51,25 @@ export default class Board extends Component {
                     message: 'Game Over: ' + this.getWinnerMessage(userMove)
                 })
             } else {
-                const aiMove = MCTS.chooseMove(GameClass, userMove, this.predict)
-                if (GameClass.isOver(aiMove)) {
-                    this.setState({
-                        data: GameClass.toReactState(aiMove),
-                        message: 'Game Over: ' + this.getWinnerMessage(aiMove)
-                    })
-                }
-                else {
-                    this.setState({
-                        data: GameClass.toReactState(aiMove),
-                        message: GameClass.isPlayer1Turn(aiMove) ? 'Your Turn' : 'Ai\'s Turn'
-                    })
-                }
+                this.setState({
+                    data: GameClass.toReactState(userMove),
+                    message: 'Ai\'s Turn'
+                })
+
+                MCTS.chooseMoveRaw(GameClass, userMove, this.predict).then(aiMove => {
+                    if (GameClass.isOver(aiMove)) {
+                        this.setState({
+                            data: GameClass.toReactState(aiMove),
+                            message: 'Game Over: ' + this.getWinnerMessage(aiMove)
+                        })
+                    }
+                    else {
+                        this.setState({
+                            data: GameClass.toReactState(aiMove),
+                            message: GameClass.isPlayer1Turn(aiMove) ? 'Your Turn' : 'Ai\'s Turn'
+                        })
+                    }
+                })
             }
         } else {
             this.setState({
