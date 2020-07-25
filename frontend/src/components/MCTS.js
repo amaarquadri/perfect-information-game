@@ -12,23 +12,27 @@ export default class MCTS {
     }
 
     static async chooseMove(GameClass, position, networkFunc, c=Math.sqrt(2), d=1, iterations=100) {
-        if (GameClass.isOver(position)) {
-            throw new Error('Game Finished!')
-        }
-
-        const root = new HeuristicNode(position, null, GameClass, networkFunc, c, d)
-        for (let i = 0; i < iterations; i++) {
-            const bestNode = root.chooseExpansionNode()
-
-            if (bestNode === null) {
-                break
+        return new Promise((resolve, reject) => {
+            if (GameClass.isOver(position)) {
+                reject('Game Finished!')
+                return
             }
 
-            bestNode.expand()
-        }
+            const root = new HeuristicNode(position, null, GameClass, networkFunc, c, d,
+                null, true)
+            for (let i = 0; i < iterations; i++) {
+                const bestNode = root.chooseExpansionNode()
 
-        const bestChild = root.chooseBestNode()
-        return bestChild.position
+                if (bestNode === null) {
+                    break
+                }
+
+                bestNode.expand()
+            }
+
+            const bestChild = root.chooseBestNode()
+            resolve(bestChild.position)
+        })
     }
 
     static argMax(arr) {
@@ -100,8 +104,8 @@ class HeuristicNode {
             throw new Error('Failed to create children!')
         }
 
-        const criticalValue = this.isMaximizing ? Math.max(this.children.map(child => child.heuristic)) :
-            Math.min(this.children.map(child => child.heuristic))
+        const criticalValue = this.isMaximizing ? Math.max(...this.children.map(child => child.heuristic)) :
+            Math.min(...this.children.map(child => child.heuristic))
         this.heuristic = criticalValue
 
         let node = this.parent
@@ -175,8 +179,8 @@ class HeuristicNode {
                 console.log('Fully expanded tree!')
             }
 
-            const minimaxEvaluation = this.isMaximizing ? Math.max(this.children.map(child => child.getEvaluation())) :
-                Math.min(this.children.map(child => child.getEvaluation()))
+            const minimaxEvaluation = this.isMaximizing ? Math.max(...this.children.map(child => child.getEvaluation())) :
+                Math.min(...this.children.map(child => child.getEvaluation()))
             this.setFullyExpanded(minimaxEvaluation)
             return this.parent === null ? null : this.parent.chooseExpansionNode()
         }
@@ -186,7 +190,6 @@ class HeuristicNode {
 
     chooseBestNode() {
         //instead of choosing from distribution, always play the optimal move
-        console.log(this.children.map(child => child.countExpansions()))
 
         const optimalValue = this.isMaximizing ? 1 : -1
         if (this.fullyExpanded) {
@@ -257,12 +260,12 @@ class HeuristicNode {
 
         const optimalValue = this.isMaximizing ? 1 : -1
         if (this.getEvaluation() === optimalValue) {
-            return 1 + Math.min(this.children
+            return 1 + Math.min(...this.children
                 .filter(child => child.fullyExpanded && child.getEvaluation() === this.getEvaluation())
                 .map(child => child.depthToEndGame()))
         }
         else {
-            return 1 + Math.max(this.children
+            return 1 + Math.max(...this.children
                 .filter(child => child.fullyExpanded && child.getEvaluation() === this.getEvaluation())
                 .map(child => child.depthToEndGame()))
         }
@@ -287,6 +290,19 @@ class HeuristicNode {
             this.children = moves.map((move, index) => new HeuristicNode(move, this, this.GameClass,
                 this.networkFunc, this.c, this.d, networkCallResults[index], this.verbose))
             this.expansions = 1
+        }
+    }
+
+    toJson() {
+        return {
+            position: this.position,
+            fullyExpanded: this.fullyExpanded,
+            children: this.children === null ? null : this.children.map(child => child.toJson()),
+            isMaximizing: this.isMaximizing,
+            verbose: this.verbose,
+            heuristic: this.heuristic,
+            policy: this.policy,
+            expansions: this.expansions
         }
     }
 }
