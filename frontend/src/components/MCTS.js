@@ -185,7 +185,7 @@ class HeuristicNode {
             return this.parent === null ? null : this.parent.chooseExpansionNode()
         }
 
-        return bestChild
+        return bestChild.chooseExpansionNode()
     }
 
     chooseBestNode() {
