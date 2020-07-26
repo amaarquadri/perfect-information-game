@@ -11,7 +11,7 @@ export default class MCTS {
         }))
     }
 
-    static async chooseMove(GameClass, position, networkFunc, c=Math.sqrt(2), d=1, iterations=100) {
+    static async chooseMove(GameClass, position, networkFunc, c=Math.sqrt(2), d=1, iterations=300) {
         return new Promise((resolve, reject) => {
             if (GameClass.isOver(position)) {
                 reject('Game Finished!')

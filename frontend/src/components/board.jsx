@@ -1,9 +1,10 @@
-import React, {Component} from "react";
-import Square from "./square";
-import GameClass from "./Connect4"
-import MCTS from "./MCTS"
+import React, {Component} from "react"
+import "bootstrap/dist/css/bootstrap.min.css"  // Gives access to all the classNames
 import {Container, Row, Col} from 'react-bootstrap'
 import * as tfjs from '@tensorflow/tfjs'
+import Square from "./square"
+import GameClass from "./Connect4"
+import MCTS from "./MCTS"
 
 
 export default class Board extends Component {
@@ -47,34 +48,18 @@ export default class Board extends Component {
         if (userMove !== null) {
             if (GameClass.isOver(userMove)) {
                 this.setState({
-                    data: GameClass.toReactState(userMove),
+                    data: this.getHighlight(this.state.data, GameClass.toReactState(userMove)),
                     message: 'Game Over: ' + this.getWinnerMessage(userMove)
                 })
             } else {
                 this.setState({
-                    data: GameClass.toReactState(userMove),
+                    data: this.getHighlight(this.state.data, GameClass.toReactState(userMove)),
                     message: 'Ai\'s Turn'
                 })
-
-                MCTS.chooseMove(GameClass, userMove, this.predict).then(aiMove => {
-                    if (GameClass.isOver(aiMove)) {
-                        this.setState({
-                            data: GameClass.toReactState(aiMove),
-                            message: 'Game Over: ' + this.getWinnerMessage(aiMove)
-                        })
-                    }
-                    else {
-                        this.setState({
-                            data: GameClass.toReactState(aiMove),
-                            message: GameClass.isPlayer1Turn(aiMove) ? 'Your Turn' : 'Ai\'s Turn'
-                        })
-                    }
-                }).catch(error => console.log(error))
             }
         } else {
             this.setState({
-                message: this.state.data[0][0].p1Turn ? 'Invalid Move! Try Again!' :
-                    'Invalid Move! Red\'s Turn'
+                message: 'Invalid Move! Try Again!'
             })
         }
     }
@@ -97,14 +82,51 @@ export default class Board extends Component {
         return winner
     }
 
+    getHighlight(oldReactState, newReactState) {
+        return newReactState.map(rowData => rowData.map(squareData => {
+            const oldSquareData = oldReactState[squareData.row][squareData.column]
+            squareData.highlight = oldSquareData.p1Piece !== squareData.p1Piece ||
+                oldSquareData.p2Piece !== squareData.p2Piece
+            return squareData
+        }))
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        const position = GameClass.toTensorFlowState(this.state.data);
+        if (!GameClass.isPlayer1Turn(position)) {
+            setTimeout(() => {
+                MCTS.chooseMove(GameClass, position, this.predict).then(aiMove => {
+                    if (GameClass.isOver(aiMove)) {
+                        this.setState({
+                            data: this.getHighlight(this.state.data, GameClass.toReactState(aiMove)),
+                            message: 'Game Over: ' + this.getWinnerMessage(aiMove)
+                        })
+                    }
+                    else {
+                        this.setState({
+                            data: this.getHighlight(this.state.data, GameClass.toReactState(aiMove)),
+                            message: GameClass.isPlayer1Turn(aiMove) ? 'Your Turn' : 'Ai\'s Turn'
+                        })
+                    }
+                }).catch(error => console.log(error))
+            }, 100)
+        }
+    }
+
     render() {
+        const noPad = {
+            paddingRight: 0,
+            paddingLeft: 0,
+            marginRight: 0,
+            marginLeft: 0
+        }
         return (
             <React.Fragment>
-                <Container>
+                <Container style={noPad}>
                     {this.state.data.map(rowData => (
-                        <Row className='show-grid' key={rowData[0].row}>
+                        <Row className='show-grid' key={rowData[0].row} style={noPad}>
                             {rowData.map(squareData => (
-                                <Col key={squareData.column}>
+                                <Col key={squareData.column} style={noPad}>
                                     <Square key={squareData.column} squareData={squareData}
                                             onClick={() => this.handleClick(squareData.row, squareData.column)}/>
                                 </Col>

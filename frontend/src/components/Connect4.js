@@ -20,7 +20,8 @@ export default class Connect4 {
                 row: rowIndex, column: columnIndex,
                 p1Piece: square[0] === 1,
                 p2Piece: square[1] === 1,
-                p1Turn: square[2] === 1
+                p1Turn: square[2] === 1,
+                highlight: false
             }
         }))
     }
