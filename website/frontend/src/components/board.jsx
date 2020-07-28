@@ -46,7 +46,9 @@ export default class Board extends Component {
                     }
                     this.userMoved = false
                     resolve(root)
-                }).then(this.recurse)
+                })
+                    .then(this.recurse)
+                    .catch(() => {})
             })
             .catch(error => {
                 console.log('Error Loading Model! Error message: ')
@@ -126,20 +128,6 @@ export default class Board extends Component {
                 })
 
                 this.userMoved = true
-                // MCTS.chooseMove(GameClass, userMove, this.predict).then(aiMove => {
-                //     if (GameClass.isOver(aiMove)) {
-                //         this.setState({
-                //             data: GameClass.toReactState(aiMove),
-                //             message: 'Game Over: ' + this.getWinnerMessage(aiMove)
-                //         })
-                //     }
-                //     else {
-                //         this.setState({
-                //             data: GameClass.toReactState(aiMove),
-                //             message: GameClass.isPlayer1Turn(aiMove) ? 'Your Turn' : 'Ai\'s Turn'
-                //         })
-                //     }
-                // }).catch(error => console.log(error))
             }
         } else {
             this.setState({
@@ -173,28 +161,6 @@ export default class Board extends Component {
                 oldSquareData.p2Piece !== squareData.p2Piece
             return squareData
         }))
-    }
-
-    componentDidUpdate(prevProps, prevState, snapshot) {
-        const position = GameClass.toTensorFlowState(this.state.data);
-        if (!GameClass.isPlayer1Turn(position)) {
-            setTimeout(() => {
-                MCTS.chooseMove(GameClass, position, this.predict).then(aiMove => {
-                    if (GameClass.isOver(aiMove)) {
-                        this.setState({
-                            data: this.getHighlight(this.state.data, GameClass.toReactState(aiMove)),
-                            message: 'Game Over: ' + this.getWinnerMessage(aiMove)
-                        })
-                    }
-                    else {
-                        this.setState({
-                            data: this.getHighlight(this.state.data, GameClass.toReactState(aiMove)),
-                            message: GameClass.isPlayer1Turn(aiMove) ? 'Your Turn' : 'Ai\'s Turn'
-                        })
-                    }
-                }).catch(error => console.log(error))
-            }, 100)
-        }
     }
 
     render() {
