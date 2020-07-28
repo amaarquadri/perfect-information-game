@@ -118,7 +118,7 @@ class Othello(Game):
 
     @classmethod
     def get_legal_moves(cls, state):
-        legal_moves = np.full_like(state, False)
+        legal_moves = np.full(Othello.BOARD_SHAPE, False)
 
         friendly_index = 0 if cls.is_player_1_turn(state) else 1
         enemy_index = 1 - friendly_index

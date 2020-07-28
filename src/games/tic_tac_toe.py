@@ -4,7 +4,8 @@ from src.utils.utils import iter_product
 
 
 class TicTacToe(Game):
-    STARTING_STATE = np.stack([np.zeros((3, 3)), np.zeros((3, 3)), np.ones((3, 3))], axis=-1).astype(np.uint8)
+    W = 3
+    STARTING_STATE = np.stack([np.zeros((W, W)), np.zeros((W, W)), np.ones((W, W))], axis=-1).astype(np.uint8)
     STATE_SHAPE = STARTING_STATE.shape  # 3, 3, 3
     ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 3, 3, 3
     BOARD_SHAPE = (ROWS, COLUMNS)  # 3, 3
@@ -62,3 +63,7 @@ class TicTacToe(Game):
         # Check diagonals
         flipped_pieces = np.fliplr(pieces)
         return np.all(np.diag(pieces)) or np.all(np.diag(flipped_pieces))
+
+    @classmethod
+    def get_ruleset(cls):
+        return f'{TicTacToe.W}x{TicTacToe.W}'
