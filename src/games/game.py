@@ -68,7 +68,7 @@ class Game(ABC):
 
     @classmethod
     def is_player_1_turn(cls, state):
-        return np.all(state[:, :, -1])
+        return np.all(state[..., -1])
 
     @classmethod
     @abstractmethod
@@ -127,13 +127,13 @@ class Game(ABC):
     @classmethod
     def null_move(cls, state):
         move = np.copy(state)
-        move[:, :, -1] = np.zeros_like(state[:, :, -1]) if cls.is_player_1_turn(state) \
-            else np.ones_like(state[:, :, -1])
+        move[..., -1] = 0 if cls.is_player_1_turn(state) else 1
         return move
 
     @staticmethod
     def is_board_full(state):
-        combined_board = state[:, :, 0]
-        for i in range(1, state.shape[2] - 1):
-            combined_board = np.logical_or(combined_board, state[:, :, i])
+        combined_board = state[..., 0]
+        # loop over all indices of the last axis except for -1, which corresponds to turn information
+        for i in range(1, state.shape[-1] - 1):
+            combined_board = np.logical_or(combined_board, state[..., i])
         return np.all(combined_board == 1)
