@@ -4,7 +4,7 @@ import {Container, Row, Col} from 'react-bootstrap'
 import * as tfjs from '@tensorflow/tfjs'
 import Square from "./square.jsx"
 import GameClass from "./Connect4.js"
-import MCTS from "./MCTS.js"
+import HeuristicNode from "./MCTS.js"
 
 
 export default class Board extends Component {
