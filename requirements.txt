@@ -5,4 +5,3 @@ keras
 pygame
 easygui
 django
-django-cors-headers
