@@ -25,7 +25,11 @@ class MiniMax:
             return evaluation
         return MiniMax(GameClass, heuristic_func, depth)
 
-    def choose_move(self, position):
+    @staticmethod
+    def solver(GameClass):
+        return MiniMax(GameClass, None, np.inf)
+
+    def choose_move(self, position, return_heuristic=False):
         if self.GameClass.is_over(position):
             raise Exception('Game Finished!')
 
@@ -39,7 +43,7 @@ class MiniMax:
             if (is_maximizing and heuristic > best_heuristic) or (not is_maximizing and heuristic < best_heuristic):
                 best_heuristic = heuristic
                 best_move = move
-        return best_move
+        return (best_move, best_heuristic) if return_heuristic else best_move
 
     def evaluate_position_recursive(self, position, depth, is_maximizing, value_to_beat):
         if self.GameClass.is_over(position):
@@ -64,3 +68,13 @@ class MiniMax:
                 best_heuristic = heuristic
 
         return best_heuristic
+
+
+def main():
+    from src.utils.active_game import ActiveGame as GameClass
+    print(MiniMax.solver(GameClass).choose_move(GameClass.STARTING_STATE, return_heuristic=True))
+
+
+if __name__ == '__main__':
+    main()
+
