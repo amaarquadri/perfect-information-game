@@ -68,7 +68,8 @@ export default class Board extends Component {
                 reject('Game Over!')
             }
 
-            for (let i = 0; i < 100; i++) {
+            const startTime = Date.now()
+            while (Date.now() - startTime < 5000) {
                 const bestNode = root.chooseExpansionNode()
 
                 if (bestNode === null) {
