@@ -16,7 +16,7 @@ export default class Board extends Component {
     constructor(props) {
         super(props);
         this.handleClick = this.handleClick.bind(this)
-        tfjs.loadLayersModel('http://localhost:8000/backend/static/model.json')
+        tfjs.loadLayersModel('/static/model.json')
             .then(model => {
                 console.log('Model Loaded!')
                 this.predict = (states) => {
