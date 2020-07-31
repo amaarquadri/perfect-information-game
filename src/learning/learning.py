@@ -13,7 +13,7 @@ class SelfPlayReinforcementLearning:
                  c=np.sqrt(2), d=1):
         """
         If network is None, then self play will be done using random MCTS rollouts and saved to
-        src/heuristics/GameClass.__name__/games/reinforcement_learning_games/
+        {get_training_path(GameClass)}/games/reinforcement_learning_games/
         """
         path = f'{get_training_path(GameClass)}/games/reinforcement_learning_games'
         self.network_process, network_a_proxies, network_b_proxies, network_training_data_pipe = \
