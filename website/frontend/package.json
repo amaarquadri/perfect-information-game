@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.jsx",
   "scripts": {
-    "dev": "webpack --mode development ./src/index.jsx --output ./static/frontend/main.js",
-    "build": "webpack --mode production ./src/index.jsx --output ./static/frontend/main.js",
+    "dev": "webpack --mode development ./src/index.jsx --output ./static/frontend/index.js && webpack --mode development ./src/connect4.jsx --output ./static/frontend/connect4.js",
+    "build": "webpack --mode production ./src/index.jsx --output ./static/frontend/index.js && webpack --mode production ./src/connect4.jsx --output ./static/frontend/connect4.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
