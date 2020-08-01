@@ -1,7 +1,7 @@
 import React, {Component} from "react";
 
 export default class Square extends Component {
-    static PREFIX = 'http://localhost:8000/backend/static/'
+    static PREFIX = '/static/'
 
     render() {
         return (

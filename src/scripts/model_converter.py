@@ -1,7 +1,7 @@
 from keras.models import load_model
 import tensorflowjs as tfjs
-from src.utils.active_game import ActiveGame as GameClass
-from src.utils.utils import get_training_path
+from ..utils.active_game import ActiveGame as GameClass
+from ..utils.utils import get_training_path
 
 
 def main():

@@ -3,7 +3,7 @@ import numpy as np
 from multiprocessing import Process, Pipe
 import sys
 from signal import signal, SIGTERM
-from src.utils.utils import get_training_path
+from ..utils.utils import get_training_path
 
 
 class Network:
@@ -43,6 +43,7 @@ class Network:
                 raise Exception('Input shape of loaded model doesn\'t match!')
             if self.model.output_shape != [(None,) + output_shape, (None, 1)]:
                 raise Exception('Output shape of loaded model doesn\'t match!')
+            # TODO: recompile model with loss_weights and learning schedule from config file
         else:
             self.model = self.create_model()
 
@@ -288,7 +289,7 @@ class ProxyNetwork(Network):
 
 
 def train_from_scratch():
-    from src.utils.active_game import ActiveGame as GameClass
+    from ..utils.active_game import ActiveGame as GameClass
     import os
     import pickle
     net = Network(GameClass)
