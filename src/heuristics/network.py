@@ -43,6 +43,7 @@ class Network:
                 raise Exception('Input shape of loaded model doesn\'t match!')
             if self.model.output_shape != [(None,) + output_shape, (None, 1)]:
                 raise Exception('Output shape of loaded model doesn\'t match!')
+            # TODO: recompile model with loss_weights and learning schedule from config file
         else:
             self.model = self.create_model()
 
