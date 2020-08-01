@@ -1,0 +1,12 @@
+{
+  "c": 1.414,
+  "d": 1,
+  "expansions": 1000,
+  "loss_weights": {
+    "policy": 1,
+    "value": 1
+  },
+  "learning_schedule": {
+
+  }
+}
