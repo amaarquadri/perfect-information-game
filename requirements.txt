@@ -1,5 +1,7 @@
 numpy
 tensorflow
+tensorflowjs
 keras
 pygame
 easygui
+django

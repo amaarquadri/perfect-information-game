@@ -1,4 +1,4 @@
-from src.utils.utils import iter_product
+from ..utils.utils import iter_product
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 import pygame
@@ -9,6 +9,7 @@ class PygameUI:
     The highlight image must have a transparent background (https://onlinepngtools.com/create-transparent-png).
     """
     HIGHLIGHT_IMAGE_PATH = '../../resources/blue_border.png'
+    FLIP_LR = False
 
     def __init__(self, GameClass, starting_position=None):
         self.GameClass = GameClass
@@ -45,11 +46,17 @@ class PygameUI:
 
         for i, j in iter_product(self.GameClass.BOARD_SHAPE):
             img = self.imgs[indices[i, j]]
-            self.canvas.blit(img, (64 * j, 64 * i))  # Note pygame inverts x and y
+            if PygameUI.FLIP_LR:
+                x = 64 * (self.GameClass.COLUMNS - 1 - i)
+            else:
+                x = 64 * i
+            y = 64 * j
+
+            self.canvas.blit(img, (y, x))  # Note pygame inverts x and y
 
             # noinspection PyUnresolvedReferences
             if changed_indices[i, j]:
-                self.canvas.blit(self.highlight_img, (64 * j, 64 * i))
+                self.canvas.blit(self.highlight_img, (y, x))
         pygame.display.flip()
 
     def get_user_move(self):
@@ -69,8 +76,12 @@ class PygameUI:
                     pygame.quit()
                     return None
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    x, y = event.pos
-                    clicks.append((y // 64, x // 64))  # Note pygame inverts x and y
+                    x, y = event.pos[0] // 64, event.pos[1] // 64
+                    if PygameUI.FLIP_LR:
+                        x = self.GameClass.COLUMNS - 1 - x
+
+                    clicks.append((y, x))  # Note pygame inverts x and y
+
                     if len(clicks) == self.GameClass.CLICKS_PER_MOVE:
                         try:
                             self.board.perform_user_move(clicks)
@@ -100,8 +111,10 @@ class PygameUI:
                     return False
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == pygame.BUTTON_LEFT:
-                        x, y = event.pos
-                        clicks.append((y // 64, x // 64))  # Note pygame inverts x and y
+                        x, y = event.pos[0] // 64, event.pos[1] // 64
+                        if PygameUI.FLIP_LR:
+                            x = self.GameClass.COLUMNS - 1 - x
+                        clicks.append((y, x))  # Note pygame inverts x and y
                         if len(clicks) == self.GameClass.CLICKS_PER_MOVE:
                             try:
                                 self.board.perform_user_move(clicks)

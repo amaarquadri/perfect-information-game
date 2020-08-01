@@ -3,7 +3,9 @@ Creating 2D perfect information board games, and playing them with machine learn
 
 ## Getting Started
 - Install requirements: \
-`pip install -r requirements.txt`
+`pip install -r requirements.txt` \
+`cd website/frontend` \
+`npm install`
 - Play a game of Connect 4 against the ai: \
 `python src/scripts/play_vs_ai.py`
 - View games files that were generated during training: \
@@ -11,6 +13,13 @@ Creating 2D perfect information board games, and playing them with machine learn
 - Switch the active game by uncommenting the corresponding line in `src/utils/active_game.py`
 - For games with multiple versions, select the desired version by opening the corresponding file under `src/games/` and 
 uncommenting the corresponding line that starts with `CONFIG = `
+
+## Playing using the web interface
+- In a terminal: \
+`cd backend` \
+`python manage.py runserver`
+- Open in web browser: \
+`localhost:8000/connect4`
 
 ## Relevant Resources
 https://webdocs.cs.ualberta.ca/~mmueller/ps/enzenberger-mueller-acg12.pdf \

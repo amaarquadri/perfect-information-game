@@ -3,3 +3,4 @@
 # Except these files
 !.gitignore
 !sample_game.pickle
+!training_config.json
