@@ -300,8 +300,8 @@ class AbstractNode(ABC):
     def choose_best_node(self, return_probability_distribution=False, optimal=False):
         distribution = []
 
+        optimal_value = 1 if self.is_maximizing else -1
         if self.fully_expanded:
-            optimal_value = 1 if self.is_maximizing else -1
             if self.verbose:
                 if self.get_evaluation() == optimal_value:
                     print('I\'m going to win')
@@ -326,13 +326,13 @@ class AbstractNode(ABC):
             for child in self.children:
                 if not child.fully_expanded:
                     distribution.append(child.count_expansions())
-                elif child.get_evaluation() == (-1 if self.is_maximizing else 1):
+                elif child.get_evaluation() == -optimal_value:
                     # this move is guaranteed to lose
                     distribution.append(0)
                 else:
                     # use the self.heuristic as a proxy for the chance of winning the game
                     # the greater the perceived chance of winning the less appealing a draw is, and vice versa
-                    winning_chance = (self.get_evaluation() * (1 if self.is_maximizing else -1)) / 2 + 0.5
+                    winning_chance = (self.get_evaluation() * optimal_value) / 2 + 0.5
                     distribution.append(self.count_expansions() * (1 - winning_chance))
 
         distribution = np.array(distribution) / sum(distribution)
@@ -452,7 +452,8 @@ class RolloutNode(AbstractNode):
 
     def ensure_children(self):
         if self.children is None:
-            self.children = [RolloutNode(move, self, self.GameClass, self.c, self.rollout_batch_size, self.pool)
+            self.children = [RolloutNode(move, self, self.GameClass, self.c, self.rollout_batch_size, self.pool,
+                                         self.verbose)
                              for move in self.GameClass.get_possible_moves(self.position)]
 
     def set_fully_expanded(self, minimax_evaluation):
@@ -567,7 +568,7 @@ class HeuristicNode(AbstractNode):
             network_call_results = self.network.call(np.stack(moves, axis=0)) if network_call_results is None \
                 else network_call_results
             self.children = [HeuristicNode(move, self, self.GameClass, self.network, self.c, self.d,
-                                           network_call_results=network_call_result)
+                                           network_call_results=network_call_result, verbose=self.verbose)
                              for move, network_call_result in zip(moves, network_call_results)]
             self.expansions = 1
 

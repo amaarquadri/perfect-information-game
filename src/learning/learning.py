@@ -3,9 +3,9 @@ import pickle
 from time import time
 from multiprocessing import Process, Queue, Event
 import numpy as np
-from src.move_selection.mcts import RolloutNode, HeuristicNode
-from src.heuristics.network import Network
-from src.utils.utils import get_training_path
+from ..move_selection.mcts import RolloutNode, HeuristicNode
+from ..heuristics.network import Network
+from ..utils.utils import get_training_path
 
 
 class SelfPlayReinforcementLearning:
@@ -13,7 +13,7 @@ class SelfPlayReinforcementLearning:
                  c=np.sqrt(2), d=1):
         """
         If network is None, then self play will be done using random MCTS rollouts and saved to
-        src/heuristics/GameClass.__name__/games/reinforcement_learning_games/
+        {get_training_path(GameClass)}/games/reinforcement_learning_games/
         """
         path = f'{get_training_path(GameClass)}/games/reinforcement_learning_games'
         self.network_process, network_a_proxies, network_b_proxies, network_training_data_pipe = \
@@ -187,7 +187,7 @@ class MCTSRolloutGameGenerator:
         for worker_process in self.worker_processes:
             worker_process.start()
 
-    def terminate(self, timeout=10):
+    def terminate(self, timeout=3600):
         # gently terminate, allowing each child process a specified amount of time to finish its current task
         self.termination_event.set()
         start_time = time()
@@ -198,6 +198,7 @@ class MCTSRolloutGameGenerator:
                 if not worker_process.is_alive():
                     continue
 
+            print('Force terminating worker')
             worker_process.terminate()
             worker_process.join()
 

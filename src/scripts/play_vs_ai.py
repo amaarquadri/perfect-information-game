@@ -1,8 +1,8 @@
-from src.utils.active_game import ActiveGame as GameClass
-from src.move_selection.mcts import AsyncMCTS
-from src.heuristics.network import Network
-from src.ui.pygame_ui import PygameUI
-from src.utils.utils import get_training_path
+from ..utils.active_game import ActiveGame as GameClass
+from ..move_selection.mcts import AsyncMCTS
+from ..heuristics.network import Network
+from ..ui.pygame_ui import PygameUI
+from ..utils.utils import get_training_path
 
 
 def main():
