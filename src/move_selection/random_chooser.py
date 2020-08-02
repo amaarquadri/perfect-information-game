@@ -1,4 +1,4 @@
-from src.utils.utils import choose_random
+from ..utils.utils import choose_random
 from time import sleep
 
 
