@@ -2,6 +2,7 @@
 Creating 2D perfect information board games, and playing them with machine learning systems.
 
 ## Getting Started
+- Ensure Python is installed
 - Install requirements: \
 `pip install -r requirements.txt`
 - Play a game of Connect 4 against the ai: \
