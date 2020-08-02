@@ -28,7 +28,7 @@ SECRET_KEY = config['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
-ALLOWED_HOSTS = ['www.amaar-quadri.com', '192.168.0.17', '73.194.132.74']
+ALLOWED_HOSTS = ['www.amaar-quadri.com']
 
 
 # Application definition
