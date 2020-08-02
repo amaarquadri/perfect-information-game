@@ -2,6 +2,10 @@ import React, {Component} from "react";
 import "bootstrap/dist/css/bootstrap.min.css"  // Gives access to all the classNames
 
 export default class Navbar extends Component {
+    scrollToServices() {
+
+    }
+
     render() {
         return (
             <nav className="navbar navbar-expand-lg navbar-light fixed-top py-3" id="mainNav">
@@ -16,10 +20,10 @@ export default class Navbar extends Component {
                                 <a className="nav-link js-scroll-trigger" href="/connect4">About</a>
                             </li>
                             <li className="nav-item">
-                                <a className="nav-link js-scroll-trigger" href="#services">Services</a>
+                                <a className="nav-link js-scroll-trigger" href="#services">Mechanical Design</a>
                             </li>
                             <li className="nav-item">
-                                <a className="nav-link js-scroll-trigger" href="#portfolio">Portfolio</a>
+                                <a className="nav-link js-scroll-trigger" href="#portfolio">Software Engineering</a>
                             </li>
                             <li className="nav-item">
                                 <a className="nav-link js-scroll-trigger" href="#contact">Contact</a>
