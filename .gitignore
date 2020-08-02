@@ -1,6 +1,6 @@
 /venv
 /.idea
 *__pycache__
-website/static
-website/frontend/node_modules
-website/frontend/package-lock.json
+/website/static
+/website/frontend/node_modules
+/website/frontend/package-lock.json
