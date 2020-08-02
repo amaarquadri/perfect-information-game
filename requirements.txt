@@ -4,4 +4,3 @@ tensorflowjs
 keras
 pygame
 easygui
-django
