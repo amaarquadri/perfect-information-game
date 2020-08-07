@@ -4,3 +4,4 @@
 !.gitignore
 # This the best pretrained neural network I have trained so far
 !model_best.h5
+# Currently, models 0, 1, and 19 are exported to the website as easy, medium, and hard respectively
