@@ -1,6 +1,6 @@
 from .game import Game
 import numpy as np
-from ..utils.utils import iter_product
+from src.utils.utils import iter_product
 
 
 class Checkers(Game):

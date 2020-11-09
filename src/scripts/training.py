@@ -1,8 +1,8 @@
 import numpy as np
 import easygui
-from ..utils.active_game import ActiveGame as GameClass
-from ..learning.learning import SelfPlayReinforcementLearning, MCTSRolloutGameGenerator
-from ..utils.utils import get_training_path
+from src.utils.active_game import ActiveGame as GameClass
+from src.learning.learning import SelfPlayReinforcementLearning, MCTSRolloutGameGenerator
+from src.utils.utils import get_training_path
 
 
 def main():

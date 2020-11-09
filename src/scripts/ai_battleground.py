@@ -1,11 +1,11 @@
 from time import time
 import numpy as np
-from ..utils.active_game import ActiveGame as GameClass
-from ..ui.pygame_ui import PygameUI
-from ..heuristics.network import Network
-from ..move_selection.mcts import AsyncMCTS
-from ..move_selection.raw_network import RawNetwork
-from ..utils.utils import get_training_path
+from src.utils.active_game import ActiveGame as GameClass
+from src.ui.pygame_ui import PygameUI
+from src.heuristics.network import Network
+from src.move_selection.mcts import AsyncMCTS
+from src.move_selection.raw_network import RawNetwork
+from src.utils.utils import get_training_path
 
 
 def play_games(network1, network2, count=1000):

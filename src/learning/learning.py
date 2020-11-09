@@ -3,9 +3,9 @@ import pickle
 from time import time
 from multiprocessing import Process, Queue, Event
 import numpy as np
-from ..move_selection.mcts import RolloutNode, HeuristicNode
-from ..heuristics.network import Network
-from ..utils.utils import get_training_path
+from src.move_selection.mcts import RolloutNode, HeuristicNode
+from src.heuristics.network import Network
+from src.utils.utils import get_training_path
 
 
 class SelfPlayReinforcementLearning:

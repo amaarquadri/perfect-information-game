@@ -1,7 +1,7 @@
 import pickle
-from ..ui.pygame_ui import PygameUI
-from ..utils.active_game import ActiveGame as GameClass
-from ..utils.utils import get_training_path
+from src.ui.pygame_ui import PygameUI
+from src.utils.active_game import ActiveGame as GameClass
+from src.utils.utils import get_training_path
 
 
 def view_game(path):
