@@ -29,6 +29,12 @@ class MiniMax:
     def solver(GameClass):
         return MiniMax(GameClass, None, np.inf)
 
+    def start(self):
+        pass
+
+    def terminate(self):
+        pass
+
     def choose_move(self, position, return_heuristic=False):
         if self.GameClass.is_over(position):
             raise Exception('Game Finished!')
