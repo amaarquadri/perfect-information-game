@@ -4,9 +4,6 @@ from multiprocessing import Process, Pipe, Pool
 import numpy as np
 
 
-# TODO: add hash table to keep track of multiple move combinations that lead to the same position
-
-
 class AsyncMCTS:
     """
     Implementation of Monte Carlo Tree Search that uses the other player's time to continue thinking.

@@ -7,10 +7,13 @@ from src.utils.utils import get_training_path
 
 def main():
     pygame_ui = PygameUI(GameClass)
-    # pygame_ui.set_user_position()
+    pygame_ui.set_user_position()
 
-    network = Network(GameClass, f'{get_training_path(GameClass)}/models/model_best.h5')
-    move_chooser = AsyncMCTS(GameClass, pygame_ui.get_position(), time_limit=5, network=network, threads=1)
+    # E (0hrs): model_reinforcement-1603784367.0827568
+    # M (8hrs): model_reinforcement-1603813336.0729053
+    # H (19.5hrs): model_reinforcement-1603854873.4800494
+    network = Network(GameClass, f'{get_training_path(GameClass)}/models/model_reinforcement-1604344180.251814.h5')
+    move_chooser = AsyncMCTS(GameClass, pygame_ui.get_position(), time_limit=3, network=network, threads=1)
     move_chooser.start()
 
     while True:

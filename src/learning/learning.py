@@ -3,13 +3,13 @@ import pickle
 from time import time
 from multiprocessing import Process, Queue, Event
 import numpy as np
-from src.move_selection.mcts import RolloutNode, HeuristicNode
-from src.heuristics.network import Network
-from src.utils.utils import get_training_path
+from ..move_selection.mcts import RolloutNode, HeuristicNode
+from ..heuristics.network import Network
+from ..utils.utils import get_training_path
 
 
 class SelfPlayReinforcementLearning:
-    def __init__(self, GameClass, model_path, threads_per_section=14, game_batch_count=6, expansions_per_move=800,
+    def __init__(self, GameClass, model_path, threads_per_section=14, game_batch_count=6, expansions_per_move=500,
                  c=np.sqrt(2), d=1):
         """
         If network is None, then self play will be done using random MCTS rollouts and saved to
@@ -50,7 +50,10 @@ class SelfPlayReinforcementLearning:
         # but won't actually need to do anything with it until the first game finishes
         self.replay_buffer_process.start()
 
-    def terminate(self):
+    def terminate(self, timeout=0):
+        if timeout != 0:
+            print('Warning! Ignoring timeout!')
+
         self.replay_buffer_process.terminate()
         self.network_process.terminate()
         for worker_process in self.worker_a_processes + self.worker_b_processes:
