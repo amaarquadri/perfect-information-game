@@ -27,7 +27,7 @@ class Checkers(Game):
         new_state = self.null_move(self.state)
 
         is_king = np.any(self.state[start_i, start_j, [1, 3]] == 1) or \
-            end_j == 0 or end_j == Checkers.ROWS - 1
+            end_i == 0 or end_i == Checkers.ROWS - 1
         new_piece = [0] * 4
         new_piece[2 * (not self.is_player_1_turn(self.state)) + is_king] = 1
         new_state[end_i, end_j, :4] = new_piece
@@ -108,7 +108,7 @@ class Checkers(Game):
 
     @classmethod
     def is_valid(cls, i, j):
-        return 0 <= i < cls.BOARD_LENGTH and 0 <= j < cls.BOARD_LENGTH
+        return 0 <= i < cls.ROWS and 0 <= j < cls.COLUMNS
 
     @classmethod
     def is_empty(cls, state, i, j):
