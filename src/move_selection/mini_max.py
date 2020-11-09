@@ -77,7 +77,7 @@ class MiniMax:
 
 
 def main():
-    from src.utils.active_game import ActiveGame as GameClass
+    from ..utils.active_game import ActiveGame as GameClass
     print(MiniMax.solver(GameClass).choose_move(GameClass.STARTING_STATE, return_heuristic=True))
 
 

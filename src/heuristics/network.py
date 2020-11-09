@@ -101,6 +101,7 @@ class Network:
 
         model = Model(input_tensor, [policy, value])
         model.compile(optimizer='adam', loss={'policy': 'categorical_crossentropy', 'value': 'mean_squared_error'},
+                      loss_weights={'policy': 1, 'value': 1},
                       metrics=['mean_squared_error'])
         return model
 
@@ -234,14 +235,14 @@ class Network:
         # concatenate is used instead of stack because each request already has shape (k,) + GameClass.STATE_SHAPE
         results_a = network.predict(np.concatenate(requests_a, axis=0))
 
-        last_save = time()
+        last_save = 0  # initialize to 0 to ensure that the network is saved at the start
         while True:
             if training_data_pipe.poll():
                 data = training_data_pipe.recv()
                 states, policies, values = data
                 network.train_step(states, policies, values)
-                if time() - last_save > 5 * 60:
-                    network.save(model_path)
+                if time() - last_save > 30 * 60:  # every 30 minutes
+                    network.save(f'{model_path[:-3]}-{time()}.h5')
                     last_save = time()
 
             # receive B requests
@@ -307,10 +308,10 @@ def train_from_scratch():
 
     net.train(load_data('rollout_mcts_games'))
 
-    reinforcement_data = load_data('reinforcement_learning_games')
-    sets = int(len(reinforcement_data) / 1200)
-    for k in range(sets):
-        net.train(reinforcement_data[k * len(reinforcement_data) // sets:(k + 1) * len(reinforcement_data) // sets])
+    # reinforcement_data = load_data('reinforcement_learning_games')
+    # sets = int(len(reinforcement_data) / 1200)
+    # for k in range(sets):
+    #     net.train(reinforcement_data[k * len(reinforcement_data) // sets:(k + 1) * len(reinforcement_data) // sets])
 
     net.save(f'{get_training_path(GameClass)}/models/model_reinforcement.h5')
 
