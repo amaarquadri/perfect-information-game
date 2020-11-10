@@ -29,15 +29,25 @@ class AsyncMCTS:
     def start(self):
         self.worker_process.start()
 
-    def choose_move(self, user_chosen_position):
+    def report_user_move(self, user_chosen_move):
         """
-        Instructs the worker thread that the user has chosen the move specified by the given position.
-        The worker thread will then continue thinking for time_limit, and then return its chosen move.
+        Reports the given user chosen move to the worker thread.
+        This allows the search tree to be narrowed.
 
-        :param user_chosen_position: The board position resulting from the user's move.
-        :return: The move chosen by monte carlo tree search.
+        :param user_chosen_move:
         """
-        self.parent_pipe.send(user_chosen_position)
+        self.parent_pipe.send(user_chosen_move)
+
+    def choose_move(self):
+        """
+        Instructs the worker thread to decide on an optimal move.
+        The worker thread will then continue thinking for time_limit, and then return a list of its chosen moves.
+        If multiple states are passed through before the ai's turn is completed,
+        then they will be the contents of the list. Otherwise the list will have a single state.
+
+        :return: The moves chosen by monte carlo tree search.
+        """
+        self.parent_pipe.send(None)
         return self.parent_pipe.recv()
 
     def terminate(self):
@@ -55,7 +65,6 @@ class AsyncMCTS:
             root = HeuristicNode(position, None, GameClass, network, c, d, verbose=True)
 
         while True:
-            # TODO: modify so that moves can be made by the user and ai in arbitrary order
             best_node = root.choose_expansion_node()
 
             if best_node is not None:
@@ -64,37 +73,51 @@ class AsyncMCTS:
             if root.children is not None and worker_pipe.poll():
                 user_chosen_position = worker_pipe.recv()
 
-                for child in root.children:
-                    if np.all(child.position == user_chosen_position):
-                        root = child
-                        root.parent = None
-                        break
+                if user_chosen_position is not None:
+                    # an updated position has been received so we can truncate the tree
+                    for child in root.children:
+                        if np.all(child.position == user_chosen_position):
+                            root = child
+                            root.parent = None
+                            break
+                    else:
+                        print(user_chosen_position)
+                        raise Exception('Invalid user chosen move!')
+
+                    if GameClass.is_over(root.position):
+                        print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
+                        return
                 else:
-                    print(user_chosen_position)
-                    raise Exception('Invalid user chosen move!')
+                    # this move chooser has been requested to decide on a move via the choose_move function
+                    start_time = time()
+                    while time() - start_time < time_limit:
+                        best_node = root.choose_expansion_node()
 
-                if GameClass.is_over(root.position):
-                    print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
-                    break
+                        # best_node will be None if the tree is fully expanded
+                        if best_node is None:
+                            break
 
-                start_time = time()
-                while time() - start_time < time_limit:
-                    best_node = root.choose_expansion_node()
+                        best_node.expand()
 
-                    # best_node will be None if the tree is fully expanded
-                    if best_node is None:
-                        break
+                    is_ai_player_1 = GameClass.is_player_1_turn(root.position)
+                    chosen_positions = []
+                    print(f'MCTS choosing move based on {root.count_expansions()} expansions!')
 
-                    best_node.expand()
+                    # choose moves as long as it is still the ai's turn
+                    while GameClass.is_player_1_turn(root.position) == is_ai_player_1:
+                        if root.children is None:
+                            best_node = root.choose_expansion_node()
+                            if best_node is not None:
+                                best_node.expand()
+                        root = root.choose_best_node(optimal=True)
+                        chosen_positions.append(root.position)
 
-                print(f'MCTS choosing move based on {root.count_expansions()} expansions!')
-                root = root.choose_best_node(optimal=True)
-                print('Expected outcome: ', root.get_evaluation())
-                root.parent = None
-                worker_pipe.send(root.position)
-                if GameClass.is_over(root.position):
-                    print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
-                    break
+                    print('Expected outcome: ', root.get_evaluation())
+                    root.parent = None  # delete references to the parent and siblings
+                    worker_pipe.send(chosen_positions)
+                    if GameClass.is_over(root.position):
+                        print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
+                        return
 
 
 class MCTS:
@@ -141,8 +164,21 @@ class MCTS:
 
             best_node.expand()
 
-        best_child = root.choose_best_node(optimal=True)
-        return best_child.position
+        is_ai_player_1 = self.GameClass.is_player_1_turn(root.position)
+        chosen_positions = []
+        print(f'MCTS choosing move based on {root.count_expansions()} expansions!')
+
+        # choose moves as long as it is still the ai's turn
+        while self.GameClass.is_player_1_turn(root.position) == is_ai_player_1:
+            if root.children is None:
+                best_node = root.choose_expansion_node()
+                if best_node is not None:
+                    best_node.expand()
+            root = root.choose_best_node(optimal=True)
+            chosen_positions.append(root.position)
+
+        print('Expected outcome: ', root.get_evaluation())
+        return chosen_positions
 
 
 class AbstractNode(ABC):
@@ -218,7 +254,8 @@ class AbstractNode(ABC):
                     winning_chance = (self.get_evaluation() * optimal_value) / 2 + 0.5
                     distribution.append(self.count_expansions() * (1 - winning_chance))
 
-        distribution = np.array(distribution) / sum(distribution)
+        distribution = np.array(distribution) / sum(distribution) if sum(distribution) > 0 else \
+            np.ones_like(distribution) / len(distribution)
         idx = np.argmax(distribution) if optimal else np.random.choice(np.arange(len(distribution)), p=distribution)
         best_child = self.children[idx]
         return (best_child, distribution) if return_probability_distribution else best_child

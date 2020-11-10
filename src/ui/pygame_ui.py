@@ -58,6 +58,7 @@ class PygameUI:
             if changed_indices[i, j]:
                 self.canvas.blit(self.highlight_img, (y, x))
         pygame.display.flip()
+        self.flush()
 
     def get_user_move(self):
         """
