@@ -132,7 +132,6 @@ class PygameUI:
         """
         Shows the given sequence of positions to the user. The user can right and left click to navigate through them.
         This function blocks until the user decides to close the program via the X button.
-        This function blocks until the user decides to close the program via the X button.
 
         :param positions: The list of positions to show.
         :param starting_index: The index in the list of positions to start at. Negative indices are supported.
