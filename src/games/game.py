@@ -43,7 +43,7 @@ class Game(ABC):
         self.state = np.copy(state)
 
     def reset_game(self):
-        self.set_state(self.STARTING_BOARD)
+        self.set_state(self.STARTING_STATE)
 
     @classmethod
     def to_string(cls, state):
@@ -52,8 +52,8 @@ class Game(ABC):
         and the second index represents the column from left to right.
         """
         representation = np.full(cls.BOARD_SHAPE, '_', dtype=str)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
-            representation[state[:, :, i] == 1] = cls.REPRESENTATION_LETTERS[i]
+        for i, letter in enumerate(cls.REPRESENTATION_LETTERS):
+            representation[state[:, :, i] == 1] = letter
 
         return '\n'.join([' '.join(representation[i, :]) for i in range(representation.shape[0])])
 
@@ -111,8 +111,8 @@ class Game(ABC):
 
         :return: A numpy matrix indicating which images to use for each square in the grid.
         """
-        representation = np.full(cls.BOARD_SHAPE, 0)
-        for i in range(cls.FEATURE_COUNT - 1):  # -1 to exclude the turn information
+        representation = np.full(cls.BOARD_SHAPE, 0)  # squares where every feature is 0 default to the 0th image
+        for i in range(len(cls.REPRESENTATION_FILES) - 1):  # -1 to exclude squares where every feature is 0
             representation[state[:, :, i] == 1] = i + 1
         return representation
 
@@ -137,3 +137,7 @@ class Game(ABC):
         for i in range(1, state.shape[-1] - 1):
             combined_board = np.logical_or(combined_board, state[..., i])
         return np.all(combined_board == 1)
+
+    @classmethod
+    def is_valid(cls, i, j):
+        return 0 <= i < cls.ROWS and 0 <= j < cls.COLUMNS
