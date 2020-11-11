@@ -2,5 +2,4 @@
 *
 # Except these files
 !.gitignore
-!README.md
 !sample_game.pickle
