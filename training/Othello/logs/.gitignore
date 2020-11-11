@@ -2,4 +2,5 @@
 *
 # Except these files
 !.gitignore
-!training_process.png
+!training_process_4x4_6.png
+!training_process_4x4_10.png
