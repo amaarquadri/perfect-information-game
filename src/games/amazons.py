@@ -1,6 +1,6 @@
 from .game import Game
 import numpy as np
-from ..utils.utils import iter_product, DIRECTIONS_8
+from src.utils.utils import iter_product, DIRECTIONS_8
 
 
 class Amazons(Game):
