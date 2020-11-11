@@ -133,17 +133,19 @@ class SelfPlayReinforcementLearning:
                 pos = new_pos
 
     @staticmethod
-    def replay_buffer_process_loop(GameClass, training_game_queue, network_training_pipe, path):
-        (states, (policies, values)), game_lengths = SelfPlayReinforcementLearning.load_games(GameClass, path, 1000)
+    def replay_buffer_process_loop(GameClass, training_game_queue, network_training_pipe, path, buffer_size=1000):
+        (states, (policies, values)), game_lengths = SelfPlayReinforcementLearning.load_games(
+            GameClass, path, buffer_size)
 
         while True:
             new_states, (new_policies, new_values) = training_game_queue.get()
             new_game_length = new_states.shape[0]
 
-            trim = game_lengths.pop(0)
-            states = states[trim:, ...]
-            policies = policies[trim:, ...]
-            values = values[trim:]
+            if len(game_lengths) < buffer_size:
+                trim = game_lengths.pop(0)
+                states = states[trim:, ...]
+                policies = policies[trim:, ...]
+                values = values[trim:]
 
             game_lengths.append(new_game_length)
             states = np.concatenate((states, new_states), axis=0)
@@ -172,8 +174,10 @@ class SelfPlayReinforcementLearning:
             for file in game_files[-(count - len(games)):]:
                 with open(os.path.join(backup_path, file), 'rb') as fin:
                     games.append(pickle.load(fin))
+            if len(games) < 2:
+                raise Exception('Not enough games for the replay buffer!')
             if len(games) < count:
-                raise Exception('Not enough games to fill replay buffer!')
+                print(f'Warning! Not enough games to fill the replay buffer. Starting with {len(games)} games.')
         game_lengths = [len(game[0]) for game in games]
         return Network.process_data(GameClass, games, shuffle=False), game_lengths
 
