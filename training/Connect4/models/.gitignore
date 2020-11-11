@@ -2,7 +2,6 @@
 *
 # Except these files
 !.gitignore
-!README.md
 !model_easy.h5
 !model_medium.h5
 !model_hard.h5
