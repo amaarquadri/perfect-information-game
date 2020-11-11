@@ -14,6 +14,7 @@ Creating 2D perfect information board games, and playing them with machine learn
 uncommenting the corresponding line that starts with `CONFIG = `
 
 ## Relevant Resources
+https://youtu.be/v9M2Ho9I9Qo \
 https://webdocs.cs.ualberta.ca/~mmueller/ps/enzenberger-mueller-acg12.pdf \
 http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.159.4373&rep=rep1&type=pdf \
 https://arxiv.org/pdf/1905.13521.pdf \
