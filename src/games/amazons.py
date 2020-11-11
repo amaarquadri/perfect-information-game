@@ -45,7 +45,7 @@ class Amazons(Game):
         new_state[piece_from_i, piece_from_j, :2] = [0, 0]
         new_state[shot_i, shot_j, 2] = 1
 
-        for legal_move in Amazons.get_possible_moves(self.state):
+        for legal_move in self.get_possible_moves(self.state):
             if np.all(legal_move == new_state):
                 break
         else:
@@ -53,16 +53,12 @@ class Amazons(Game):
 
         self.state = new_state
 
-    @staticmethod
-    def is_valid(i, j):
-        return 0 <= i < Amazons.ROWS and 0 <= j < Amazons.COLUMNS
-
-    @staticmethod
-    def shoot(state, i, j):
+    @classmethod
+    def shoot(cls, state, i, j):
         targets = []
         for di, dj in DIRECTIONS_8:
             p_x, p_y = i + di, j + dj
-            while Amazons.is_valid(p_x, p_y) and np.all(state[p_x, p_y, :3] == 0):
+            while cls.is_valid(p_x, p_y) and np.all(state[p_x, p_y, :3] == 0):
                 targets.append((p_x, p_y))
                 p_x += di
                 p_y += dj
@@ -73,13 +69,13 @@ class Amazons(Game):
         moves = []
 
         player_index = 0 if cls.is_player_1_turn(state) else 1
-        for i, j in iter_product(Amazons.BOARD_SHAPE):
+        for i, j in iter_product(cls.BOARD_SHAPE):
             if state[i, j, player_index] == 1:
-                for p_x, p_y in Amazons.shoot(state, i, j):
+                for p_x, p_y in cls.shoot(state, i, j):
                     partial_move = cls.null_move(state)
                     partial_move[i, j, player_index] = 0
                     partial_move[p_x, p_y, player_index] = 1
-                    for t_x, t_y in Amazons.shoot(partial_move, p_x, p_y):
+                    for t_x, t_y in cls.shoot(partial_move, p_x, p_y):
                         full_move = np.copy(partial_move)  # Don't use null_move because turn was already switched above
                         full_move[t_x, t_y, 2] = 1
                         moves.append(full_move)
@@ -87,24 +83,24 @@ class Amazons(Game):
 
     @classmethod
     def get_legal_moves(cls, state):
-        legal_moves = np.full(Amazons.MOVE_SHAPE, False)
+        legal_moves = np.full(cls.MOVE_SHAPE, False)
 
         player_index = 0 if cls.is_player_1_turn(state) else 1
-        for i, j in iter_product(Amazons.BOARD_SHAPE):
+        for i, j in iter_product(cls.BOARD_SHAPE):
             if state[i, j, player_index] == 1:
-                for p_x, p_y in Amazons.shoot(state, i, j):
+                for p_x, p_y in cls.shoot(state, i, j):
                     partial_move = cls.null_move(state)
                     partial_move[i, j, player_index] = 0
                     partial_move[p_x, p_y, player_index] = 1
-                    p_direction, p_distance = Amazons.parse(p_x - i, p_y - j)
-                    for t_x, t_y in Amazons.shoot(partial_move, p_x, p_y):
-                        t_direction, t_distance = Amazons.parse(t_x - p_x, t_y - p_y)
+                    p_direction, p_distance = cls.parse(p_x - i, p_y - j)
+                    for t_x, t_y in cls.shoot(partial_move, p_x, p_y):
+                        t_direction, t_distance = cls.parse(t_x - p_x, t_y - p_y)
                         legal_moves[i, j, p_direction, p_distance, t_direction, t_distance] = True
         return legal_moves
 
     @classmethod
     def get_ruleset(cls):
-        return f'{Amazons.ROWS}x{Amazons.COLUMNS}'
+        return f'{cls.ROWS}x{cls.COLUMNS}'
 
     @staticmethod
     def parse(di, dj):

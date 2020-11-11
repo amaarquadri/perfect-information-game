@@ -1,7 +1,7 @@
 from ..utils.utils import iter_product
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
-import pygame
+import pygame  # noqa: E402
 
 
 class PygameUI:
@@ -57,7 +57,10 @@ class PygameUI:
             # noinspection PyUnresolvedReferences
             if changed_indices[i, j]:
                 self.canvas.blit(self.highlight_img, (y, x))
+
         pygame.display.flip()
+        # Not sure why this is necessary to get the screen to update
+        self.flush()
 
     def get_user_move(self):
         """

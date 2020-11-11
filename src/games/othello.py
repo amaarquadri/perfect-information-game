@@ -39,19 +39,19 @@ class Othello(Game):
 
         friendly_index = 0 if self.is_player_1_turn(self.state) else 1
         enemy_index = 1 - friendly_index
-        flip_squares = np.full(Othello.BOARD_SHAPE, False)
+        flip_squares = np.full(self.BOARD_SHAPE, False)
         for di, dj, in DIRECTIONS_8:
             p_x, p_y = i + di, j + dj
-            if not (Othello.is_valid(p_x, p_y) and self.state[p_x, p_y, enemy_index] == 1):
+            if not (self.is_valid(p_x, p_y) and self.state[p_x, p_y, enemy_index] == 1):
                 continue
             p_x += di
             p_y += dj
 
-            while Othello.is_valid(p_x, p_y) and self.state[p_x, p_y, enemy_index] == 1:
+            while self.is_valid(p_x, p_y) and self.state[p_x, p_y, enemy_index] == 1:
                 p_x += di
                 p_y += dj
 
-            if Othello.is_valid(p_x, p_y) and self.state[p_x, p_y, friendly_index] == 1:
+            if self.is_valid(p_x, p_y) and self.state[p_x, p_y, friendly_index] == 1:
                 # success, mark all squares between i, j and p_x, p_y (not including endpoints)
                 p_x -= di
                 p_y -= dj
@@ -69,10 +69,6 @@ class Othello(Game):
         else:
             raise ValueError('Illegal Move: no pieces are captured by that move!')
 
-    @staticmethod
-    def is_valid(i, j):
-        return 0 <= i < Othello.ROWS and 0 <= j < Othello.COLUMNS
-
     @classmethod
     def get_possible_moves(cls, state):
         moves = []
@@ -80,23 +76,23 @@ class Othello(Game):
         friendly_index = 0 if cls.is_player_1_turn(state) else 1
         enemy_index = 1 - friendly_index
         player_piece = [enemy_index, friendly_index]
-        for i, j in iter_product(Othello.BOARD_SHAPE):
+        for i, j in iter_product(cls.BOARD_SHAPE):
             if np.any(state[i, j, :2] == 1):
                 continue
 
-            flip_squares = np.full(Othello.BOARD_SHAPE, False)
+            flip_squares = np.full(cls.BOARD_SHAPE, False)
             for di, dj, in DIRECTIONS_8:
                 p_x, p_y = i + di, j + dj
-                if not (Othello.is_valid(p_x, p_y) and state[p_x, p_y, enemy_index] == 1):
+                if not (cls.is_valid(p_x, p_y) and state[p_x, p_y, enemy_index] == 1):
                     continue
                 p_x += di
                 p_y += dj
 
-                while Othello.is_valid(p_x, p_y) and state[p_x, p_y, enemy_index] == 1:
+                while cls.is_valid(p_x, p_y) and state[p_x, p_y, enemy_index] == 1:
                     p_x += di
                     p_y += dj
 
-                if Othello.is_valid(p_x, p_y) and state[p_x, p_y, friendly_index] == 1:
+                if cls.is_valid(p_x, p_y) and state[p_x, p_y, friendly_index] == 1:
                     # success, mark all squares between i, j and p_x, p_y (not including endpoints)
                     p_x -= di
                     p_y -= dj
@@ -118,26 +114,26 @@ class Othello(Game):
 
     @classmethod
     def get_legal_moves(cls, state):
-        legal_moves = np.full(Othello.BOARD_SHAPE, False)
+        legal_moves = np.full(cls.BOARD_SHAPE, False)
 
         friendly_index = 0 if cls.is_player_1_turn(state) else 1
         enemy_index = 1 - friendly_index
-        for i, j in iter_product(Othello.BOARD_SHAPE):
+        for i, j in iter_product(cls.BOARD_SHAPE):
             if np.any(state[i, j, :2] == 1):
                 continue
 
             for di, dj, in DIRECTIONS_8:
                 p_x, p_y = i + di, j + dj
-                if not (Othello.is_valid(p_x, p_y) and state[p_x, p_y, enemy_index] == 1):
+                if not (cls.is_valid(p_x, p_y) and state[p_x, p_y, enemy_index] == 1):
                     continue
                 p_x += di
                 p_y += dj
 
-                while Othello.is_valid(p_x, p_y) and state[p_x, p_y, enemy_index] == 1:
+                while cls.is_valid(p_x, p_y) and state[p_x, p_y, enemy_index] == 1:
                     p_x += di
                     p_y += dj
 
-                if Othello.is_valid(p_x, p_y) and state[p_x, p_y, friendly_index] == 1:
+                if cls.is_valid(p_x, p_y) and state[p_x, p_y, friendly_index] == 1:
                     legal_moves[i, j] = True
                     break
 
