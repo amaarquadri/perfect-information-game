@@ -1,4 +1,4 @@
-# Othello Training Process
+# Othello/Reversi Training Process
 First, games were generated using MCTS rollout with 100 expansions per move, and c=sqrt(2).  
 Then a network with a 4x4 kernel size and 6 residual layers was trained using supervised learning on those games.  
 Then the network was further trained using reinforcement learning with 500 expansions per move, c=np.sqrt(2), and d=1.  
