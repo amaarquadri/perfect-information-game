@@ -13,7 +13,7 @@ This graphs shows the training process for this modified network:
 Interestingly, the value estimation seems to be better with the higher number of residual layers, but the policy seems to be worse.
 It is not clear if this trend would continue as the training finishes.
 
-Based on the learning curve, the following models (with 6 residual layers) were chosen for their respective difficulty levels:  
+Based on the learning curve, the following models (with the original 6 residual layers) were chosen for their respective difficulty levels:  
 - Easy: model_reinforcement-1604045224.7152517 (0 hours into training)  
 - Medium: model_reinforcement-1604092085.6274474 (13 hours into training)  
 - Hard: model_reinforcement-1604228204.9054377 (2 days 3 hours into training)  
