@@ -13,6 +13,10 @@ Creating 2D perfect information board games, and playing them with machine learn
 - For games with multiple versions, select the desired version by opening the corresponding file under `src/games/` and 
 uncommenting the corresponding line that starts with `CONFIG = `
 
+## How I Trained the Models
+- [Connect 4](/training/Connect4)
+- [Othello/Reversi](/training/Othello)
+
 ## Relevant Resources
 https://youtu.be/v9M2Ho9I9Qo \
 https://webdocs.cs.ualberta.ca/~mmueller/ps/enzenberger-mueller-acg12.pdf \
