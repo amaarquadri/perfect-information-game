@@ -127,11 +127,11 @@ class Network:
         evaluations = evaluations.reshape(states.shape[0])
         return [(filtered_policy, evaluation) for filtered_policy, evaluation in zip(filtered_policies, evaluations)]
 
-    def choose_move(self, position, return_evaluation=False, optimal=False):
+    def choose_move(self, position, return_distribution=False, optimal=False):
         distribution, evaluation = self.call(position[np.newaxis, ...])[0]
         idx = np.argmin(distribution) if optimal else np.random.choice(np.arange(len(distribution)), p=distribution)
         move = self.GameClass.get_possible_moves(position)[idx]
-        return (move, evaluation) if return_evaluation else move
+        return (move, distribution) if return_distribution else move
 
     def train(self, data, validation_fraction=0.2):
         # Note: keras imports are within functions to prevent initializing keras in processes that import from this file

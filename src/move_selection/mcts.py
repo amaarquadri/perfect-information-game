@@ -2,29 +2,32 @@ from abc import ABC, abstractmethod
 from time import time
 from multiprocessing import Process, Pipe, Pool
 import numpy as np
+from src.move_selection.move_chooser import MoveChooser
 
 
 # TODO: add hash table to keep track of multiple move combinations that lead to the same position
 
 
-class AsyncMCTS:
+class AsyncMCTS(MoveChooser):
     """
     Implementation of Monte Carlo Tree Search that uses the other player's time to continue thinking.
     This is achieved using multiprocessing, and a Pipe for transferring data to and from the worker process.
     """
 
-    def __init__(self, GameClass, position, time_limit=3, network=None, c=np.sqrt(2), d=1, threads=1):
+    def __init__(self, GameClass, starting_position, time_limit=3, network=None, c=np.sqrt(2), d=1, threads=1):
         """
         Either:
         If network is provided, threads must be 1.
         If network is not provided, then threads will be used for leaf parallelization
         """
+        super().__init__(GameClass, starting_position)
         if network is not None and threads != 1:
             raise Exception('Threads != 1 with Network != None')
 
         self.parent_pipe, worker_pipe = Pipe()
         self.worker_process = Process(target=self.loop_func,
-                                      args=(GameClass, position, time_limit, network, c, d, threads, worker_pipe))
+                                      args=(GameClass, starting_position, time_limit, network, c, d, threads,
+                                            worker_pipe))
 
     def start(self):
         self.worker_process.start()
@@ -37,8 +40,9 @@ class AsyncMCTS:
         :param user_chosen_move:
         """
         self.parent_pipe.send(user_chosen_move)
+        self.position = user_chosen_move
 
-    def choose_move(self):
+    def choose_move(self, return_distribution=False):
         """
         Instructs the worker thread to decide on an optimal move.
         The worker thread will then continue thinking for time_limit, and then return a list of its chosen moves.
@@ -47,6 +51,9 @@ class AsyncMCTS:
 
         :return: The moves chosen by monte carlo tree search.
         """
+        if return_distribution:
+            # TODO: implement
+            print('Returning distributions not implemented!')
         self.parent_pipe.send(None)
         return self.parent_pipe.recv()
 
@@ -120,7 +127,7 @@ class AsyncMCTS:
                         return
 
 
-class MCTS:
+class MCTS(MoveChooser):
     """
     Implementation of Monte Carlo Tree Search
     https://www.youtube.com/watch?v=UXW2yZndl7U
@@ -132,10 +139,10 @@ class MCTS:
         If network is provided, threads must be 1.
         If network is not provided, then threads will be used for leaf parallelization
         """
+        super().__init__(GameClass)
         if network is not None and threads != 1:
             raise Exception('Threads != 1 with Network != None')
 
-        self.GameClass = GameClass
         self.network = network
         if network is not None:
             network.initialize()
@@ -144,7 +151,10 @@ class MCTS:
         self.threads = threads
         self.pool = Pool(threads) if threads > 1 else None
 
-    def choose_move(self, position, time_limit=10):
+    def choose_move(self, position, return_distribution=False, time_limit=10):
+        if return_distribution:
+            # TODO: implement
+            print('Returning distributions not implemented!')
         if self.GameClass.is_over(position):
             raise Exception('Game Finished!')
 

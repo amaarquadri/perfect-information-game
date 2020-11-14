@@ -1,55 +1,69 @@
 import numpy as np
+from src.move_selection.move_chooser import MoveChooser
 
 
-class MiniMax:
+class MiniMax(MoveChooser):
     """
     Implementation of MiniMax with alpha-beta pruning.
     """
 
-    def __init__(self, GameClass, heuristic_func, depth):
+    def __init__(self, GameClass, starting_position=None, heuristic_func=None, depth=5):
         """
         
         :param heuristic_func: Take's positions for the game and returns a heuristic approximation in [-1, 1]
         :param depth: 
         """
-        self.GameClass = GameClass
-        self.heuristic_func = heuristic_func
+        super().__init__(GameClass, starting_position)
+        self.heuristic_func = heuristic_func if heuristic_func is not None else GameClass.heuristic
         self.depth = depth
 
     @staticmethod
-    def from_network(GameClass, network, depth):
-        network.initialize()
+    def from_network(GameClass, starting_position=None, network=None, depth=5):
+        if network is None:
+            raise ValueError('Network must be provided!')
 
         def heuristic_func(state):
             _, evaluation = network.predict(state[np.newaxis, ...])[0]
             return evaluation
-        return MiniMax(GameClass, heuristic_func, depth)
+
+        class NetworkMiniMax(MiniMax):
+            def __init__(self):
+                super().__init__(GameClass, starting_position, heuristic_func, depth)
+
+            def start(self):
+                network.initialize()
+        return NetworkMiniMax()
 
     @staticmethod
-    def solver(GameClass):
-        return MiniMax(GameClass, None, np.inf)
+    def solver(GameClass, starting_position=None):
+        return MiniMax(GameClass, starting_position=starting_position, depth=np.inf)
 
-    def start(self):
-        pass
-
-    def terminate(self):
-        pass
-
-    def choose_move(self, position, return_heuristic=False):
-        if self.GameClass.is_over(position):
+    def choose_move(self, return_distribution=False):
+        if self.GameClass.is_over(self.position):
             raise Exception('Game Finished!')
 
-        is_maximizing = self.GameClass.is_player_1_turn(position)
+        is_maximizing = self.GameClass.is_player_1_turn(self.position)
         best_move = None
         best_heuristic = -np.inf if is_maximizing else np.inf
+        heuristics = []
 
-        for move in self.GameClass.get_possible_moves(position):
+        for move in self.GameClass.get_possible_moves(self.position):
             heuristic = self.evaluate_position_recursive(move, self.depth - 1, not is_maximizing, best_heuristic)
+            heuristics.append(heuristic)
 
             if (is_maximizing and heuristic > best_heuristic) or (not is_maximizing and heuristic < best_heuristic):
                 best_heuristic = heuristic
                 best_move = move
-        return (best_move, best_heuristic) if return_heuristic else best_move
+
+        self.position = best_move
+
+        if return_distribution:
+            # create an exponentially scaled distribution based on the heuristic values
+            distribution = np.exp(heuristics)
+            distribution /= np.sum(distribution)
+            return self.position, distribution
+        else:
+            return self.position
 
     def evaluate_position_recursive(self, position, depth, is_maximizing, value_to_beat):
         if self.GameClass.is_over(position):
@@ -74,13 +88,3 @@ class MiniMax:
                 best_heuristic = heuristic
 
         return best_heuristic
-
-
-def main():
-    from src.utils.active_game import ActiveGame as GameClass
-    print(MiniMax.solver(GameClass).choose_move(GameClass.STARTING_STATE, return_heuristic=True))
-
-
-if __name__ == '__main__':
-    main()
-

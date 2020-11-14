@@ -1,17 +1,19 @@
 from time import sleep
+from src.move_selection.move_chooser import MoveChooser
 
 
-class RawNetwork:
-    def __init__(self, network=None, delay=2):
+class RawNetwork(MoveChooser):
+    def __init__(self, network, starting_position=None, optimal=False, delay=2):
+        super().__init__(GameClass=None, starting_position=starting_position)
         self.network = network
         self.delay = delay
+        self.optimal = optimal
 
     def start(self):
         self.network.initialize()
 
-    def choose_move(self, user_chosen_position):
-        sleep(self.delay)
-        return self.network.choose_move(user_chosen_position)
-
-    def terminate(self):
-        pass
+    def choose_move(self, return_distribution=False):
+        if self.delay > 0:
+            sleep(self.delay)
+        self.position = self.network.choose_move(self.position, return_distribution, self.optimal)
+        return self.position
