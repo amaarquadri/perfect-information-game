@@ -10,10 +10,7 @@ def main(user_is_player_1=False):
     pygame_ui = PygameUI(GameClass)
     # pygame_ui.set_user_position()
 
-    # E (0hrs): model_reinforcement-1603784367.0827568
-    # M (8hrs): model_reinforcement-1603813336.0729053
-    # H (19.5hrs): model_reinforcement-1603854873.4800494
-    # network = Network(GameClass, f'{get_training_path(GameClass)}/models/model_best.h5')
+    # network = Network(GameClass, f'{get_training_path(GameClass)}/models/model_hard.h5')
     move_chooser = AsyncMCTS(GameClass, pygame_ui.get_position(), time_limit=3, network=None, threads=1)
     move_chooser.start()
 
