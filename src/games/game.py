@@ -141,3 +141,7 @@ class Game(ABC):
     @classmethod
     def is_valid(cls, i, j):
         return 0 <= i < cls.ROWS and 0 <= j < cls.COLUMNS
+
+    @classmethod
+    def heuristic(cls, state):
+        raise NotImplemented()

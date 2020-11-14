@@ -187,3 +187,7 @@ class Checkers(Game):
         move = super(Checkers, cls).null_move(state)
         move[:, :, -2] = 0  # remove double jump possibilities
         return move
+
+    @classmethod
+    def heuristic(cls, state):
+        return np.sum(np.dot(state, [1, 2, -1, -2, 0, 0]))
