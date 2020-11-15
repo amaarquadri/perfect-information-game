@@ -3,7 +3,8 @@ import pickle
 from time import time
 from multiprocessing import Process, Queue, Event
 import numpy as np
-from src.move_selection.mcts import RolloutNode, HeuristicNode
+from src.move_selection.mcts.rollout_node import RolloutNode
+from src.move_selection.mcts.heuristic_node import HeuristicNode
 from src.heuristics.network import Network
 from src.utils.utils import get_training_path
 

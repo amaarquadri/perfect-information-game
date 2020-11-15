@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from keras import Sequential
 from keras.layers import Conv2D, Flatten, Dense
-from src.move_selection.mcts import RolloutNode
+from src.move_selection.mcts.rollout_node import RolloutNode
 from src.utils.active_game import ActiveGame as GameClass
 
 
