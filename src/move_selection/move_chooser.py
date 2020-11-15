@@ -3,8 +3,6 @@ import numpy as np
 
 
 class MoveChooser(ABC):
-    # TODO: switch to MCTS style API:
-    #     report_user_move, choose_move returns list of all sub-moves, with distributions for each
     def __init__(self, GameClass, starting_position=None):
         self.GameClass = GameClass
         self.position = starting_position if starting_position is not None else GameClass.STARTING_STATE
@@ -16,6 +14,12 @@ class MoveChooser(ABC):
         pass
 
     def report_user_move(self, user_chosen_position):
+        """
+        Accepts a single position that the user has made, and updates accordingly.
+
+        :param user_chosen_position:
+        :return:
+        """
         if user_chosen_position not in self.GameClass.get_possible_moves(self.position):
             raise ValueError('Invalid move!')
         self.position = user_chosen_position
@@ -26,7 +30,7 @@ class MoveChooser(ABC):
         Must update self.position
 
         @param return_distribution:
-        @return:
+        @return: A list of all the positions that were made a s part of this move
         """
         pass
 

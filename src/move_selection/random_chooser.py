@@ -15,6 +15,13 @@ class RandomMoveChooser(MoveChooser):
 
         if self.delay > 0:
             sleep(self.delay)
-        moves = self.GameClass.get_possible_moves(self.position)
-        self.position = choose_random(moves)
-        return (self.position, np.full_like(moves, 1 / len(moves))) if return_distribution else self.position
+
+        is_ai_player_1 = self.GameClass.is_player_1_turn(self.position)
+        chosen_moves = []
+
+        while self.GameClass.is_player_1_turn(self.position) == is_ai_player_1:
+            moves = self.GameClass.get_possible_moves(self.position)
+            self.position = choose_random(moves)
+            chosen_moves.append((self.position, np.full_like(moves, 1 / len(moves)))
+                                if return_distribution else self.position)
+        return chosen_moves
