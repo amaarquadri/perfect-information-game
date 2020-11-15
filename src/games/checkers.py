@@ -189,5 +189,5 @@ class Checkers(Game):
         return move
 
     @classmethod
-    def heuristic(cls, state):
-        return np.sum(np.dot(state, [1, 2, -1, -2, 0, 0]))
+    def heuristic(cls, state, king_weight=2):
+        return np.sum(np.dot(state, [1, king_weight, -1, -king_weight, 0, 0]))
