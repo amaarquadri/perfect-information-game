@@ -2,8 +2,8 @@ from time import time
 from multiprocessing import Pool
 import numpy as np
 from src.move_selection.move_chooser import MoveChooser
-from move_selection.mcts.rollout_node import RolloutNode
-from move_selection.mcts.heuristic_node import HeuristicNode
+from src.move_selection.mcts.rollout_node import RolloutNode
+from src.move_selection.mcts.heuristic_node import HeuristicNode
 
 
 # TODO: add hash table to keep track of multiple move combinations that lead to the same position
@@ -15,13 +15,13 @@ class MCTS(MoveChooser):
     https://www.youtube.com/watch?v=UXW2yZndl7U
     """
 
-    def __init__(self, GameClass, network=None, c=np.sqrt(2), d=1, threads=1):
+    def __init__(self, GameClass, starting_position=None, network=None, c=np.sqrt(2), d=1, threads=1):
         """
         Either:
         If network is provided, threads must be 1.
         If network is not provided, then threads will be used for leaf parallelization
         """
-        super().__init__(GameClass)
+        super().__init__(GameClass, starting_position)
         if network is not None and threads != 1:
             raise Exception('Threads != 1 with Network != None')
 
@@ -33,18 +33,18 @@ class MCTS(MoveChooser):
         self.threads = threads
         self.pool = Pool(threads) if threads > 1 else None
 
-    def choose_move(self, position, return_distribution=False, time_limit=10):
+    def choose_move(self, return_distribution=False, time_limit=10):
         if return_distribution:
             # TODO: implement
             print('Returning distributions not implemented!')
-        if self.GameClass.is_over(position):
+        if self.GameClass.is_over(self.position):
             raise Exception('Game Finished!')
 
         if self.network is None:
-            root = RolloutNode(position, parent=None, GameClass=self.GameClass, c=self.c,
+            root = RolloutNode(self.position, parent=None, GameClass=self.GameClass, c=self.c,
                                rollout_batch_size=self.threads, pool=self.pool, verbose=True)
         else:
-            root = HeuristicNode(position, None, self.GameClass, self.network, self.c, self.d, verbose=True)
+            root = HeuristicNode(self.position, None, self.GameClass, self.network, self.c, self.d, verbose=True)
 
         start_time = time()
         while time() - start_time < time_limit:

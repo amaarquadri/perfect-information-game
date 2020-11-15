@@ -2,9 +2,9 @@ from multiprocessing import Pipe, Pool
 from multiprocessing.context import Process
 from time import time
 import numpy as np
-from move_selection.mcts.heuristic_node import HeuristicNode
-from move_selection.mcts.rollout_node import RolloutNode
-from move_selection.move_chooser import MoveChooser
+from src.move_selection.mcts.heuristic_node import HeuristicNode
+from src.move_selection.mcts.rollout_node import RolloutNode
+from src.move_selection.move_chooser import MoveChooser
 
 
 class AsyncMCTS(MoveChooser):
@@ -54,7 +54,8 @@ class AsyncMCTS(MoveChooser):
             # TODO: implement
             print('Returning distributions not implemented!')
         self.parent_pipe.send(None)
-        return self.parent_pipe.recv()
+        self.position = self.parent_pipe.recv()
+        return self.position
 
     def terminate(self):
         self.worker_process.terminate()
@@ -115,8 +116,8 @@ class AsyncMCTS(MoveChooser):
                             best_node = root.choose_expansion_node()
                             if best_node is not None:
                                 best_node.expand()
-                        root = root.choose_best_node(optimal=True)
-                        chosen_positions.append(root.position)
+                        root, distribution = root.choose_best_node(return_probability_distribution=True, optimal=True)
+                        chosen_positions.append((root.position, distribution))
 
                     print('Expected outcome: ', root.get_evaluation())
                     root.parent = None  # delete references to the parent and siblings
@@ -124,3 +125,6 @@ class AsyncMCTS(MoveChooser):
                     if GameClass.is_over(root.position):
                         print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
                         return
+
+    def reset(self):
+        raise NotImplementedError('')
