@@ -53,7 +53,7 @@ class Network:
                                             histogram_freq=0, write_graph=True)
             self.tensor_board.set_model(self.model)
 
-    def create_model(self, kernel_size=(4, 4), residual_layers=6):
+    def create_model(self, kernel_size=(4, 4), residual_layers=6, policy_loss_value=1):
         """
         https://www.youtube.com/watch?v=OPgRNY3FaxA
         """
@@ -101,7 +101,7 @@ class Network:
 
         model = Model(input_tensor, [policy, value])
         model.compile(optimizer='adam', loss={'policy': 'categorical_crossentropy', 'value': 'mean_squared_error'},
-                      loss_weights={'policy': 1, 'value': 1},
+                      loss_weights={'policy': policy_loss_value, 'value': 1},
                       metrics=['mean_squared_error'])
         return model
 
@@ -276,7 +276,7 @@ class ProxyNetwork(Network):
         self.model_pipe.send(states)
         return self.model_pipe.recv()
 
-    def create_model(self, kernel_size=(4, 4), residual_layers=6):
+    def create_model(self, kernel_size=(4, 4), residual_layers=6, policy_loss_weight=1):
         raise NotImplementedError('ProxyNetwork does not support this operation!')
 
     def train(self, data, validation_fraction=0.2):
