@@ -24,6 +24,17 @@ def get_model():
 
 
 def benchmark_inference(target='gpu'):
+    """
+    Use this function as a quick test to verify that Tensorflow is running on the GPU.
+    You will see significantly faster performance on the GPU.
+    You can also check that a bunch of your VRAM is allocated in task manager.
+
+    In one case, Tensorflow was running on my CPU and tensorflow-cpu was installed in my virtual environment.
+    If this happens, recreating the virtual environment might help.
+
+    @param target: Either 'gpu' or 'cpu'
+    @return:
+    """
     model = get_model()
     with tf.device(target):
         for i in range(10000):
