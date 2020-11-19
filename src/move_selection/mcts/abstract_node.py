@@ -76,7 +76,7 @@ class AbstractNode(ABC):
                     distribution.append(self.count_expansions() * (1 - winning_chance))
 
         distribution = np.array(distribution) / sum(distribution) if sum(distribution) > 0 else \
-            np.full_like(distribution, 1 / len(distribution))
+            np.full_like(distribution, 1 / len(distribution), dtype=float)
         idx = np.argmax(distribution) if optimal else np.random.choice(np.arange(len(distribution)), p=distribution)
         best_child = self.children[idx]
         return (best_child, distribution) if return_probability_distribution else best_child
