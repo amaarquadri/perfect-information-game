@@ -91,9 +91,10 @@ class SelfPlayReinforcementLearning:
                     # practically speaking this will never happen
                     if GameClass.is_over(root.position):
                         game = (training_data_sets[i], GameClass.get_winner(root.position))
-                        with open(f'{path}/game_{time()}.pickle', 'wb') as fout:
+                        game_file = f'{path}/game_{time()}.pickle'
+                        with open(game_file, 'wb') as fout:
                             pickle.dump(game, fout)
-                        response_queue.put(network.process_data(GameClass, [game], shuffle=False))
+                        response_queue.put((game_file, len(training_data_sets[i])))
 
                         training_data_sets[i] = []
                         root = HeuristicNode(GameClass.STARTING_STATE, parent=None, GameClass=GameClass, network=None,
@@ -110,9 +111,10 @@ class SelfPlayReinforcementLearning:
                         root = best_node
                         root.parent = None
                     game = (training_data_sets[i], GameClass.get_winner(root.position))
-                    with open(f'{path}/game_{time()}.pickle', 'wb') as fout:
+                    game_file = f'{path}/game_{time()}.pickle'
+                    with open(game_file, 'wb') as fout:
                         pickle.dump(game, fout)
-                    response_queue.put(network.process_data(GameClass, [game], shuffle=False))
+                    response_queue.put((game_file, len(training_data_sets[i])))
                     training_data_sets[i] = []
                     root = HeuristicNode(GameClass.STARTING_STATE, parent=None, GameClass=GameClass, network=None,
                                          c=c, d=d, network_call_results=(np.copy(starting_policy), starting_evaluation))
@@ -135,52 +137,64 @@ class SelfPlayReinforcementLearning:
 
     @staticmethod
     def replay_buffer_process_loop(GameClass, training_game_queue, network_training_pipe, path, buffer_size):
-        (states, (policies, values)), game_lengths = SelfPlayReinforcementLearning.load_games(
-            GameClass, path, buffer_size)
+        game_files, game_lengths = SelfPlayReinforcementLearning.load_games(GameClass, path, buffer_size)
 
         while True:
-            new_states, (new_policies, new_values) = training_game_queue.get()
-            new_game_length = new_states.shape[0]
+            new_game_file, new_game_length = training_game_queue.get()
 
-            if len(game_lengths) < buffer_size:
-                trim = game_lengths.pop(0)
-                states = states[trim:, ...]
-                policies = policies[trim:, ...]
-                values = values[trim:]
+            if len(game_lengths) >= buffer_size:
+                game_files.pop(0)
+                game_lengths.pop(0)
 
+            game_files.append(new_game_file)
             game_lengths.append(new_game_length)
-            states = np.concatenate((states, new_states), axis=0)
-            policies = np.concatenate((policies, new_policies), axis=0)
-            values = np.concatenate((values, new_values))
 
             # exponential probability distribution biases towards more recently played games
             # probability density function is a normalized rescaling of e^x from (0, 1) to (0, N)
             # https://www.desmos.com/calculator/aoqionfo8j
-            probability_distribution = np.exp(np.arange(states.shape[0]) / states.shape[0])
+            total = sum(game_lengths)
+            probability_distribution = np.exp(np.arange(total) / total)
             probability_distribution = probability_distribution / np.sum(probability_distribution)
-            indices = np.random.choice(np.arange(states.shape[0]), 256, replace=False, p=probability_distribution)
+            indices = np.random.choice(np.arange(total), 256, replace=False, p=probability_distribution)
+
+            # read from files to collect moves and their outcomes into dataset
+            data = []
+            game_lengths_cum_sum = np.cumsum(game_lengths)
+            for index in indices:
+                game_index = np.searchsorted(index, game_lengths_cum_sum, side='right')
+                move_index = index - game_lengths_cum_sum[game_index - 1]
+                with open(game_files[game_index], 'rb') as fin:
+                    training_data, outcome = pickle.load(fin)
+                    state, policy = training_data[move_index]
+                    data.append(([(state, policy)], outcome))
+
+            states, (policies, values) = Network.process_data(GameClass, data)
             print('Starting Training step')
-            network_training_pipe.send((states[indices, ...], policies[indices, ...], values[indices]))
+            network_training_pipe.send((states, policies, values))
 
     @staticmethod
     def load_games(GameClass, path, count):
-        games = []
-        game_files = [file for file in sorted(os.listdir(path)) if file[-7:] == '.pickle']
-        for file in game_files[-count:]:
-            with open(os.path.join(path, file), 'rb') as fin:
-                games.append(pickle.load(fin))
-        if len(games) < count:
+        game_files = [os.path.join(path, file) for file in sorted(os.listdir(path)) if file[-7:] == '.pickle']
+        if len(game_files) < count:
             backup_path = f'{get_training_path(GameClass)}/games/rollout_mcts_games'
-            game_files = [file for file in sorted(os.listdir(backup_path)) if file[-7:] == '.pickle']
-            for file in game_files[-(count - len(games)):]:
-                with open(os.path.join(backup_path, file), 'rb') as fin:
-                    games.append(pickle.load(fin))
-            if len(games) < 2:
-                raise Exception('Not enough games for the replay buffer!')
-            if len(games) < count:
-                print(f'Warning! Not enough games to fill the replay buffer. Starting with {len(games)} games.')
-        game_lengths = [len(game[0]) for game in games]
-        return Network.process_data(GameClass, games, shuffle=False), game_lengths
+            backup_game_files = [os.path.join(backup_path, file) for file in sorted(os.listdir(backup_path))
+                                 if file[-7:] == '.pickle']
+            game_files = backup_game_files + game_files
+        game_files = game_files[-count:]
+
+        if len(game_files) < 2:
+            raise Exception('Not enough games for the replay buffer!')
+        if len(game_files) < count:
+            print(f'Warning! Not enough games to fill the replay buffer. Starting with {len(game_files)} games.')
+
+        game_lengths = []
+        for game_file in game_files:
+            with open(game_file, 'rb') as fin:
+                game = pickle.load(fin)
+                training_data = game[0]
+                game_lengths.append(len(training_data))
+
+        return game_files, game_lengths
 
 
 class MCTSRolloutGameGenerator:
