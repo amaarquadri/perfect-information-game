@@ -177,6 +177,7 @@ class Network:
                 legal_moves = GameClass.get_legal_moves(position)
                 policy = np.zeros_like(legal_moves, dtype=float)
                 policy[legal_moves] = distribution
+                policy /= np.sum(policy)  # rescale so total probability is 1
 
                 if one_hot:
                     idx = np.unravel_index(policy.argmax(), policy.shape)
