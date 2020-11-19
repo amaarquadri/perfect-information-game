@@ -4,3 +4,6 @@ tensorflowjs
 keras
 pygame
 easygui
+# for debugging:
+# memory_profiler
+# matplotlib
