@@ -136,7 +136,8 @@ class SelfPlayReinforcementLearning:
                 pos = new_pos
 
     @staticmethod
-    def replay_buffer_process_loop(GameClass, training_game_queue, network_training_pipe, path, buffer_size):
+    def replay_buffer_process_loop(GameClass, training_game_queue, network_training_pipe, path, buffer_size,
+                                   batch_size=256):
         game_files, game_lengths = SelfPlayReinforcementLearning.load_games(GameClass, path, buffer_size)
 
         while True:
@@ -155,7 +156,7 @@ class SelfPlayReinforcementLearning:
             total = sum(game_lengths)
             probability_distribution = np.exp(np.arange(total) / total)
             probability_distribution = probability_distribution / np.sum(probability_distribution)
-            indices = np.random.choice(np.arange(total), 256, replace=False, p=probability_distribution)
+            indices = np.random.choice(np.arange(total), batch_size, replace=False, p=probability_distribution)
 
             # read from files to collect moves and their outcomes into dataset
             data = []
