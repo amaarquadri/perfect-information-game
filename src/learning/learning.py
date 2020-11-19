@@ -162,8 +162,8 @@ class SelfPlayReinforcementLearning:
             data = []
             game_lengths_cum_sum = np.cumsum(game_lengths)
             for index in indices:
-                game_index = np.searchsorted(index, game_lengths_cum_sum, side='right')
-                move_index = index - game_lengths_cum_sum[game_index - 1]
+                game_index = np.searchsorted(game_lengths_cum_sum, index, side='right')
+                move_index = index - game_lengths_cum_sum[game_index - 1] if game_index > 0 else index
                 with open(game_files[game_index], 'rb') as fin:
                     training_data, outcome = pickle.load(fin)
                     state, policy = training_data[move_index]
