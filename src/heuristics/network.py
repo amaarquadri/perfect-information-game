@@ -223,18 +223,20 @@ class Network:
             sys.exit(0)
         signal(SIGTERM, on_terminate_process)
 
-        def send_results(requests, results, pipes):
-            raw_policies, evaluations = results
+        def process_requests(requests):
+            results = []
+            # concatenate is used instead of stack because each request already has shape (k,) + GameClass.STATE_SHAPE
+            raw_policies, evaluations = network.predict(np.concatenate(requests, axis=0))
             pos = 0
-            for request, pipe in zip(requests, pipes):
+            for request in requests:
                 new_pos = pos + request.shape[0]
                 # This send call will not block because the receiver will always be waiting to read the result
-                pipe.send((raw_policies[pos:new_pos], evaluations[pos:new_pos]))
+                results.append((raw_policies[pos:new_pos], evaluations[pos:new_pos]))
                 pos = new_pos
+            return results
 
         requests_a = [worker_a_pipe.recv() for worker_a_pipe in worker_a_pipes]
-        # concatenate is used instead of stack because each request already has shape (k,) + GameClass.STATE_SHAPE
-        results_a = network.predict(np.concatenate(requests_a, axis=0))
+        results_a = process_requests(requests_a)
 
         last_save = 0  # initialize to 0 to ensure that the network is saved at the start
         while True:
@@ -250,19 +252,21 @@ class Network:
             requests_b = [worker_b_pipe.recv() for worker_b_pipe in worker_b_pipes]
 
             # return A results
-            send_results(requests_a, results_a, worker_a_pipes)
+            for result_a, pipe_a in zip(results_a, worker_a_pipes):
+                pipe_a.send(result_a)
 
             # compute B results
-            results_b = network.predict(np.concatenate(requests_b, axis=0))
+            results_b = process_requests(requests_b)
 
             # receive A requests
             requests_a = [worker_a_pipe.recv() for worker_a_pipe in worker_a_pipes]
 
             # return B results
-            send_results(requests_b, results_b, worker_b_pipes)
+            for result_b, pipe_b in zip(results_b, worker_b_pipes):
+                pipe_b.send(result_b)
 
             # compute A results
-            results_a = network.predict(np.concatenate(requests_a, axis=0))
+            results_a = process_requests(requests_a)
 
 
 class ProxyNetwork(Network):
