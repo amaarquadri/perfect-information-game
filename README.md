@@ -23,7 +23,7 @@ uncommenting the corresponding line that starts with `CONFIG = `
 - Othello: Coming Soon
 - Amazons (6x6 Board): Coming Soon
 
-## Relevant Resources
+## Resources I Used
 - [How to Keep Improving When You're Better Than Any Teacher - Iterated Distillation and Amplification](https://youtu.be/v9M2Ho9I9Qo)
 - [Multiple Policy Value Monte Carlo Tree Search](https://arxiv.org/pdf/1905.13521.pdf)
 - [Parallel Monte-Carlo Tree Search](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.159.4373&rep=rep1&type=pdf)
