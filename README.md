@@ -18,6 +18,11 @@ uncommenting the corresponding line that starts with `CONFIG = `
 - [Othello/Reversi](/training/Othello)
 - [Amazons (6x6 Board)](/training/Amazons/6x6)
 
+## Play Against Live Models on my Website
+- Connect 4:  [Easy](https://www.amaarquadri.com/play?game=connect4&difficulty=easy&ai-time=1&log-stats=true), [Medium](https://www.amaarquadri.com/play?game=connect4&difficulty=medium&ai-time=1&log-stats=true), [Hard](https://www.amaarquadri.com/play?game=connect4&difficulty=hard&ai-time=1&log-stats=true)
+- Othello: Coming Soon
+- Amazons (6x6 Board): Coming Soon
+
 ## Relevant Resources
 - [How to Keep Improving When You're Better Than Any Teacher - Iterated Distillation and Amplification](https://youtu.be/v9M2Ho9I9Qo)
 - [Multiple Policy Value Monte Carlo Tree Search](https://arxiv.org/pdf/1905.13521.pdf)
