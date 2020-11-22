@@ -16,6 +16,7 @@ uncommenting the corresponding line that starts with `CONFIG = `
 ## How I Trained the Models
 - [Connect 4](/training/Connect4)
 - [Othello/Reversi](/training/Othello)
+- [Amazons (6x6 Board)](/training/Amazons/6x6)
 
 ## Relevant Resources
 https://youtu.be/v9M2Ho9I9Qo \
