@@ -19,11 +19,11 @@ uncommenting the corresponding line that starts with `CONFIG = `
 - [Amazons (6x6 Board)](/training/Amazons/6x6)
 
 ## Relevant Resources
-https://youtu.be/v9M2Ho9I9Qo \
-https://webdocs.cs.ualberta.ca/~mmueller/ps/enzenberger-mueller-acg12.pdf \
-http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.159.4373&rep=rep1&type=pdf \
-https://arxiv.org/pdf/1905.13521.pdf \
-https://medium.com/oracledevs/lessons-from-alpha-zero-part-5-performance-optimization-664b38dc509e \
-https://medium.com/@malay.haldar/how-much-training-data-do-you-need-da8ec091e956 \
-https://cython.readthedocs.io/en/latest/src/tutorial/numpy.html \
-https://dke.maastrichtuniversity.nl/m.winands/documents/time_management_for_monte_carlo_tree_search.pdf
+- [How to Keep Improving When You're Better Than Any Teacher - Iterated Distillation and Amplification](https://youtu.be/v9M2Ho9I9Qo)
+- [Multiple Policy Value Monte Carlo Tree Search](https://arxiv.org/pdf/1905.13521.pdf)
+- [Parallel Monte-Carlo Tree Search](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.159.4373&rep=rep1&type=pdf)
+- [A Lock-free Multithreaded Monte-Carlo Tree Search Algorithm](https://webdocs.cs.ualberta.ca/~mmueller/ps/enzenberger-mueller-acg12.pdf)
+- [Time Management for Monte Carlo Tree Search](https://dke.maastrichtuniversity.nl/m.winands/documents/time_management_for_monte_carlo_tree_search.pdf)
+- [Lessons From Alpha Zero (part 5): Performance Optimization](https://medium.com/oracledevs/lessons-from-alpha-zero-part-5-performance-optimization-664b38dc509e)
+- [How much training data do you need?](https://medium.com/@malay.haldar/how-much-training-data-do-you-need-da8ec091e956)
+- [Working with Numpy in Cython](https://cython.readthedocs.io/en/latest/src/tutorial/numpy.html)
