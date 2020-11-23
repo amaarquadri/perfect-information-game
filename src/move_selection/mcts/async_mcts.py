@@ -50,12 +50,10 @@ class AsyncMCTS(MoveChooser):
 
         :return: The moves chosen by monte carlo tree search.
         """
-        if return_distribution:
-            # TODO: implement
-            print('Returning distributions not implemented!')
         self.parent_pipe.send(None)
-        self.position = self.parent_pipe.recv()
-        return self.position
+        chosen_positions = self.parent_pipe.recv()
+        self.position = chosen_positions[-1][0]
+        return chosen_positions if return_distribution else [position for position, _ in chosen_positions]
 
     def terminate(self):
         self.worker_process.terminate()
