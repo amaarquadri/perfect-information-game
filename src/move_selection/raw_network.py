@@ -5,8 +5,10 @@ from src.utils.utils import choose_random
 
 
 class RawNetwork(MoveChooser):
-    def __init__(self, network, starting_position=None, optimal=False, delay=2):
-        super().__init__(GameClass=None, starting_position=starting_position)
+    def __init__(self, GameClass, starting_position=None, network=None, optimal=False, delay=2):
+        super().__init__(GameClass=GameClass, starting_position=starting_position)
+        if network is None:
+            raise ValueError('Network must be provided!')
         self.network = network
         self.delay = delay
         self.optimal = optimal
