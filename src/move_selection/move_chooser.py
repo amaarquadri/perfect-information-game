@@ -20,7 +20,7 @@ class MoveChooser(ABC):
         :param user_chosen_position:
         :return:
         """
-        if user_chosen_position not in self.GameClass.get_possible_moves(self.position):
+        if np.all([np.any(user_chosen_position != move) for move in self.GameClass.get_possible_moves(self.position)]):
             raise ValueError('Invalid move!')
         self.position = user_chosen_position
 
