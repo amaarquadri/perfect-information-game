@@ -53,7 +53,8 @@ class Network:
                                             histogram_freq=0, write_graph=True)
             self.tensor_board.set_model(self.model)
 
-    def create_model(self, kernel_size=(4, 4), residual_layers=6, policy_loss_value=1):
+    def create_model(self, kernel_size=(4, 4), convolutional_filters=64, residual_layers=20,
+                     value_head_neurons=64, policy_loss_value=5e4):
         """
         https://www.youtube.com/watch?v=OPgRNY3FaxA
         """
@@ -68,16 +69,16 @@ class Network:
         input_tensor = Input(input_shape)
 
         # convolutional layer
-        x = Conv2D(16, kernel_size, padding='same')(input_tensor)
+        x = Conv2D(convolutional_filters, kernel_size, padding='same')(input_tensor)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
 
         # residual layers
         for _ in range(residual_layers):
-            y = Conv2D(16, kernel_size, padding='same')(x)
+            y = Conv2D(convolutional_filters, kernel_size, padding='same')(x)
             y = BatchNormalization()(y)
             y = Activation('relu')(y)
-            y = Conv2D(16, kernel_size, padding='same')(y)
+            y = Conv2D(convolutional_filters, kernel_size, padding='same')(y)
             y = BatchNormalization()(y)
             # noinspection PyTypeChecker
             x = Add()([x, y])
@@ -96,7 +97,7 @@ class Network:
         value = BatchNormalization()(value)
         value = Activation('relu')(value)
         value = Flatten()(value)
-        value = Dense(16, activation='relu')(value)
+        value = Dense(value_head_neurons, activation='relu')(value)
         value = Dense(1, activation='tanh', name='value')(value)
 
         model = Model(input_tensor, [policy, value])
