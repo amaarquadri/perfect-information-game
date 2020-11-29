@@ -1,6 +1,6 @@
 # Connect 4 Training Process
 First, 1000 games were generated using MCTS rollout with 100 expansions per move, and c=sqrt(2).  
-Then a network with a 4x4 kernel size and 6 residual layers was trained using supervised learning on those games.  
+Then a network with a 4x4 kernel size, 16 convolutional filters per layer, 6 residual layers, and 16 value head neurons was trained using supervised learning on those games.  
 Then the network was further trained using reinforcement learning with 500 expansions per move, c=np.sqrt(2), and d=1.  
 The replay buffer was a fixed size of 1000 games, and it was initialized with the 1000 MCTS rollout games.  
 A total of 13906 games were played during this stage, and models were saved every 30 minutes.  
