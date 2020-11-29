@@ -269,7 +269,8 @@ class ProxyNetwork(Network):
         self.model_pipe.send(states)
         return self.model_pipe.recv()
 
-    def create_model(self, kernel_size=(4, 4), residual_layers=6, policy_loss_weight=1):
+    def create_model(self, kernel_size=(4, 4), convolutional_filters=64, residual_layers=20,
+                     value_head_neurons=64, policy_loss_value=5e4):
         raise NotImplementedError('ProxyNetwork does not support this operation!')
 
     def train(self, data, validation_fraction=0.2):
