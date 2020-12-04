@@ -9,7 +9,7 @@ in order to roughly equalize the two.
 The replay buffer was initialized with the 64 MCTS rollout games, and allowed to grow to the full size of
 1000 games as training occurred.  
 A total of n games were played during this stage, and models were saved every 30 minutes.  
-These graph shows the training process:  
+These graphs shows the training process:  
 ![Total Loss](/training/Checkers/logs/combined_loss.png)  
 ![Policy Loss](/training/Checkers/logs/policy_loss.png)  
 ![Value Loss](/training/Checkers/logs/value_loss.png)  
