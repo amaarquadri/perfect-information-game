@@ -93,7 +93,7 @@ class SelfPlayReinforcementLearning:
                         game = (training_data_sets[i], GameClass.get_winner(root.position))
                         with open(f'{path}/game_{time()}.pickle', 'wb') as fout:
                             pickle.dump(game, fout)
-                        response_queue.put(Network.process_data(GameClass, [game], shuffle=False))
+                        response_queue.put(network.process_data(GameClass, [game], shuffle=False))
 
                         training_data_sets[i] = []
                         root = HeuristicNode(GameClass.STARTING_STATE, parent=None, GameClass=GameClass, network=None,
