@@ -53,7 +53,7 @@ class Network:
                                             histogram_freq=0, write_graph=True)
             self.tensor_board.set_model(self.model)
 
-    def create_model(self, kernel_size=(4, 4), residual_layers=6):
+    def create_model(self, kernel_size=(4, 4), residual_layers=6, policy_loss_value=1):
         """
         https://www.youtube.com/watch?v=OPgRNY3FaxA
         """
@@ -101,7 +101,7 @@ class Network:
 
         model = Model(input_tensor, [policy, value])
         model.compile(optimizer='adam', loss={'policy': 'categorical_crossentropy', 'value': 'mean_squared_error'},
-                      loss_weights={'policy': 1, 'value': 1},
+                      loss_weights={'policy': policy_loss_value, 'value': 1},
                       metrics=['mean_squared_error'])
         return model
 
@@ -127,11 +127,11 @@ class Network:
         evaluations = evaluations.reshape(states.shape[0])
         return [(filtered_policy, evaluation) for filtered_policy, evaluation in zip(filtered_policies, evaluations)]
 
-    def choose_move(self, position, return_evaluation=False, optimal=False):
+    def choose_move(self, position, return_distribution=False, optimal=False):
         distribution, evaluation = self.call(position[np.newaxis, ...])[0]
         idx = np.argmin(distribution) if optimal else np.random.choice(np.arange(len(distribution)), p=distribution)
         move = self.GameClass.get_possible_moves(position)[idx]
-        return (move, evaluation) if return_evaluation else move
+        return (move, distribution) if return_distribution else move
 
     def train(self, data, validation_fraction=0.2):
         # Note: keras imports are within functions to prevent initializing keras in processes that import from this file
@@ -177,6 +177,7 @@ class Network:
                 legal_moves = GameClass.get_legal_moves(position)
                 policy = np.zeros_like(legal_moves, dtype=float)
                 policy[legal_moves] = distribution
+                policy /= np.sum(policy)  # rescale so total probability is 1
 
                 if one_hot:
                     idx = np.unravel_index(policy.argmax(), policy.shape)
@@ -213,6 +214,8 @@ class Network:
 
     @staticmethod
     def dual_architecture_process_loop(GameClass, model_path, worker_a_pipes, worker_b_pipes, training_data_pipe):
+        worker_pipes = worker_a_pipes + worker_b_pipes
+
         network = Network(GameClass, model_path, reinforcement_training=True)
         network.initialize()
 
@@ -221,19 +224,6 @@ class Network:
             network.save(model_path)
             sys.exit(0)
         signal(SIGTERM, on_terminate_process)
-
-        def send_results(requests, results, pipes):
-            raw_policies, evaluations = results
-            pos = 0
-            for request, pipe in zip(requests, pipes):
-                new_pos = pos + request.shape[0]
-                # This send call will not block because the receiver will always be waiting to read the result
-                pipe.send((raw_policies[pos:new_pos], evaluations[pos:new_pos]))
-                pos = new_pos
-
-        requests_a = [worker_a_pipe.recv() for worker_a_pipe in worker_a_pipes]
-        # concatenate is used instead of stack because each request already has shape (k,) + GameClass.STATE_SHAPE
-        results_a = network.predict(np.concatenate(requests_a, axis=0))
 
         last_save = 0  # initialize to 0 to ensure that the network is saved at the start
         while True:
@@ -245,23 +235,25 @@ class Network:
                     network.save(f'{model_path[:-3]}-{time()}.h5')
                     last_save = time()
 
-            # receive B requests
-            requests_b = [worker_b_pipe.recv() for worker_b_pipe in worker_b_pipes]
+            # collect requests from whichever workers finish first
+            request_indices = []
+            requests = []
+            while len(request_indices) < len(worker_pipes) // 2:
+                for i, worker_pipe in enumerate(worker_pipes):
+                    if i not in request_indices and worker_pipe.poll():
+                        request_indices.append(i)
+                        requests.append(worker_pipe.recv())
 
-            # return A results
-            send_results(requests_a, results_a, worker_a_pipes)
+            # concatenate is used instead of stack because each request already has shape (k,) + GameClass.STATE_SHAPE
+            raw_policies, evaluations = network.predict(np.concatenate(requests, axis=0))
 
-            # compute B results
-            results_b = network.predict(np.concatenate(requests_b, axis=0))
-
-            # receive A requests
-            requests_a = [worker_a_pipe.recv() for worker_a_pipe in worker_a_pipes]
-
-            # return B results
-            send_results(requests_b, results_b, worker_b_pipes)
-
-            # compute A results
-            results_a = network.predict(np.concatenate(requests_a, axis=0))
+            # send the results back to the workers as fast as possible
+            pos = 0
+            for i, request in zip(request_indices, requests):
+                new_pos = pos + request.shape[0]
+                # This send call will not block because the receiver will always be waiting to read the result
+                worker_pipes[i].send((raw_policies[pos:new_pos], evaluations[pos:new_pos]))
+                pos = new_pos
 
 
 class ProxyNetwork(Network):
@@ -276,7 +268,7 @@ class ProxyNetwork(Network):
         self.model_pipe.send(states)
         return self.model_pipe.recv()
 
-    def create_model(self, kernel_size=(4, 4), residual_layers=6):
+    def create_model(self, kernel_size=(4, 4), residual_layers=6, policy_loss_weight=1):
         raise NotImplementedError('ProxyNetwork does not support this operation!')
 
     def train(self, data, validation_fraction=0.2):

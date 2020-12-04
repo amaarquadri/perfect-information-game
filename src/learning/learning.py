@@ -3,14 +3,15 @@ import pickle
 from time import time
 from multiprocessing import Process, Queue, Event
 import numpy as np
-from src.move_selection.mcts import RolloutNode, HeuristicNode
+from src.move_selection.mcts.rollout_node import RolloutNode
+from src.move_selection.mcts.heuristic_node import HeuristicNode
 from src.heuristics.network import Network
 from src.utils.utils import get_training_path
 
 
 class SelfPlayReinforcementLearning:
     def __init__(self, GameClass, model_path, threads_per_section=14, game_batch_count=6, expansions_per_move=500,
-                 c=np.sqrt(2), d=1):
+                 c=np.sqrt(2), d=1, buffer_size=1000):
         """
         If network is None, then self play will be done using random MCTS rollouts and saved to
         {get_training_path(GameClass)}/games/reinforcement_learning_games/
@@ -36,7 +37,7 @@ class SelfPlayReinforcementLearning:
 
         self.replay_buffer_process = Process(target=SelfPlayReinforcementLearning.replay_buffer_process_loop,
                                              args=(GameClass, worker_training_data_queue, network_training_data_pipe,
-                                                   path))
+                                                   path, buffer_size))
 
     def start(self):
         # start all processes in a logical order
@@ -133,7 +134,8 @@ class SelfPlayReinforcementLearning:
                 pos = new_pos
 
     @staticmethod
-    def replay_buffer_process_loop(GameClass, training_game_queue, network_training_pipe, path, buffer_size=1000):
+    def replay_buffer_process_loop(GameClass, training_game_queue, network_training_pipe, path, buffer_size,
+                                   batch_size=256):
         (states, (policies, values)), game_lengths = SelfPlayReinforcementLearning.load_games(
             GameClass, path, buffer_size)
 
@@ -157,7 +159,8 @@ class SelfPlayReinforcementLearning:
             # https://www.desmos.com/calculator/aoqionfo8j
             probability_distribution = np.exp(np.arange(states.shape[0]) / states.shape[0])
             probability_distribution = probability_distribution / np.sum(probability_distribution)
-            indices = np.random.choice(np.arange(states.shape[0]), 256, replace=False, p=probability_distribution)
+            indices = np.random.choice(np.arange(states.shape[0]), batch_size,
+                                       replace=False, p=probability_distribution)
             print('Starting Training step')
             network_training_pipe.send((states[indices, ...], policies[indices, ...], values[indices]))
 
