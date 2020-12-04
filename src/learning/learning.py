@@ -134,7 +134,8 @@ class SelfPlayReinforcementLearning:
                 pos = new_pos
 
     @staticmethod
-    def replay_buffer_process_loop(GameClass, training_game_queue, network_training_pipe, path, buffer_size=1000):
+    def replay_buffer_process_loop(GameClass, training_game_queue, network_training_pipe, path, buffer_size,
+                                   batch_size=256):
         (states, (policies, values)), game_lengths = SelfPlayReinforcementLearning.load_games(
             GameClass, path, buffer_size)
 
@@ -158,7 +159,8 @@ class SelfPlayReinforcementLearning:
             # https://www.desmos.com/calculator/aoqionfo8j
             probability_distribution = np.exp(np.arange(states.shape[0]) / states.shape[0])
             probability_distribution = probability_distribution / np.sum(probability_distribution)
-            indices = np.random.choice(np.arange(states.shape[0]), 256, replace=False, p=probability_distribution)
+            indices = np.random.choice(np.arange(states.shape[0]), batch_size,
+                                       replace=False, p=probability_distribution)
             print('Starting Training step')
             network_training_pipe.send((states[indices, ...], policies[indices, ...], values[indices]))
 
