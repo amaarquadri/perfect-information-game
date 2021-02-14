@@ -1,8 +1,36 @@
 import numpy as np
 from itertools import product
+from multiprocessing import Pool
 
 
-DIRECTIONS_8 = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+class OptionalPool:
+    def __init__(self, threads=1):
+        self.pool = Pool(threads) if threads > 1 else None
+
+    def map(self, func, iterable, chunksize=None):
+        return self.pool.map(func, iterable, chunksize) if self.pool is not None else map(func, iterable)
+
+    def star_map(self, func, iterable, chunksize=None):
+        return self.pool.starmap(func, iterable, chunksize) if self.pool is not None \
+            else [func(*params) for params in iterable]
+
+    def __enter__(self):
+        if self.pool is not None:
+            self.pool.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.pool is not None:
+            self.pool.__exit__(exc_type, exc_val, exc_tb)
+            
+    def close(self):
+        if self.pool is not None:
+            self.pool.close()
+
+
+STRAIGHT_DIRECTIONS = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+DIAGONAL_DIRECTIONS = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+DIRECTIONS_8 = STRAIGHT_DIRECTIONS + DIAGONAL_DIRECTIONS
 
 
 def get_training_path(GameClass):
