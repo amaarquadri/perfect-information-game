@@ -111,7 +111,7 @@ class Game(ABC):
 
         :return: A numpy matrix indicating which images to use for each square in the grid.
         """
-        representation = np.full(cls.BOARD_SHAPE, 0)  # squares where every feature is 0 default to the 0th image
+        representation = np.zeros_like(cls.BOARD_SHAPE)  # squares where every feature is 0 default to the 0th image
         for i in range(len(cls.REPRESENTATION_FILES) - 1):  # -1 to exclude squares where every feature is 0
             representation[state[:, :, i] == 1] = i + 1
         return representation
