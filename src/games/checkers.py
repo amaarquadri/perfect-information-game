@@ -97,12 +97,12 @@ class Checkers(Game):
         """
         The given move must correspond to a capture.
 
-        @param state: The state prior to the move being made.
-        @param move: The state after the move has been made, without the turn having switched.
-        @param i:
-        @param j:
-        @param di:
-        @param dj:
+        :param state: The state prior to the move being made.
+        :param move: The state after the move has been made, without the turn having switched.
+        :param i:
+        :param j:
+        :param di:
+        :param dj:
         """
         # remove any previous double moves
         move[i, j, -2] = 0
