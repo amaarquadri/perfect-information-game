@@ -125,8 +125,17 @@ class Chess(Game):
         return moves
 
     @classmethod
+    def promote_on_move(cls, move, target_i, target_j, friendly_slice):
+        promoting_moves = []
+        for promotion in range(1, 5):
+            promoting_move = np.copy(move)
+            promoting_move[target_i, target_j, :12] = 0
+            promoting_move[target_i, target_j, friendly_slice][promotion] = 1
+            promoting_moves.append(promoting_move)
+        return promoting_moves
+
+    @classmethod
     def get_possible_moves(cls, state):
-        # TODO: handle ensuring king is not in check
         friendly_slice, enemy_slice, pawn_direction, queening_row, pawn_starting_row, castling_row, en_passant_row = \
             cls.get_stats(state)
         moves = []
@@ -135,13 +144,15 @@ class Chess(Game):
             square_piece = state[i, j, friendly_slice]
             if np.any(square_piece == 1):
                 if square_piece[0] == 1:  # king moves
-                    king_moves = cls.get_finite_distance_moves(i, j, DIRECTIONS_8)
+                    king_moves = cls.get_finite_distance_moves(i, j, DIRECTIONS_8, friendly_slice)
 
                     # castling moves
                     for castling_column, pass_through_column, rook_column in [(2, 3, 0), (6, 5, 7)]:
                         if state[castling_row, castling_column, -2] and \
                                 np.all(state[castling_row, pass_through_column, :12] == 0) and \
-                                np.all(state[castling_row, castling_column, :12] == 0):
+                                np.all(state[castling_row, castling_column, :12] == 0) and \
+                                cls.square_safe(state, castling_row, 4) and \
+                                cls.square_safe(state, castling_row, pass_through_column):
                             move = cls.create_move(state, i, j, castling_row, castling_column)
                             move[castling_row, pass_through_column, :12] = move[castling_row, rook_column, :12]
                             move[castling_row, rook_column, :12] = 0
@@ -154,10 +165,10 @@ class Chess(Game):
                     moves.extend(king_moves)
 
                 if square_piece[1] == 1:  # queen moves
-                    moves.extend(cls.get_infinite_distance_moves(i, j, DIRECTIONS_8))
+                    moves.extend(cls.get_infinite_distance_moves(i, j, DIRECTIONS_8, friendly_slice, enemy_slice))
 
                 if square_piece[2] == 1:  # rook moves
-                    rook_moves = cls.get_infinite_distance_moves(i, j, STRAIGHT_DIRECTIONS)
+                    rook_moves = cls.get_infinite_distance_moves(i, j, STRAIGHT_DIRECTIONS, friendly_slice, enemy_slice)
 
                     # if castling was possible before the rook moved, remove the castling flag from all moves
                     for castling_column, rook_column in [(2, 0), (6, 7)]:
@@ -168,14 +179,19 @@ class Chess(Game):
                     moves.extend(rook_moves)
 
                 if square_piece[3] == 1:  # bishop moves
-                    moves.extend(cls.get_infinite_distance_moves(i, j, DIAGONAL_DIRECTIONS))
+                    moves.extend(cls.get_infinite_distance_moves(i, j, DIAGONAL_DIRECTIONS, friendly_slice, enemy_slice))
 
                 if square_piece[4] == 1:  # knight moves
-                    moves.extend(cls.get_finite_distance_moves(i, j, cls.KNIGHT_MOVES))
+                    moves.extend(cls.get_finite_distance_moves(i, j, cls.KNIGHT_MOVES, friendly_slice))
 
                 if square_piece[5] == 1:  # pawn moves
+                    is_promoting = i + pawn_direction == queening_row
                     if np.all(state[i + pawn_direction, j, :12] == 0):
-                        moves.append(cls.create_move(state, i, j, i + pawn_direction, j))
+                        move = cls.create_move(state, i, j, i + pawn_direction, j)
+                        if is_promoting:
+                            moves.extend(cls.promote_on_move(move, i + pawn_direction, j, friendly_slice))
+                        else:
+                            moves.append(move)
 
                     if i == pawn_starting_row and np.all(state[i + 2 * pawn_direction, j, :12] == 0):
                         move = cls.create_move(state, i, j, i + 2 * pawn_direction, j)
@@ -192,17 +208,26 @@ class Chess(Game):
                     for dj in [1, -1]:
                         if cls.is_valid(i + pawn_direction, j + dj):
                             if np.any(state[i + pawn_direction, j + dj, enemy_slice] == 1):
-                                moves.append(cls.create_move(state, i, j, i + pawn_direction, j + dj))
+                                move = cls.create_move(state, i, j, i + pawn_direction, j + dj)
+                                if is_promoting:
+                                    moves.extend(cls.promote_on_move(move, i + pawn_direction, j + dj, friendly_slice))
+                                else:
+                                    moves.append(move)
 
-                            if i == en_passant_row and state[i + pawn_direction, j + dj, -2] == 1:
+                            elif i == en_passant_row and state[i + pawn_direction, j + dj, -2] == 1:
                                 move = cls.create_move(state, i, j, i + pawn_direction, j + dj)
                                 move[i, j + dj, :12] = 0
                                 moves.append(move)
-        return moves
+
+        return list(filter(cls.king_safe, moves))
 
     @classmethod
-    def square_attacked(cls, state, i, j):
-        pass
+    def square_safe(cls, state, i, j):
+        return True
+
+    @classmethod
+    def king_safe(cls, move):
+        return True
 
     @classmethod
     def get_legal_moves(cls, state):
