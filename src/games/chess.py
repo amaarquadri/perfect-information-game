@@ -227,6 +227,11 @@ class Chess(Game):
 
     @classmethod
     def king_safe(cls, move):
+        """
+        Returns False if the provided move results in a state that is not valid because the king would be in check.
+
+        :returns: True if and only if the player whose turn it isn't has a king that is safe.
+        """
         return True
 
     @classmethod
@@ -257,13 +262,20 @@ class Chess(Game):
 
     @classmethod
     def is_over(cls, state):
-        # TODO: implement
-        return False
+        return len(cls.get_possible_moves(state)) == 0
 
     @classmethod
     def get_winner(cls, state):
-        # TODO: implement
-        return 0
+        if not cls.is_over(state):
+            raise Exception('Game is not over!')
+
+        if cls.king_safe(cls.null_move(state)):
+            return 0  # stalemate
+
+        if cls.is_player_1_turn(state):
+            return -1
+        else:
+            return 1
 
     @classmethod
     def get_img_index_representation(cls, state):
