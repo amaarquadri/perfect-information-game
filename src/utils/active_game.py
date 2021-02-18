@@ -3,5 +3,7 @@
 # from src.games.amazons import Amazons as ActiveGame
 # from src.games.checkers import Checkers as ActiveGame
 # from src.games.connect4 import Connect4 as ActiveGame
-from src.games.othello import Othello as ActiveGame
+# from src.games.othello import Othello as ActiveGame
 # from src.games.tic_tac_toe import TicTacToe as ActiveGame
+from src.games.chess import Chess as ActiveGame
+# from src.games.monster_chess import MonsterChess as ActiveGame
