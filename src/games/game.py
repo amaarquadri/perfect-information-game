@@ -120,6 +120,13 @@ class Game(ABC):
         return representation
 
     @classmethod
+    def needs_checkerboard(cls):
+        """
+        If this game needs the UI to draw a checkerboard below the pieces, then this should return True.
+        """
+        return False
+
+    @classmethod
     def get_ruleset(cls):
         """
         Returns the ruleset that the game is configured to be using. For example, the board size.

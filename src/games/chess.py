@@ -1,6 +1,6 @@
 from games.game import Game
 import numpy as np
-from utils.utils import iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
+from utils.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
 
 
 def parse_algebraic_notation(square, layer_slice=None, as_slice=True):
@@ -26,27 +26,33 @@ def parse_algebraic_notation(square, layer_slice=None, as_slice=True):
         return i, j
 
 
-def create_white_starting_position():
-    white = np.zeros((8, 8, 6))
-    white[parse_algebraic_notation('E1', 0)] = 1
-    white[parse_algebraic_notation('D1', 1)] = 1
-    white[parse_algebraic_notation('A1', 2)] = 1
-    white[parse_algebraic_notation('H1', 2)] = 1
-    white[parse_algebraic_notation('C1', 3)] = 1
-    white[parse_algebraic_notation('F1', 3)] = 1
-    white[parse_algebraic_notation('B1', 4)] = 1
-    white[parse_algebraic_notation('G1', 4)] = 1
-    white[-2, :, 5] = 1  # all of row 2
-    return white
+def parse_fen(position):
+    pieces, turn, castling, en_passant, half_move_clock, full_move_clock = position.split(' ')
+    for i in range(2, 9):
+        pieces = pieces.replace(str(i), i * '1')
 
+    mapping = 'KQRBNPkqrbnp'
 
-def create_starting_special_moves():
+    def parse_piece(piece_character):
+        if piece_character == '1':
+            return np.zeros(len(mapping))
+        where = np.argwhere(piece_character == np.array(list(mapping)))
+        if len(where) == 0:
+            raise ValueError(f'Invalid piece: {piece_character}')
+        return one_hot(where[0, 0], len(mapping))
+
+    pieces = np.stack([np.stack([parse_piece(piece) for piece in rank], axis=0)
+                       for rank in pieces.split('/')], axis=0)
+
     special_moves = np.zeros((8, 8, 1))
-    special_moves[parse_algebraic_notation('C1', 4)] = 1
-    special_moves[parse_algebraic_notation('G1', 4)] = 1
-    special_moves[parse_algebraic_notation('C8', 4)] = 1
-    special_moves[parse_algebraic_notation('G8', 4)] = 1
-    return special_moves
+    for letter, square in zip('KQkq', ['C1', 'G1', 'C8', 'G8']):
+        if letter in castling:
+            special_moves[parse_algebraic_notation(square)] = 1
+    if en_passant != '-':
+        special_moves[parse_algebraic_notation(en_passant.capitalize())] = 1
+
+    turn = np.full((8, 8, 1), 1 if turn.lower() == 'w' else 0)
+    return np.concatenate((pieces, special_moves, turn), axis=-1)
 
 
 class Chess(Game):
@@ -61,10 +67,7 @@ class Chess(Game):
     castling move (C1, G1, C8, and G8), or the square where a pawn will end up after a legal
     en passant capture (rows 3 and 6).
     """
-    WHITE = create_white_starting_position()
-    BLACK = np.flip(WHITE, axis=0)
-    SPECIAL_MOVES = create_starting_special_moves()
-    STARTING_STATE = np.concatenate([WHITE, BLACK, SPECIAL_MOVES, np.ones((8, 8, 1))], axis=-1).astype(np.uint8)
+    STARTING_STATE = parse_fen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
     STATE_SHAPE = STARTING_STATE.shape  # 8, 8, 14
     ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 8, 8, 14
     BOARD_SHAPE = (ROWS, COLUMNS)  # 8, 8
@@ -72,27 +75,31 @@ class Chess(Game):
     REPRESENTATION_LETTERS = ['K', 'Q', 'R', 'B', 'N', 'P',
                               'k', 'q', 'r', 'b', 'n', 'p']
     CLICKS_PER_MOVE = 2
-    REPRESENTATION_FILES = ['light_square', 'dark_square',
-                            'white_king_light_square', 'white_king_dark_square',
-                            'white_queen_light_square', 'white_queen_dark_square',
-                            'white_rook_light_square', 'white_rook_dark_square',
-                            'white_bishop_light_square', 'white_bishop_dark_square',
-                            'white_knight_light_square', 'white_knight_dark_square',
-                            'white_pawn_light_square', 'white_pawn_dark_square',
-                            'black_king_light_square', 'black_king_dark_square',
-                            'black_queen_light_square', 'black_queen_dark_square',
-                            'black_rook_light_square', 'black_rook_dark_square',
-                            'black_bishop_light_square', 'black_bishop_dark_square',
-                            'black_knight_light_square', 'black_knight_dark_square',
-                            'black_pawn_light_square', 'black_pawn_dark_square']
-    KNIGHT_MOVES = [(-2, -1), (-2, 1), (-1, -1), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]
+    REPRESENTATION_FILES = [None,
+                            'white_king', 'white_queen', 'white_rook', 'white_bishop', 'white_knight', 'white_pawn',
+                            'black_king', 'black_queen', 'black_rook', 'black_bishop', 'black_knight', 'black_pawn']
+    KNIGHT_MOVES = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]
 
     def __init__(self, state=STARTING_STATE):
         super().__init__(state)
 
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
-        # TODO: implement
+        friendly_slice, enemy_slice, *_ = self.get_stats(self.state)
+
+        for move in self.get_possible_moves(self.state):
+            if np.any(self.state[start_i, start_j, friendly_slice] == 1) and \
+                    np.all(self.state[end_i, end_j, friendly_slice] == 0) and \
+                    np.all(move[start_i, start_j, :12] == 0) and \
+                    np.any(move[end_i, end_j, friendly_slice] == 1):
+                self.state = move
+                break
+        else:
+            raise ValueError('Invalid Move!')
+
+    @classmethod
+    def needs_checkerboard(cls):
+        return True
 
     @classmethod
     def create_move(cls, state, i, j, target_i, target_j):
@@ -111,7 +118,7 @@ class Chess(Game):
                     break
                 if np.all(state[target_i, target_j, friendly_slice] == 0):
                     moves.append(cls.create_move(state, i, j, target_i, target_j))
-                if np.any(state[target_i, target_j, enemy_slice] == 1):
+                if np.any(state[target_i, target_j, :12] == 1):
                     break
         return moves
 
@@ -144,7 +151,7 @@ class Chess(Game):
             square_piece = state[i, j, friendly_slice]
             if np.any(square_piece == 1):
                 if square_piece[0] == 1:  # king moves
-                    king_moves = cls.get_finite_distance_moves(i, j, DIRECTIONS_8, friendly_slice)
+                    king_moves = cls.get_finite_distance_moves(state, i, j, DIRECTIONS_8, friendly_slice)
 
                     # castling moves
                     for castling_column, pass_through_column, rook_column in [(2, 3, 0), (6, 5, 7)]:
@@ -165,10 +172,10 @@ class Chess(Game):
                     moves.extend(king_moves)
 
                 if square_piece[1] == 1:  # queen moves
-                    moves.extend(cls.get_infinite_distance_moves(i, j, DIRECTIONS_8, friendly_slice, enemy_slice))
+                    moves.extend(cls.get_infinite_distance_moves(state, i, j, DIRECTIONS_8, friendly_slice, enemy_slice))
 
                 if square_piece[2] == 1:  # rook moves
-                    rook_moves = cls.get_infinite_distance_moves(i, j, STRAIGHT_DIRECTIONS, friendly_slice, enemy_slice)
+                    rook_moves = cls.get_infinite_distance_moves(state, i, j, STRAIGHT_DIRECTIONS, friendly_slice, enemy_slice)
 
                     # if castling was possible before the rook moved, remove the castling flag from all moves
                     for castling_column, rook_column in [(2, 0), (6, 7)]:
@@ -179,10 +186,11 @@ class Chess(Game):
                     moves.extend(rook_moves)
 
                 if square_piece[3] == 1:  # bishop moves
-                    moves.extend(cls.get_infinite_distance_moves(i, j, DIAGONAL_DIRECTIONS, friendly_slice, enemy_slice))
+                    moves.extend(
+                        cls.get_infinite_distance_moves(state, i, j, DIAGONAL_DIRECTIONS, friendly_slice, enemy_slice))
 
                 if square_piece[4] == 1:  # knight moves
-                    moves.extend(cls.get_finite_distance_moves(i, j, cls.KNIGHT_MOVES, friendly_slice))
+                    moves.extend(cls.get_finite_distance_moves(state, i, j, cls.KNIGHT_MOVES, friendly_slice))
 
                 if square_piece[5] == 1:  # pawn moves
                     is_promoting = i + pawn_direction == queening_row
@@ -276,18 +284,6 @@ class Chess(Game):
             return -1
         else:
             return 1
-
-    @classmethod
-    def get_img_index_representation(cls, state):
-        # same calculation as in Game, except with only half the number of REPRESENTATION_FILES
-        representation = np.zeros_like(cls.BOARD_SHAPE)
-        for i in range(len(cls.REPRESENTATION_FILES) // 2 - 1):
-            representation[state[:, :, i] == 1] = i + 1
-
-        # multiply by 2, add 1 if dark square
-        representation *= 2
-        representation += np.array([[(i + j % 2) for j in range(8)] for i in range(8)])
-        return representation
 
     @classmethod
     def is_empty(cls, state, i, j):
