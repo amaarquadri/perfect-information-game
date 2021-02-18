@@ -10,7 +10,7 @@ class OptionalPool:
     def map(self, func, iterable, chunksize=None):
         return self.pool.map(func, iterable, chunksize) if self.pool is not None else map(func, iterable)
 
-    def star_map(self, func, iterable, chunksize=None):
+    def starmap(self, func, iterable, chunksize=None):
         return self.pool.starmap(func, iterable, chunksize) if self.pool is not None \
             else [func(*params) for params in iterable]
 
@@ -41,6 +41,12 @@ def get_training_path(GameClass):
 
 def choose_random(values):
     return values[np.random.randint(len(values))]
+
+
+def one_hot(index, size):
+    result = np.zeros(size)
+    result[index] = 1
+    return result
 
 
 def iter_product(shape, actions=None):
