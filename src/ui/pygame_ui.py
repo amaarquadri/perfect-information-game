@@ -9,6 +9,8 @@ class PygameUI:
     The highlight image must have a transparent background (https://onlinepngtools.com/create-transparent-png).
     """
     HIGHLIGHT_IMAGE_PATH = '../../resources/blue_border.png'
+    LIGHT_SQUARE_IMAGE_PATH = '../../resources/light_square.png'
+    DARK_SQUARE_IMAGE_PATH = '../../resources/dark_square.png'
     FLIP_LR = False
 
     def __init__(self, GameClass, starting_position=None):
@@ -16,8 +18,16 @@ class PygameUI:
         pygame.init()
         # Note pygame inverts x and y
         self.canvas = pygame.display.set_mode((64 * GameClass.COLUMNS, 64 * GameClass.ROWS))
-        self.imgs = [pygame.image.load(f'../../resources/{file_name}.png')
+        self.imgs = [pygame.image.load(f'../../resources/{file_name}.png') if file_name is not None else None
                      for file_name in GameClass.REPRESENTATION_FILES]
+        if GameClass.needs_checkerboard():
+            self.checkerboard = True
+            self.light_square = pygame.image.load(PygameUI.LIGHT_SQUARE_IMAGE_PATH)
+            self.dark_square = pygame.image.load(PygameUI.DARK_SQUARE_IMAGE_PATH)
+        else:
+            self.checkerboard = False
+            self.light_square = None
+            self.dark_square = None
         self.highlight_img = pygame.image.load(PygameUI.HIGHLIGHT_IMAGE_PATH)
         if starting_position is None:
             starting_position = GameClass.STARTING_STATE
@@ -52,7 +62,10 @@ class PygameUI:
                 x = 64 * i
             y = 64 * j
 
-            self.canvas.blit(img, (y, x))  # Note pygame inverts x and y
+            if self.checkerboard:
+                self.canvas.blit(self.light_square if (i + j) % 2 == 0 else self.dark_square, (y, x))
+            if img is not None:
+                self.canvas.blit(img, (y, x))  # Note pygame inverts x and y
 
             # noinspection PyUnresolvedReferences
             if changed_indices[i, j]:

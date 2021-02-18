@@ -9,8 +9,10 @@ class MiniMax(MoveChooser):
 
     def __init__(self, GameClass, starting_position=None, heuristic_func=None, depth=5):
         """
-        
-        :param heuristic_func: Take's positions for the game and returns a heuristic approximation in [-1, 1]
+        The heuristic approximation should be positive if player 1 is winning,
+        negative if player 2 is winning, and 0 if it is a draw.
+
+        :param heuristic_func: Take's positions for the game and returns a heuristic approximation.
         :param depth: 
         """
         super().__init__(GameClass, starting_position)

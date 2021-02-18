@@ -25,9 +25,9 @@ class Game(ABC):
         k is the number of features.
         For example, in checkers n=m=8 and k=5 where the features are
         [red pieces, red kings, black pieces, black kings, is white to move]
-        In chess (ignoring 50 move rule and threefold repetition) n=m=8, k=14 and features=[white pawns, white knights,
-        white bishops, white rooks, white queens, white kings, black pawns, black knights, black bishops, black rooks,
-        black queens, black kings, castling and en passant booleans (on their respective squares), is white to move].
+        In chess (ignoring 50 move rule and threefold repetition) n=m=8, k=14 and features=[white king, white queens,
+        white rooks, white bishops, white knights, white pawns, black king, black queens, black rooks, black bishops,
+        black knights, black pawns, special move booleans, is white to move].
 
 
         :return: A numpy matrix representation of the current state of this Game.
@@ -56,6 +56,9 @@ class Game(ABC):
             representation[state[:, :, i] == 1] = letter
 
         return '\n'.join([' '.join(representation[i, :]) for i in range(representation.shape[0])])
+
+    def __str__(self):
+        return self.to_string(self.state)
 
     @abstractmethod
     def perform_user_move(self, clicks):
@@ -111,10 +114,17 @@ class Game(ABC):
 
         :return: A numpy matrix indicating which images to use for each square in the grid.
         """
-        representation = np.full(cls.BOARD_SHAPE, 0)  # squares where every feature is 0 default to the 0th image
+        representation = np.zeros(cls.BOARD_SHAPE, dtype=int)  # squares where every feature is 0 default to the 0th image
         for i in range(len(cls.REPRESENTATION_FILES) - 1):  # -1 to exclude squares where every feature is 0
             representation[state[:, :, i] == 1] = i + 1
         return representation
+
+    @classmethod
+    def needs_checkerboard(cls):
+        """
+        If this game needs the UI to draw a checkerboard below the pieces, then this should return True.
+        """
+        return False
 
     @classmethod
     def get_ruleset(cls):
