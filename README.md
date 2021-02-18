@@ -32,3 +32,4 @@ uncommenting the corresponding line that starts with `CONFIG = `
 - [Lessons From Alpha Zero (part 5): Performance Optimization](https://medium.com/oracledevs/lessons-from-alpha-zero-part-5-performance-optimization-664b38dc509e)
 - [How much training data do you need?](https://medium.com/@malay.haldar/how-much-training-data-do-you-need-da8ec091e956)
 - [Working with Numpy in Cython](https://cython.readthedocs.io/en/latest/src/tutorial/numpy.html)
+- [Chess Pieces Images](https://commons.wikimedia.org/wiki/Category:PNG_chess_pieces/Standard_transparent)
