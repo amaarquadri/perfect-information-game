@@ -46,7 +46,7 @@ def parse_fen(position):
                        for rank in pieces.split('/')], axis=0)
 
     special_moves = np.zeros((8, 8, 1))
-    for letter, square in zip('KQkq', ['C1', 'G1', 'C8', 'G8']):
+    for letter, square in zip('KQkq', ['G1', 'C1', 'G8', 'C8']):
         if letter in castling:
             special_moves[parse_algebraic_notation(square)] = 1
     if en_passant != '-':
