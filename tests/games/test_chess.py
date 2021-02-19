@@ -4,13 +4,28 @@ from src.games.chess import Chess, parse_fen, encode_fen
 
 
 class TestChess(unittest.TestCase):
+    def test_move_counts(self, state, depth=3, threads=8):
+        from utils.utils import OptionalPool
+        move_counts = []
+        moves = [state]
+        with OptionalPool(threads) as pool:
+            for _ in range(depth):
+                moves = sum(pool.map(Chess.get_possible_moves, moves), start=[])
+                move_counts.append(len(moves))
+        return move_counts
+
     def test_get_possible_moves(self):
+        """
+        Test cases taken from https://gist.github.com/peterellisjones/8c46c28141c162d1d8a0f0badbc9cff9
+
+        :return:
+        """
         with open('chess_test_cases.json') as f:
             test_cases = json.load(f)
 
         for test_case in test_cases:
             if test_case['nodes'] < 1000_000:
-                node_count = Chess.test_move_counts(parse_fen(test_case['fen']), test_case['depth'])[-1]
+                node_count = self.test_move_counts(parse_fen(test_case['fen']), test_case['depth'])[-1]
                 if node_count != test_case['nodes']:
                     print(test_case['fen'])
                     raise AssertionError
@@ -18,24 +33,29 @@ class TestChess(unittest.TestCase):
                     print('pass ' + test_case['fen'])
 
     def test_again(self):
-        self.assertEqual(Chess.test_move_counts(Chess.STARTING_STATE, depth=3), [20, 400, 8902])
+        """
+        Test cases taken from https://www.chessprogramming.org/Perft_Results
 
-        self.assertEqual(Chess.test_move_counts(parse_fen(
+        :return:
+        """
+        self.assertEqual(self.test_move_counts(Chess.STARTING_STATE, depth=3), [20, 400, 8902])
+
+        self.assertEqual(self.test_move_counts(parse_fen(
             'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -'), depth=3),
             [48, 2039, 97862])
 
-        self.assertEqual(Chess.test_move_counts(parse_fen('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - '), depth=4),
+        self.assertEqual(self.test_move_counts(parse_fen('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - '), depth=4),
                          [14, 191, 2812, 43238])  # 43373 (135 too many)
 
-        self.assertEqual(Chess.test_move_counts(parse_fen(
+        self.assertEqual(self.test_move_counts(parse_fen(
             'r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1'), depth=3),
             [6, 264, 9467])
 
-        self.assertEqual(Chess.test_move_counts(parse_fen(
+        self.assertEqual(self.test_move_counts(parse_fen(
             'rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8'), depth=3),
             [44, 1486, 62379])
 
-        self.assertEqual(Chess.test_move_counts(
+        self.assertEqual(self.test_move_counts(
             parse_fen('r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 '), depth=3),
             [46, 2079, 89890])
 
