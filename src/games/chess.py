@@ -120,6 +120,7 @@ class Chess(Game):
     KNIGHT_MOVES = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]
 
     def __init__(self, state=STARTING_STATE):
+        # noinspection PyTypeChecker
         super().__init__(parse_fen(state) if type(state) is str else state)
 
     def perform_user_move(self, clicks):
@@ -354,8 +355,30 @@ class Chess(Game):
 
     @classmethod
     def get_legal_moves(cls, state):
-        # TODO: implement
-        return []
+        legal_moves = np.full(cls.MOVE_SHAPE, False)
+        friendly_slice, *_ = cls.get_stats(state)
+        for move in cls.get_possible_moves(state):
+            from_squares = []  # squares that went from friendly to empty
+            to_squares = []  # squares that went from not friendly to friendly
+            for i, j, in iter_product(cls.BOARD_SHAPE):
+                if np.any(state[i, j, friendly_slice] == 1) and np.all(move[i, j, :12] == 0):
+                    # insert to the start of the list if its a king
+                    if state[i, j, friendly_slice][0] == 1:
+                        from_squares.insert(0, (i, j))
+                    else:
+                        from_squares.append((i, j))
+                elif np.all(state[i, j, friendly_slice] == 0) and np.any(move[i, j, friendly_slice] == 1):
+                    # insert to the start of the list if its a king
+                    if move[i, j, friendly_slice][0] == 1:
+                        to_squares.insert(0, (i, j))
+                    else:
+                        to_squares.append((i, j))
+
+            if (len(from_squares) == 1 and len(to_squares) == 1) or (len(from_squares) == 2 and len(to_squares) == 2):
+                legal_moves[from_squares[0][0], from_squares[0][1], to_squares[0][0], to_squares[0][1]] = True
+            else:
+                raise Exception(f'Invalid number of piece moves: from_squares = {from_squares}, to_squares = {to_squares}')
+        return legal_moves
 
     @classmethod
     def get_stats(cls, state):
