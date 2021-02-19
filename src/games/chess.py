@@ -147,9 +147,12 @@ class Chess(Game):
         move[i, j, :12] = 0
         # handle loss of castling privileges due to rook move or capture
         for castling_row in [0, 7]:
-            for castling_column in [0, 7]:
+            for castling_column, rook_pos in [(2, 0), (6, 7)]:
                 if state[castling_row, castling_column, -2] == 1:
-                    if (i == castling_row and j == castling_column) or (i == target_i and j == target_j):
+                    # only need to check if the rook moves or is captured
+                    # if the king moves, then castling privileges will be removed as part of get_possible_moves
+                    if (i == castling_row and j == rook_pos) or \
+                            (target_i == castling_row and target_j == rook_pos):
                         move[castling_row, castling_column, -2] = 0
         return move
 
@@ -208,6 +211,7 @@ class Chess(Game):
                                 np.all(state[castling_row, castling_column, :12] == 0) and \
                                 cls.square_safe(state, castling_row, king_column, enemy_slice, -pawn_direction) and \
                                 cls.square_safe(state, castling_row, pass_through_column, enemy_slice, -pawn_direction) and \
+                                state[castling_row, rook_column, friendly_slice][2] == 1 and \
                                 (empty_column is None or np.all(state[castling_row, empty_column, :12] == 0)):
                             move = cls.create_move(state, i, j, castling_row, castling_column)
                             move[castling_row, pass_through_column, :12] = move[castling_row, rook_column, :12]
@@ -258,8 +262,15 @@ class Chess(Game):
                         for dj in [1, -1]:
                             if cls.is_valid(i + 2 * pawn_direction, j + dj) and \
                                     state[i + 2 * pawn_direction, j + dj, enemy_slice][5] == 1:
-                                move[i + pawn_direction, j, -2] = 1
-                                break
+                                # play out the en passant capture and verify that it is a valid move
+                                test_board = cls.null_move(move)
+                                test_move = cls.create_move(test_board, i + 2 * pawn_direction, j + dj,
+                                                            i + pawn_direction, j)
+                                test_move[i + 2 * pawn_direction, j, :12] = 0
+                                if cls.king_safe(test_move, enemy_slice, friendly_slice, -pawn_direction):
+                                    # verified, set the en passant flag now
+                                    move[i + pawn_direction, j, -2] = 1
+                                    break
 
                         moves.append(move)
 
@@ -394,8 +405,8 @@ class Chess(Game):
     def null_move(cls, state):
         move = super(Chess, cls).null_move(state)
         # remove en passant possibilities
-        move[1, :, -2] = 0
-        move[-2, :, -2] = 0
+        move[2, :, -2] = 0
+        move[-3, :, -2] = 0
         return move
 
     @staticmethod
