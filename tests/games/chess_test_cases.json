@@ -2,7 +2,7 @@
   {
     "depth": 1,
     "nodes": 8,
-    "fen": "r6r/1b2k1bq/8/8/7B/8/8/R3K2R b QK - 3 2"
+    "fen": "r6r/1b2k1bq/8/8/7B/8/8/R3K2R b KQ - 3 2"
   },
   {
     "depth": 1,
@@ -12,22 +12,22 @@
   {
     "depth": 1,
     "nodes": 19,
-    "fen": "r1bqkbnr/pppppppp/n7/8/8/P7/1PPPPPPP/RNBQKBNR w QqKk - 2 2"
+    "fen": "r1bqkbnr/pppppppp/n7/8/8/P7/1PPPPPPP/RNBQKBNR w KQkq - 2 2"
   },
   {
     "depth": 1,
     "nodes": 5,
-    "fen": "r3k2r/p1pp1pb1/bn2Qnp1/2qPN3/1p2P3/2N5/PPPBBPPP/R3K2R b QqKk - 3 2"
+    "fen": "r3k2r/p1pp1pb1/bn2Qnp1/2qPN3/1p2P3/2N5/PPPBBPPP/R3K2R b KQkq - 3 2"
   },
   {
     "depth": 1,
     "nodes": 44,
-    "fen": "2kr3r/p1ppqpb1/bn2Qnp1/3PN3/1p2P3/2N5/PPPBBPPP/R3K2R b QK - 3 2"
+    "fen": "2kr3r/p1ppqpb1/bn2Qnp1/3PN3/1p2P3/2N5/PPPBBPPP/R3K2R b KQ - 3 2"
   },
   {
     "depth": 1,
     "nodes": 39,
-    "fen": "rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNnPP/RNB1K2R w QK - 3 9"
+    "fen": "rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNnPP/RNB1K2R w KQ - 3 9"
   },
   {
     "depth": 1,
