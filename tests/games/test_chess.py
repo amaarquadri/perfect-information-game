@@ -25,7 +25,7 @@ class TestChess(unittest.TestCase):
 
         for test_case in test_cases:
             if test_case['nodes'] < 1000_000:
-                node_count = self.test_move_counts(parse_fen(test_case['fen']), test_case['depth'])[-1]
+                node_count = self.search_for_errors_recursive(test_case['fen'], test_case['depth'])
                 if node_count != test_case['nodes']:
                     print(test_case['fen'])
                     raise AssertionError
