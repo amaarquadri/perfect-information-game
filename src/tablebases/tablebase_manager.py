@@ -15,7 +15,8 @@ class TablebaseManager:
     Only the symmetric variants of each position are stored in the tablebases.
     """
     DRAWING_DESCRIPTORS = ['Kk', 'KBk', 'KNk']
-    AVAILABLE_TABLEBASES = [file[:len('.pickle')] for file in listdir('chess_tablebases') if file.endswith('.pickle')]
+    AVAILABLE_TABLEBASES = [file[:-len('.pickle')]
+                            for file in listdir('../tablebases/chess_tablebases') if file.endswith('.pickle')]
 
     def __init__(self):
         # dictionary mapping descriptors to tablebases
@@ -23,7 +24,7 @@ class TablebaseManager:
 
     def ensure_loaded(self, descriptor):
         if descriptor not in self.tablebases:
-            with open(f'chess_tablebases/{descriptor}.pickle', 'rb') as file:
+            with open(f'../tablebases/chess_tablebases/{descriptor}.pickle', 'rb') as file:
                 self.tablebases[descriptor] = pickle.load(file)
 
     def query_position(self, state, outcome_only=False):
@@ -71,4 +72,4 @@ class TablebaseManager:
             raise NotImplementedError()
 
         self.ensure_loaded(descriptor)
-        return parse_fen(choose_random(list(descriptor.keys())))
+        return parse_fen(choose_random(list(self.tablebases[descriptor].keys())))
