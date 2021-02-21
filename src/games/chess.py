@@ -30,8 +30,8 @@ def parse_algebraic_notation(square, layer_slice=None, as_slice=True):
         return i, j
 
 
-def parse_fen(position):
-    pieces, turn, castling, en_passant, *_ = position.split(' ')
+def parse_fen(fen):
+    pieces, turn, castling, en_passant, *_ = fen.split(' ')
     for i in range(2, 9):
         pieces = pieces.replace(str(i), i * '1')
 
@@ -118,6 +118,8 @@ class Chess(Game):
                             'white_king', 'white_queen', 'white_rook', 'white_bishop', 'white_knight', 'white_pawn',
                             'black_king', 'black_queen', 'black_rook', 'black_bishop', 'black_knight', 'black_pawn']
     KNIGHT_MOVES = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]
+    WHITE_SLICE = slice(0, 6)
+    BLACK_SLICE = slice(6, 12)
 
     def __init__(self, state=STARTING_STATE):
         # noinspection PyTypeChecker
@@ -383,16 +385,16 @@ class Chess(Game):
     @classmethod
     def get_stats(cls, state):
         if cls.is_player_1_turn(state):
-            friendly_slice = slice(0, 6)
-            enemy_slice = slice(6, 12)
+            friendly_slice = cls.WHITE_SLICE
+            enemy_slice = cls.BLACK_SLICE
             pawn_direction = -1
             queening_row = 0
             pawn_starting_row = 6
             castling_row = 7
             en_passant_row = 3
         else:
-            friendly_slice = slice(6, 12)
-            enemy_slice = slice(0, 6)
+            friendly_slice = cls.BLACK_SLICE
+            enemy_slice = cls.WHITE_SLICE
             pawn_direction = 1
             queening_row = 7
             pawn_starting_row = 1
