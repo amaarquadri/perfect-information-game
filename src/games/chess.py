@@ -4,6 +4,9 @@ from utils.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIR
 from functools import partial
 
 
+PIECE_LETTERS = 'KQRBNPkqrbnp'
+
+
 def parse_algebraic_notation(square, layer_slice=None, as_slice=True):
     letter, number = square
 
@@ -32,15 +35,13 @@ def parse_fen(position):
     for i in range(2, 9):
         pieces = pieces.replace(str(i), i * '1')
 
-    mapping = 'KQRBNPkqrbnp'
-
     def parse_piece(piece_character):
         if piece_character == '1':
-            return np.zeros(len(mapping))
-        where = np.argwhere(piece_character == np.array(list(mapping)))
+            return np.zeros(len(PIECE_LETTERS))
+        where = np.argwhere(piece_character == np.array(list(PIECE_LETTERS)))
         if len(where) == 0:
             raise ValueError(f'Invalid piece: {piece_character}')
-        return one_hot(where[0, 0], len(mapping))
+        return one_hot(where[0, 0], len(PIECE_LETTERS))
 
     pieces = np.stack([np.stack([parse_piece(piece) for piece in rank], axis=0)
                        for rank in pieces.split('/')], axis=0)
@@ -57,7 +58,6 @@ def parse_fen(position):
 
 
 def encode_fen(state):
-    mapping = 'KQRBNPkqrbnp'
 
     def encode_piece(piece_arr):
         where = np.argwhere(piece_arr)
@@ -65,7 +65,7 @@ def encode_fen(state):
             return '1'
         if len(where) > 1:
             raise ValueError('Multiple pieces in same square')
-        return mapping[where[0, 0]]
+        return PIECE_LETTERS[where[0, 0]]
     pieces = '/'.join([''.join([encode_piece(state[rank, file, :12]) for file in range(8)]) for rank in range(8)])
     for i in range(8, 1, -1):
         pieces = pieces.replace(i * '1', str(i))
