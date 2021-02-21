@@ -404,12 +404,12 @@ class Chess(Game):
             en_passant_row
 
     @classmethod
-    def is_over(cls, state):
-        return len(cls.get_possible_moves(state)) == 0
+    def is_over(cls, state, moves=None):
+        return len(cls.get_possible_moves(state)) == 0 if moves is None else len(moves) == 0
 
     @classmethod
-    def get_winner(cls, state):
-        if not cls.is_over(state):
+    def get_winner(cls, state, moves=None):
+        if not cls.is_over(state, moves):
             raise Exception('Game is not over!')
 
         friendly_slice, enemy_slice, pawn_direction, *_ = cls.get_stats(state)
