@@ -97,6 +97,7 @@ class ChessTablebaseGenerator:
                 if indices[pointer][1] == Chess.COLUMNS:
                     indices[pointer] = indices[pointer][0] + 1, 0
                     if indices[pointer][0] == Chess.ROWS:
+                        indices[pointer] = 0, 0
                         continue
                 break
             else:
