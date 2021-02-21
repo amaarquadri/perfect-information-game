@@ -26,6 +26,12 @@ class SymmetryTransform:
         if not (i <= j):
             self.transform_funcs.append(SymmetryTransform.flip_state_diagonal)
 
+    @classmethod
+    def identity(cls):
+        identity = SymmetryTransform(Chess.STARTING_STATE)
+        identity.transform_funcs = []
+        return identity
+
     def is_identity(self):
         return len(self.transform_funcs) == 0
 
