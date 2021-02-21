@@ -1,8 +1,9 @@
 import pickle
 from os import listdir
 import numpy as np
-from games.chess import Chess, encode_fen, parse_fen, PIECE_LETTERS
+from games.chess import encode_fen, parse_fen, PIECE_LETTERS
 from tablebases.symmetry_transform import SymmetryTransform
+from utils.utils import choose_random
 
 
 class TablebaseManager:
@@ -19,6 +20,11 @@ class TablebaseManager:
     def __init__(self):
         # dictionary mapping descriptors to tablebases
         self.tablebases = {}
+
+    def ensure_loaded(self, descriptor):
+        if descriptor not in self.tablebases:
+            with open(f'chess_tablebases/{descriptor}.pickle', 'rb') as file:
+                self.tablebases[descriptor] = pickle.load(file)
 
     def query_position(self, state, outcome_only=False):
         """
@@ -46,10 +52,7 @@ class TablebaseManager:
         if descriptor not in self.AVAILABLE_TABLEBASES:
             return (np.nan, np.nan) if outcome_only else (None, np.nan, np.nan)
 
-        if descriptor not in self.tablebases:
-            with open(f'chess_tablebases/{descriptor}.pickle', 'rb') as file:
-                self.tablebases[descriptor] = pickle.load(file)
-
+        self.ensure_loaded(descriptor)
         tablebase = self.tablebases[descriptor]
         transformed_move_fen, outcome, distance = tablebase[encode_fen(transformed_state)]
         if outcome_only:
@@ -62,3 +65,10 @@ class TablebaseManager:
     def get_position_descriptor(state):
         piece_counts = [np.sum(state[:, :, i] == 1) for i in range(12)]
         return ''.join([piece_count * letter for piece_count, letter in zip(piece_counts, PIECE_LETTERS)])
+
+    def get_random_endgame(self, descriptor):
+        if descriptor not in self.AVAILABLE_TABLEBASES:
+            raise NotImplementedError()
+
+        self.ensure_loaded(descriptor)
+        return parse_fen(choose_random(list(descriptor.keys())))
