@@ -1,6 +1,7 @@
+import pickle
 import numpy as np
 from games.chess import Chess, parse_fen, encode_fen, PIECE_LETTERS
-from utils.utils import OptionalPool
+from tablebases.tablebase_manager import TablebaseManager
 from tablebases.symmetry_transform import SymmetryTransform
 
 
@@ -16,26 +17,62 @@ class ChessTablebaseGenerator:
     """
     class Node:
         def __init__(self, state):
+            # since many nodes will be stored in memory at once during generation, only the fen will be stored
             self.fen = encode_fen(state)
+            self.piece_count = np.sum(state[:, :, :12] == 1)
             self.is_maximizing = Chess.is_player_1_turn(state)
+            self.optimizer = max if self.is_maximizing else min
 
-            self.children_fen = [encode_fen(move) for move in Chess.get_possible_moves(state)]
-            self.children_nodes = None
+            self.children = None
 
+            self.best_move = None
             self.outcome = Chess.get_winner(state) if Chess.is_over(state) else None
             self.terminal_distance = 0 if self.outcome is not None else None
-            self.best_move = None
 
-        def init_children(self, nodes):
-            self.children_nodes = [nodes[fen] for fen in self.children_fen]
+        def init_children(self, nodes, tablebase_manager):
+            self.children = []
+            for move in Chess.get_possible_moves(parse_fen(self.fen)):
+                move_piece_count = np.sum(move[:, :, :12] == 1)
+                if move_piece_count == self.piece_count:
+                    symmetry_transform = SymmetryTransform(move)
+                    move_fen = encode_fen(symmetry_transform.transform_state(move))
+                    self.children.append(nodes[move_fen])
+                else:
+                    node = ChessTablebaseGenerator.Node(move)
+                    node.children = []
+                    node.outcome, node.terminal_distance = tablebase_manager.query_position(move, outcome_only=True)
+                    self.children.append(node)
 
-        def extend(self):
-            if self.outcome is not None:
-                return
+        def update(self):
+            """
+            :return: True if an update was made.
+            """
+            terminal_children = [child for child in self.children if child.outcome is not None]
 
-            terminal_children = [child for child in self.children_nodes if child.outcome is not None]
             if len(terminal_children) == 0:
-                return
+                return False
+
+            losing_outcome = -1 if self.is_maximizing else 1
+            best_move = terminal_children[0]
+            for move in terminal_children[1:]:
+                if (move.outcome > best_move.outcome) if self.is_maximizing else (move.outcome < best_move.outcome):
+                    best_move = move
+                elif move.outcome == best_move.outcome:
+                    if (move.terminal_distance < best_move.terminal_distance) if move.outcome != losing_outcome \
+                            else (move.terminal_distance > best_move.terminal_distance):
+                        best_move = move
+
+            updated = False
+            if best_move != self.best_move:
+                self.best_move = best_move
+                updated = True
+            if self.outcome != best_move.outcome:
+                self.outcome = best_move.outcome
+                updated = True
+            if self.terminal_distance != best_move.terminal_distance + 1:
+                self.terminal_distance = best_move.terminal_distance + 1
+                updated = True
+            return updated
 
     @classmethod
     def piece_position_generator(cls, piece_count):
@@ -69,17 +106,14 @@ class ChessTablebaseGenerator:
                 indices[0] = SymmetryTransform.UNIQUE_SQUARE_INDICES[unique_squares_index]
 
     @classmethod
-    def generate_KQ_k_tablebase(cls, pieces, file_name=None):
-        pieces = sorted(pieces)
+    def generate_tablebase(cls, descriptor):
+        pieces = sorted([PIECE_LETTERS.index(letter) for letter in descriptor])
         if len(set(pieces)) < len(pieces):
             raise NotImplementedError('Tablebases with duplicate pieces not implemented!')
         if not (0 in pieces and 6 in pieces):
-            raise ValueError('White and black kings must be among the pieces!')
+            raise ValueError('White and black kings must be in the descriptor!')
 
-        if file_name is None:
-            file_name = ''.join([PIECE_LETTERS[i] for i in pieces]) + '.pickle'
-
-        all_nodes = {}
+        nodes = {}
         for is_white_turn in [True, False]:
             for piece_indices in cls.piece_position_generator(len(pieces)):
                 # create the state
@@ -95,13 +129,28 @@ class ChessTablebaseGenerator:
                     continue
 
                 fen = encode_fen(state)
-                all_nodes[fen] = ChessTablebaseGenerator.Node(state)
+                nodes[fen] = ChessTablebaseGenerator.Node(state)
 
+        tablebase_manager = TablebaseManager()
+        for node in nodes.values():
+            node.init_children(nodes, tablebase_manager)
 
+        updated = True
+        while updated:
+            updated = False
+            for node in nodes:
+                if node.update():
+                    updated = True
+
+        tablebase = {node.fen: (node.best_node.fen if node.best_node is not None else None,
+                                node.outcome, node.terminal_distance)
+                     for node in nodes}
+        with open(f'/chess_tablebases/{descriptor}.pickle', 'wb') as file:
+            pickle.dump(tablebase, file)
 
 
 def main():
-    ChessTablebaseGenerator.generate_KQ_k_tablebase([0, 1, 6])
+    ChessTablebaseGenerator.generate_tablebase('KQk')
 
 
 if __name__ == '__main__':
