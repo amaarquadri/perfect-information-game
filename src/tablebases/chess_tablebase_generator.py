@@ -22,7 +22,6 @@ class ChessTablebaseGenerator:
             # since many nodes will be stored in memory at once during generation, only the fen will be stored
             self.board_bytes = Chess.encode_board_bytes(state)
             self.is_maximizing = Chess.is_player_1_turn(state)
-            self.optimizer = max if self.is_maximizing else min
 
             # create children, but leave references to other nodes as move_fen strings for now
             self.children = []
@@ -91,18 +90,36 @@ class ChessTablebaseGenerator:
                 updated = True
             return updated
 
+        def destroy_connections(self):
+            """
+            Deletes links to children, and replaces best_move link with a copy of the best_move's board_bytes
+            This allows this node to be pickled (without infinite nested references),
+            which allows the final operations (calculation of move_bytes) to be done in parallel.
+            """
+            self.children = None
+            self.children_symmetry_transforms = None
+            self.best_move = self.best_move.board_bytes if self.best_move is not None else None
+
         def get_best_move(self):
+            """
+            The node's destroy_connections function must be called first.
+            """
             if self.best_move is None:
                 return 0, 0, 0, 0
 
-            transformed_move = Chess.parse_board_bytes(self.best_move.board_bytes)
+            if type(self.best_move) is not bytes:
+                print('Warning: destroy_connections not called. Calling now...')
+                self.destroy_connections()
+
+            transformed_move = Chess.parse_board_bytes(self.best_move)
             move = self.best_symmetry_transform.untransform_state(transformed_move)
             return Chess.get_from_to_move(Chess.parse_board_bytes(self.board_bytes), move)
 
-        def get_move_bytes(self):
-            start_i, start_j, end_i, end_j = self.get_best_move()
-            return TablebaseManager.encode_move_bytes(self.outcome, start_i, start_j, end_i, end_j,
-                                                      self.terminal_distance)
+        @staticmethod
+        def get_move_bytes(node):
+            start_i, start_j, end_i, end_j = node.get_best_move()
+            return TablebaseManager.encode_move_bytes(node.outcome, start_i, start_j, end_i, end_j,
+                                                      node.terminal_distance)
 
     @classmethod
     def piece_position_generator(cls, piece_count):
@@ -159,7 +176,7 @@ class ChessTablebaseGenerator:
         return nodes
 
     @classmethod
-    def generate_tablebase(cls, descriptor, threads=14):
+    def generate_tablebase(cls, descriptor, pool):
         pieces = sorted([PIECE_LETTERS.index(letter) for letter in descriptor])
         if len(set(pieces)) < len(pieces):
             raise NotImplementedError('Tablebases with duplicate pieces not implemented!')
@@ -168,10 +185,9 @@ class ChessTablebaseGenerator:
 
         nodes = {}
         tablebase_manager = TablebaseManager()
-        with OptionalPool(threads) as pool:
-            for some_nodes in pool.map(partial(cls.create_node, pieces=pieces, tablebase_manager=tablebase_manager),
-                                       cls.piece_position_generator(len(pieces))):
-                nodes.update(some_nodes)
+        for some_nodes in pool.map(partial(cls.create_node, pieces=pieces, tablebase_manager=tablebase_manager),
+                                   cls.piece_position_generator(len(pieces))):
+            nodes.update(some_nodes)
 
         with open(f'chess_tablebases/{descriptor}_nodes.pickle', 'wb') as file:
             pickle.dump(nodes, file)
@@ -186,20 +202,26 @@ class ChessTablebaseGenerator:
                 if node.update():
                     updated = True
 
-        tablebase = {node.board_bytes: node.get_move_bytes() for node in nodes.values()}
+        nodes = list(nodes.values())
+        for node in nodes:
+            node.destroy_connections()
+        node_move_bytes = pool.map(ChessTablebaseGenerator.Node.get_move_bytes, nodes)
+        tablebase = {node.board_bytes: move_bytes for node, move_bytes in zip(nodes, node_move_bytes)}
+
         with open(f'chess_tablebases/{descriptor}.pickle', 'wb') as file:
             pickle.dump(tablebase, file)
 
 
-def generate_tablebases():
+def generate_tablebases(threads=12):
     THREE_MAN = 'KQk,KRk,KPk'  # KBk and KNk are theoretical draws
     FOUR_MAN_NO_ENEMY = 'KQQk,KQRk,KQBk,KQNk,KQPk,KRRk,KRBk,KRNk,KRPk,KBBk,KBNk,KBPk,KNNk,KNPk,KPPk'
     FOUR_MAN_ENEMY = 'KQkq,KQkr,KQkb,KQkn,KQkp,KRkr,KRkb,KRkn,KRkp,KBkb,KBkn,KBkp,KNkn,KNkp,KPkp'
-    for section in [THREE_MAN]:
-        for descriptor in section.split(','):
-            ChessTablebaseGenerator.generate_tablebase(descriptor)
-            print(f'Completed {descriptor}')
-        TablebaseManager.update_tablebase_list()
+    with OptionalPool(threads) as pool:
+        for section in [THREE_MAN, FOUR_MAN_ENEMY, FOUR_MAN_NO_ENEMY]:
+            for descriptor in section.split(','):
+                ChessTablebaseGenerator.generate_tablebase(descriptor, pool)
+                print(f'Completed {descriptor}')
+            TablebaseManager.update_tablebase_list()
 
 
 if __name__ == '__main__':
