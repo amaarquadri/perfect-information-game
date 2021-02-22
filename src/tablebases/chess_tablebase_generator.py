@@ -86,6 +86,18 @@ class ChessTablebaseGenerator:
                 updated = True
             return updated
 
+        def mark_resolved(self):
+            if self.outcome is None:
+                # a drawing strategy exists
+                for move, symmetry_transform in zip(self.children, self.children_symmetry_transforms):
+                    if move.outcome is None or move.outcome == 0:
+                        self.best_move, self.best_symmetry_transform = move, symmetry_transform
+                        break
+                else:
+                    print('Warning node found with outcome = None, but no drawing children!')
+                self.outcome = 0
+                self.terminal_distance = np.inf
+
         def get_best_move(self):
             if self.best_move is None:
                 return None
