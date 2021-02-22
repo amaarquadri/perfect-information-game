@@ -166,6 +166,17 @@ class Chess(Game):
             for i, square in enumerate(row):
                 if square:
                     value += (1 << i)
+            board_bytes.append(value)
+        if np.sum(bitboard) % 2 == 1:
+            board_bytes.append(pieces[0])
+            pieces = pieces[1:]
+        for i in range(0, len(pieces), 2):
+            board_bytes.append(16 * pieces[i] + pieces[i + 1])
+        return bytes(board_bytes)
+
+    @classmethod
+    def parse_bitboard(cls, board_bytes):
+        pass
 
     def __init__(self, state=STARTING_STATE):
         # noinspection PyTypeChecker
