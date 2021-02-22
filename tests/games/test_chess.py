@@ -1,5 +1,6 @@
 import unittest
 import json
+import numpy as np
 from src.games.chess import Chess, parse_fen, encode_fen
 
 
@@ -94,6 +95,25 @@ class TestChess(unittest.TestCase):
         for move in chess_moves:
             total += self.search_for_errors_recursive(move, depth - 1)
         return total
+
+    def test_board_bytes(self):
+        self.test_encodings(Chess.STARTING_STATE)
+
+        with open('chess_test_cases.json') as f:
+            test_cases = json.load(f)
+
+        for test_case in test_cases:
+            fen = test_case['fen']
+            state = parse_fen(fen)
+            self.test_encodings(state)
+            for move in Chess.get_possible_moves(state):
+                self.test_encodings(move)
+
+    def test_encodings(self, state):
+        if not np.all(state == Chess.parse_board_bytes(Chess.encode_board_bytes(state))):
+            raise AssertionError(f'Failed to consistently process board_bytes: {encode_fen(state)}')
+        if not np.all(state == parse_fen(encode_fen(state))):
+            raise AssertionError(f'Failed to consistently process fen: {encode_fen(state)}')
 
 
 if __name__ == '__main__':
