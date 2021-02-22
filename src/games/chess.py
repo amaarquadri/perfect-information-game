@@ -54,7 +54,7 @@ def parse_fen(fen):
         special_moves[parse_algebraic_notation(en_passant.capitalize())] = 1
 
     turn = np.full((8, 8, 1), 1 if turn.lower() == 'w' else 0)
-    return np.concatenate((pieces, special_moves, turn), axis=-1)
+    return np.concatenate((pieces, special_moves, turn), axis=-1).astype(np.uint8)
 
 
 def encode_fen(state):
