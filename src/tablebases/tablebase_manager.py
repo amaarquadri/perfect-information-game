@@ -18,6 +18,13 @@ class TablebaseManager:
     AVAILABLE_TABLEBASES = [file[:-len('.pickle')]
                             for file in listdir('../tablebases/chess_tablebases') if file.endswith('.pickle')]
 
+    @classmethod
+    def update_tablebase_list(cls):
+        tablebases = [file[:-len('.pickle')] for file in listdir('../tablebases/chess_tablebases')
+                      if file.endswith('.pickle')]
+        cls.AVAILABLE_TABLEBASES.extend([tablebase for tablebase in tablebases
+                                         if tablebase not in cls.AVAILABLE_TABLEBASES])
+
     def __init__(self):
         # dictionary mapping descriptors to tablebases
         self.tablebases = {}
