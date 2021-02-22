@@ -176,7 +176,7 @@ class Chess(Game):
 
     @classmethod
     def parse_board_bytes(cls, board_bytes):
-        board_bytes = list(board_bytes)
+        board_bytes = list(board_bytes)  # convert back to list of integers
         bitboard = np.array([[row & (1 << square) for square in range(8)] for row in board_bytes[:8]]) != 0
         board_bytes = board_bytes[8:]
         pieces = []
@@ -489,7 +489,10 @@ class Chess(Game):
         return legal_moves
 
     @classmethod
-    def get_from_to_move(cls, state, move, friendly_slice):
+    def get_from_to_move(cls, state, move, friendly_slice=None):
+        if friendly_slice is None:
+            friendly_slice, *_ = cls.get_stats(state)
+
         from_squares = []  # squares that went from friendly to empty
         to_squares = []  # squares that went from not friendly to friendly
         for i, j, in iter_product(cls.BOARD_SHAPE):
