@@ -171,7 +171,7 @@ class ChessTablebaseGenerator:
         with OptionalPool(threads) as pool:
             for some_nodes in pool.map(partial(cls.create_node, pieces=pieces, tablebase_manager=tablebase_manager),
                                        cls.piece_position_generator(len(pieces))):
-                nodes.update(**some_nodes)
+                nodes.update(some_nodes)
 
         with open(f'chess_tablebases/{descriptor}_nodes.pickle', 'wb') as file:
             pickle.dump(nodes, file)
