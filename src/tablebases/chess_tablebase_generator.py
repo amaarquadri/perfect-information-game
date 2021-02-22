@@ -1,6 +1,6 @@
 import pickle
 import numpy as np
-from games.chess import Chess, encode_fen, PIECE_LETTERS
+from games.chess import Chess, encode_fen, parse_fen, PIECE_LETTERS
 from tablebases.tablebase_manager import TablebaseManager
 from tablebases.symmetry_transform import SymmetryTransform
 from utils.utils import OptionalPool
@@ -26,6 +26,7 @@ class ChessTablebaseGenerator:
 
             # create children, but leave references to other nodes as move_fen strings for now
             self.children = []
+            self.children_symmetry_transforms = []
             piece_count = np.sum(state[:, :, :12] == 1)
             moves = Chess.get_possible_moves(state)
             for move in moves:
@@ -34,13 +35,16 @@ class ChessTablebaseGenerator:
                     symmetry_transform = SymmetryTransform(move)
                     move_fen = encode_fen(symmetry_transform.transform_state(move))
                     self.children.append(move_fen)
+                    self.children_symmetry_transforms.append(symmetry_transform)
                 else:
                     node = ChessTablebaseGenerator.Node(move, tablebase_manager)
                     node.children = []
                     node.outcome, node.terminal_distance = tablebase_manager.query_position(move, outcome_only=True)
                     self.children.append(node)
+                    self.children_symmetry_transforms.append(SymmetryTransform.identity())
 
             self.best_move = None
+            self.best_symmetry_transform = None
             self.outcome = Chess.get_winner(state, moves) if Chess.is_over(state, moves) else None
             self.terminal_distance = 0 if self.outcome is not None else None
 
@@ -52,24 +56,27 @@ class ChessTablebaseGenerator:
             """
             :return: True if an update was made.
             """
-            terminal_children = [child for child in self.children if child.outcome is not None]
+            terminal_children = [(child, symmetry_transform)
+                                 for child, symmetry_transform in zip(self.children, self.children_symmetry_transforms)
+                                 if child.outcome is not None]
 
             if len(terminal_children) == 0:
                 return False
 
             losing_outcome = -1 if self.is_maximizing else 1
-            best_move = terminal_children[0]
-            for move in terminal_children[1:]:
+            best_move, best_symmetry_transform = terminal_children[0]
+            for move, symmetry_transform in terminal_children[1:]:
                 if (move.outcome > best_move.outcome) if self.is_maximizing else (move.outcome < best_move.outcome):
-                    best_move = move
+                    best_move, best_symmetry_transform = move, symmetry_transform
                 elif move.outcome == best_move.outcome:
                     if (move.terminal_distance < best_move.terminal_distance) if move.outcome != losing_outcome \
                             else (move.terminal_distance > best_move.terminal_distance):
-                        best_move = move
+                        best_move, best_symmetry_transform = move, symmetry_transform
 
             updated = False
             if best_move != self.best_move:
                 self.best_move = best_move
+                self.best_symmetry_transform = best_symmetry_transform
                 updated = True
             if self.outcome != best_move.outcome:
                 self.outcome = best_move.outcome
@@ -78,6 +85,14 @@ class ChessTablebaseGenerator:
                 self.terminal_distance = best_move.terminal_distance + 1
                 updated = True
             return updated
+
+        def get_best_move(self):
+            if self.best_move is None:
+                return None
+
+            transformed_move = parse_fen(self.best_move.fen)
+            best_move_fen = encode_fen(self.best_symmetry_transform.untransform_state(transformed_move))
+            return best_move_fen
 
     @classmethod
     def piece_position_generator(cls, piece_count):
@@ -134,7 +149,7 @@ class ChessTablebaseGenerator:
         return nodes
 
     @classmethod
-    def generate_tablebase(cls, descriptor, threads=12):
+    def generate_tablebase(cls, descriptor, threads=14):
         pieces = sorted([PIECE_LETTERS.index(letter) for letter in descriptor])
         if len(set(pieces)) < len(pieces):
             raise NotImplementedError('Tablebases with duplicate pieces not implemented!')
@@ -161,16 +176,18 @@ class ChessTablebaseGenerator:
                 if node.update():
                     updated = True
 
-        tablebase = {node.fen: (node.best_move.fen if node.best_move is not None else None,
-                                node.outcome, node.terminal_distance)
+        tablebase = {node.fen: (node.get_best_move(), node.outcome, node.terminal_distance)
                      for node in nodes.values()}
         with open(f'chess_tablebases/{descriptor}.pickle', 'wb') as file:
             pickle.dump(tablebase, file)
 
 
 def main():
-    for descriptor in 'KQk,KRk,KBNk'.split(','):
+    # KQk,KRk,KBNk
+    # TODO: KBBk
+    for descriptor in 'KQkn,KQkb,KQkr'.split(','):
         ChessTablebaseGenerator.generate_tablebase(descriptor)
+        print(f'Completed {descriptor}')
 
 
 if __name__ == '__main__':
