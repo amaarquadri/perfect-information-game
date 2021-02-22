@@ -13,7 +13,7 @@ class ChessTablebaseGenerator:
     If material is equal, then it will be treated as if white is up in material.
     Material comparison is determined using Chess.heuristic.
 
-    Symmetry will be applied to ensure that for the attacking king: i < 4, j < 4, i <=j.
+    Symmetry will be applied to ensure that for the attacking king: i < 4, j < 4, i <= j.
 
     The tablebase will not support any positions where pawns are present or castling is possible.
     """
@@ -45,8 +45,15 @@ class ChessTablebaseGenerator:
 
             self.best_move = None
             self.best_symmetry_transform = None
-            self.outcome = Chess.get_winner(state, moves) if Chess.is_over(state, moves) else None
-            self.terminal_distance = 0 if self.outcome is not None else None
+            if Chess.is_over(state, moves):
+                self.outcome = Chess.get_winner(state, moves)
+                self.terminal_distance = 0
+            else:
+                # assume that everything is a draw (by fortress) unless proven otherwise
+                # this will get overwritten with a win if any child node is proven to be a win
+                # this will get overwritten with a loss if all child nodes are proven to be a loss
+                self.outcome = 0
+                self.terminal_distance = np.inf
 
         def init_children(self, nodes):
             # replace move_fen strings with references to actual nodes
@@ -56,16 +63,13 @@ class ChessTablebaseGenerator:
             """
             :return: True if an update was made.
             """
-            terminal_children = [(child, symmetry_transform)
-                                 for child, symmetry_transform in zip(self.children, self.children_symmetry_transforms)
-                                 if child.outcome is not None]
-
-            if len(terminal_children) == 0:
+            if len(self.children) == 0:
+                # this was a terminal node from the start, so there is nothing to update
                 return False
 
             losing_outcome = -1 if self.is_maximizing else 1
-            best_move, best_symmetry_transform = terminal_children[0]
-            for move, symmetry_transform in terminal_children[1:]:
+            best_move, best_symmetry_transform = self.children[0], self.children_symmetry_transforms[0]
+            for move, symmetry_transform in zip(self.children[1:], self.children_symmetry_transforms[1:]):
                 if (move.outcome > best_move.outcome) if self.is_maximizing else (move.outcome < best_move.outcome):
                     best_move, best_symmetry_transform = move, symmetry_transform
                 elif move.outcome == best_move.outcome:
@@ -82,6 +86,7 @@ class ChessTablebaseGenerator:
                 self.outcome = best_move.outcome
                 updated = True
             if self.terminal_distance != best_move.terminal_distance + 1:
+                # note that this arithmetic will work, even with np.inf
                 self.terminal_distance = best_move.terminal_distance + 1
                 updated = True
             return updated
@@ -195,11 +200,14 @@ class ChessTablebaseGenerator:
 
 
 def main():
-    # KQk,KRk,KBNk
-    # TODO: KBBk
-    for descriptor in 'KQkn,KQkb,KQkr'.split(','):
-        ChessTablebaseGenerator.generate_tablebase(descriptor)
-        print(f'Completed {descriptor}')
+    THREE_MAN = 'KQk,KRk,KPk'  # KBk and KNk are theoretical draws
+    FOUR_MAN_NO_ENEMY = 'KQQk,KQRk,KQBk,KQNk,KQPk,KRRk,KRBk,KRNk,KRPk,KBBk,KBNk,KBPk,KNNk,KNPk,KPPk'
+    FOUR_MAN_ENEMY = 'KQkq,KQkr,KQkb,KQkn,KQkp,KRkr,KRkb,KRkn,KRkp,KBkb,KBkn,KBkp,KNkn,KNkp,KPkp'
+    for section in [THREE_MAN]:
+        for descriptor in section.split(','):
+            ChessTablebaseGenerator.generate_tablebase(descriptor)
+            print(f'Completed {descriptor}')
+        TablebaseManager.update_tablebase_list()
 
 
 if __name__ == '__main__':
