@@ -72,7 +72,15 @@ class ChessTablebaseGenerator:
                 if (move.outcome > best_move.outcome) if self.is_maximizing else (move.outcome < best_move.outcome):
                     best_move, best_symmetry_transform = move, symmetry_transform
                 elif move.outcome == best_move.outcome:
-                    if (move.terminal_distance < best_move.terminal_distance) if move.outcome != losing_outcome \
+                    if move.outcome == 0:
+                        # if is_maximizing, then it is white's turn
+                        # white is always up in material advantage (for the endgame tablebases)
+                        # if we are up in material, try to delay the draw
+                        # if we are down in material, try to hasten the draw
+                        if (move.terminal_distance > best_move.terminal_distance) if self.is_maximizing \
+                                else (move.terminal_distance < best_move.terminal_distance):
+                            best_move, best_symmetry_transform = move, symmetry_transform
+                    elif (move.terminal_distance < best_move.terminal_distance) if move.outcome != losing_outcome \
                             else (move.terminal_distance > best_move.terminal_distance):
                         best_move, best_symmetry_transform = move, symmetry_transform
 
