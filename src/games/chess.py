@@ -122,7 +122,8 @@ class Chess(Game):
     BLACK_SLICE = slice(6, 12)
 
     @classmethod
-    def encode_bitboard(cls, state):
+    def encode_board_bytes(cls, state):
+        # https://codegolf.stackexchange.com/questions/19397/smallest-chess-board-compression
         bitboard = np.sum(state[:, :, :12], axis=-1) == 1
         is_white_turn = cls.is_player_1_turn(state)
         pieces = []
@@ -133,7 +134,7 @@ class Chess(Game):
             # KQRBNP, King to move, Rook that can castle or Pawn that moved 2 squares, same 8 for black
             where = np.argwhere(state[i, j, :12])[0, 0]
             piece = where % 6
-            is_white = piece < 6
+            is_white = where < 6
 
             if piece == 0 and is_white == is_white_turn:  # if piece is a king whose turn it is
                 pieces.append(6 if is_white_turn else 14)
@@ -175,8 +176,75 @@ class Chess(Game):
         return bytes(board_bytes)
 
     @classmethod
-    def parse_bitboard(cls, board_bytes):
-        pass
+    def parse_board_bytes(cls, board_bytes):
+        board_bytes = list(board_bytes)
+        bitboard = np.array([[row & (1 << square) for square in range(8)] for row in board_bytes[:8]]) != 0
+        board_bytes = board_bytes[8:]
+        pieces = []
+        piece_count = np.sum(bitboard)
+        if piece_count % 2 == 1:
+            pieces.append(board_bytes[0])
+            board_bytes = board_bytes[1:]
+        for piece_bytes in board_bytes:
+            pieces.append(piece_bytes // 16)
+            pieces.append(piece_bytes % 16)
+
+        if len(pieces) != piece_count:
+            raise ValueError(f'Inconsistent number of pieces! Expected {piece_count} but got {len(pieces)}')
+
+        state = np.zeros(Chess.STATE_SHAPE)
+        en_passant_processed = False
+        for i, j in iter_product(Chess.BOARD_SHAPE):
+            if not bitboard[i, j]:
+                continue
+
+            piece_value = pieces.pop(0)
+            is_white = piece_value < 8
+            piece = piece_value % 8
+
+            if piece == 6:  # if the piece is a king whose turn it is
+                # process turn information
+                if is_white:
+                    state[:, :, -1] = 1
+                piece = 0  # convert to regular king
+            if piece == 7:
+                if i == 0 or i == 7:  # if this is castling information
+                    if i == 0 and j == 0 and not is_white:
+                        state[0, 2, -2] = 1
+                    elif i == 0 and j == 7 and not is_white:
+                        state[0, 6, -2] = 1
+                    elif i == 7 and j == 0 and is_white:
+                        state[7, 2, -2] = 1
+                    elif i == 7 and j == 7 and is_white:
+                        state[7, 6, -2] = 1
+                    else:
+                        raise ValueError(f'Castling information on invalid square! '
+                                         f'i = {i}, j = {j}, is_white = {is_white}')
+                    piece = 2  # convert to regular rook
+                elif i == 3 or i == 4:  # if this is en passant information
+                    if en_passant_processed:
+                        raise ValueError(f'Second en passant square found! i = {i}, j = {j}, is_white = {is_white}')
+                    if i == 4 and is_white:
+                        state[i + 1, j, -2] = 1
+                    elif i == 3 and not is_white:
+                        state[i - 1, j, -2] = 1
+                    else:
+                        raise ValueError(f'En passant rank does not match the correct colour! '
+                                         f'i = {i}, j = {j}, is_white = {is_white}')
+                    en_passant_processed = True
+                    piece = 5  # convert to regular pawn
+                else:
+                    raise ValueError(f'Special piece on invalid square! i = {i}, j = {j}, is_white = {is_white}')
+
+            state[i, j, piece + (0 if is_white else 6)] = 1
+
+        if en_passant_processed:
+            # check if en passant information is consistent with whose turn it is
+            is_white_pawn_en_passant = np.any(state[5, :, -2] == 1)
+            if is_white_pawn_en_passant == cls.is_player_1_turn(state):
+                raise ValueError('The player whose turn it is also has an en passant pawn!')
+
+        return state
 
     def __init__(self, state=STARTING_STATE):
         # noinspection PyTypeChecker
