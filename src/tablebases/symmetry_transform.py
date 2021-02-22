@@ -5,7 +5,8 @@ from utils.utils import iter_product
 
 class SymmetryTransform:
     # noinspection PyChainedComparisons
-    UNIQUE_SQUARE_INDICES = [(i, j) for i, j in iter_product(Chess.BOARD_SHAPE) if i < 4 and j < 4 and i <= j]
+    PAWNLESS_UNIQUE_SQUARE_INDICES = [(i, j) for i, j in iter_product(Chess.BOARD_SHAPE) if i < 4 and j < 4 and i <= j]
+    UNIQUE_SQUARE_INDICES = [(i, j) for i, j in iter_product(Chess.BOARD_SHAPE) if j < 4]
 
     def __init__(self, state):
         self.transform_funcs = []

@@ -26,11 +26,11 @@ class ChessTablebaseGenerator:
             # create children, but leave references to other nodes as move_fen strings for now
             self.children = []
             self.children_symmetry_transforms = []
-            piece_count = np.sum(state[:, :, :12] == 1)
+            descriptor = TablebaseManager.get_position_descriptor(state)
             moves = Chess.get_possible_moves(state)
             for move in moves:
-                move_piece_count = np.sum(move[:, :, :12] == 1)
-                if move_piece_count == piece_count:
+                # need to compare descriptors (piece count is not robust to pawn promotions)
+                if TablebaseManager.get_position_descriptor(move) == descriptor:
                     symmetry_transform = SymmetryTransform(move)
                     move_board_bytes = Chess.encode_board_bytes(symmetry_transform.transform_state(move))
                     self.children.append(move_board_bytes)
@@ -122,7 +122,7 @@ class ChessTablebaseGenerator:
                                                       node.terminal_distance)
 
     @classmethod
-    def piece_position_generator(cls, piece_count):
+    def piece_position_generator(cls, piece_count, pawnless=True):
         """
         This function is a generator that iterates over all possible piece configurations.
         Each piece configuration yielded is a list of (i, j) tuples.
@@ -131,12 +131,16 @@ class ChessTablebaseGenerator:
         This function assumes that pieces are unique. For example, having 2 white rooks are not supported.
 
         :param piece_count: The number of pieces.
+        :param pawnless: If True, then the fact that there are no pawns will be used to impose extra symmetries and
+                         decrease the total number of nodes to be considered.
         """
         unique_squares_index = 0
-        indices = [SymmetryTransform.UNIQUE_SQUARE_INDICES[unique_squares_index]] + [(0, 0)] * (piece_count - 1)
+        unique_squares = SymmetryTransform.PAWNLESS_UNIQUE_SQUARE_INDICES if pawnless \
+            else SymmetryTransform.UNIQUE_SQUARE_INDICES
+        indices = [unique_squares[unique_squares_index]] + [(0, 0)] * (piece_count - 1)
         while True:
             # yield if all indices are unique and attacking king is in one of the
-            if len(set(indices)) == piece_count and indices[0] in SymmetryTransform.UNIQUE_SQUARE_INDICES:
+            if len(set(indices)) == piece_count:
                 yield indices.copy()
 
             for pointer in range(piece_count - 1, 0, -1):  # intentionally skip index 0
@@ -149,9 +153,9 @@ class ChessTablebaseGenerator:
                 break
             else:
                 unique_squares_index += 1
-                if unique_squares_index == len(SymmetryTransform.UNIQUE_SQUARE_INDICES):
+                if unique_squares_index == len(unique_squares):
                     break
-                indices[0] = SymmetryTransform.UNIQUE_SQUARE_INDICES[unique_squares_index]
+                indices[0] = unique_squares[unique_squares_index]
 
     @classmethod
     def create_node(cls, piece_indices, pieces, tablebase_manager):
@@ -171,6 +175,11 @@ class ChessTablebaseGenerator:
             if not Chess.king_safe(state, enemy_slice, friendly_slice, -pawn_direction):
                 continue
 
+            if np.any(state[0, :, 5] == 1) or np.any(state[7, :, 5] == 1) \
+                    or np.any(state[0, :, 11] == 1) or np.any(state[7, :, 11] == 1):
+                # ignore states with pawns on the first or last ranks
+                continue
+
             node = ChessTablebaseGenerator.Node(state, tablebase_manager)
             nodes[node.board_bytes] = node
         return nodes
@@ -185,8 +194,9 @@ class ChessTablebaseGenerator:
 
         nodes = {}
         tablebase_manager = TablebaseManager()
+        pawnless = 'P' not in descriptor and 'p' not in descriptor
         for some_nodes in pool.map(partial(cls.create_node, pieces=pieces, tablebase_manager=tablebase_manager),
-                                   cls.piece_position_generator(len(pieces))):
+                                   cls.piece_position_generator(len(pieces), pawnless)):
             nodes.update(some_nodes)
 
         with open(f'chess_tablebases/{descriptor}_nodes.pickle', 'wb') as file:
@@ -215,13 +225,14 @@ class ChessTablebaseGenerator:
 def generate_tablebases(threads=12):
     THREE_MAN = 'KQk,KRk,KPk'  # KBk and KNk are theoretical draws
     FOUR_MAN_NO_ENEMY = 'KQQk,KQRk,KQBk,KQNk,KQPk,KRRk,KRBk,KRNk,KRPk,KBBk,KBNk,KBPk,KNNk,KNPk,KPPk'
-    FOUR_MAN_ENEMY = 'KQkq,KQkr,KQkb,KQkn,KQkp,KRkr,KRkb,KRkn,KRkp,KBkb,KBkn,KBkp,KNkn,KNkp,KPkp'
+    FOUR_MAN_WITH_ENEMY = 'KQkq,KQkr,KQkb,KQkn,KQkp,KRkr,KRkb,KRkn,KRkp,KBkb,KBkn,KBkp,KNkn,KNkp,KPkp'
     with OptionalPool(threads) as pool:
-        for section in [THREE_MAN, FOUR_MAN_ENEMY, FOUR_MAN_NO_ENEMY]:
+        for section in [THREE_MAN, FOUR_MAN_WITH_ENEMY, FOUR_MAN_NO_ENEMY]:
             for descriptor in section.split(','):
                 ChessTablebaseGenerator.generate_tablebase(descriptor, pool)
                 print(f'Completed {descriptor}')
-            TablebaseManager.update_tablebase_list()
+                # need to refresh every time due to pawn promotions
+                TablebaseManager.update_tablebase_list()
 
 
 if __name__ == '__main__':
