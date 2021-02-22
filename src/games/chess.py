@@ -58,7 +58,6 @@ def parse_fen(fen):
 
 
 def encode_fen(state):
-
     def encode_piece(piece_arr):
         where = np.argwhere(piece_arr)
         if len(where) == 0:
@@ -73,7 +72,7 @@ def encode_fen(state):
     turn = 'w' if Chess.is_player_1_turn(state) else 'b'
 
     castling = ''
-    for letter, square in [('K', 'G1'), ('Q', 'C1'), ('k', 'G8'), ('q', 'G8')]:
+    for letter, square in [('K', 'G1'), ('Q', 'C1'), ('k', 'G8'), ('q', 'C8')]:
         if state[parse_algebraic_notation(square, layer_slice=-2)] == 1:
             castling += letter
     if len(castling) == 0:
