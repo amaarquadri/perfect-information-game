@@ -18,7 +18,7 @@ class ChessTablebaseGenerator:
     The tablebase will not support any positions where pawns are present or castling is possible.
     """
     class Node:
-        def __init__(self, state, tablebase_manager):
+        def __init__(self, state, descriptor, tablebase_manager):
             # since many nodes will be stored in memory at once during generation, only the fen will be stored
             self.board_bytes = Chess.encode_board_bytes(state)
             self.is_maximizing = Chess.is_player_1_turn(state)
@@ -26,17 +26,17 @@ class ChessTablebaseGenerator:
             # create children, but leave references to other nodes as move_fen strings for now
             self.children = []
             self.children_symmetry_transforms = []
-            descriptor = TablebaseManager.get_position_descriptor(state)
             moves = Chess.get_possible_moves(state)
             for move in moves:
                 # need to compare descriptors (piece count is not robust to pawn promotions)
-                if TablebaseManager.get_position_descriptor(move) == descriptor:
+                move_descriptor = TablebaseManager.get_position_descriptor(move)
+                if move_descriptor == descriptor:
                     symmetry_transform = SymmetryTransform(move)
                     move_board_bytes = Chess.encode_board_bytes(symmetry_transform.transform_state(move))
                     self.children.append(move_board_bytes)
                     self.children_symmetry_transforms.append(symmetry_transform)
                 else:
-                    node = ChessTablebaseGenerator.Node(move, tablebase_manager)
+                    node = ChessTablebaseGenerator.Node(move, move_descriptor, tablebase_manager)
                     node.children = []
                     node.outcome, node.terminal_distance = tablebase_manager.query_position(move, outcome_only=True)
                     self.children.append(node)
@@ -142,6 +142,7 @@ class ChessTablebaseGenerator:
         :param pawnless: If True, then the fact that there are no pawns will be used to impose extra symmetries and
                          decrease the total number of nodes to be considered.
         """
+        # TODO: handle repeated pieces
         unique_squares_index = 0
         unique_squares = SymmetryTransform.PAWNLESS_UNIQUE_SQUARE_INDICES if pawnless \
             else SymmetryTransform.UNIQUE_SQUARE_INDICES
@@ -166,7 +167,7 @@ class ChessTablebaseGenerator:
                 indices[0] = unique_squares[unique_squares_index]
 
     @classmethod
-    def create_node(cls, piece_indices, pieces, tablebase_manager):
+    def create_node(cls, piece_indices, descriptor, pieces, tablebase_manager):
         nodes = {}
         for is_white_turn in True, False:
             # create the state
@@ -188,7 +189,7 @@ class ChessTablebaseGenerator:
                 # ignore states with pawns on the first or last ranks
                 continue
 
-            node = ChessTablebaseGenerator.Node(state, tablebase_manager)
+            node = ChessTablebaseGenerator.Node(state, descriptor, tablebase_manager)
             nodes[node.board_bytes] = node
         return nodes
 
@@ -203,7 +204,8 @@ class ChessTablebaseGenerator:
         nodes = {}
         tablebase_manager = TablebaseManager()
         pawnless = 'P' not in descriptor and 'p' not in descriptor
-        for some_nodes in pool.map(partial(cls.create_node, pieces=pieces, tablebase_manager=tablebase_manager),
+        for some_nodes in pool.map(partial(cls.create_node, descriptor=descriptor, pieces=pieces,
+                                           tablebase_manager=tablebase_manager),
                                    cls.piece_position_generator(len(pieces), pawnless)):
             nodes.update(some_nodes)
 
