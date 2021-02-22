@@ -251,17 +251,19 @@ class Chess(Game):
 
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
-        friendly_slice, enemy_slice, *_ = self.get_stats(self.state)
+        self.state = self.apply_from_to_move(self.state, start_i, start_j, end_i, end_j)
 
-        for move in self.get_possible_moves(self.state):
-            if np.any(self.state[start_i, start_j, friendly_slice] == 1) and \
-                    np.all(self.state[end_i, end_j, friendly_slice] == 0) and \
+    @classmethod
+    def apply_from_to_move(cls, state, start_i, start_j, end_i, end_j):
+        friendly_slice, enemy_slice, *_ = cls.get_stats(state)
+
+        for move in cls.get_possible_moves(state):
+            if np.any(state[start_i, start_j, friendly_slice] == 1) and \
+                    np.all(state[end_i, end_j, friendly_slice] == 0) and \
                     np.all(move[start_i, start_j, :12] == 0) and \
                     np.any(move[end_i, end_j, friendly_slice] == 1):
-                self.state = move
-                break
-        else:
-            raise ValueError('Invalid Move!')
+                return move
+        raise ValueError('Invalid Move!')
 
     @classmethod
     def needs_checkerboard(cls):
