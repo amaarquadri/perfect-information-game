@@ -121,6 +121,52 @@ class Chess(Game):
     WHITE_SLICE = slice(0, 6)
     BLACK_SLICE = slice(6, 12)
 
+    @classmethod
+    def encode_bitboard(cls, state):
+        bitboard = np.sum(state[:, :, :12], axis=-1) == 1
+        is_white_turn = cls.is_player_1_turn(state)
+        pieces = []
+        for i, j in iter_product(Chess.BOARD_SHAPE):
+            if not bitboard[i, j]:
+                continue
+
+            # KQRBNP, King to move, Rook that can castle or Pawn that moved 2 squares, same 8 for black
+            where = np.argwhere(state[i, j, :12])[0, 0]
+            piece = where % 6
+            is_white = piece < 6
+
+            if piece == 0 and is_white == is_white_turn:  # if piece is a king whose turn it is
+                pieces.append(6 if is_white_turn else 14)
+                continue
+
+            if piece == 2 and i == (7 if is_white else 0):  # if piece is a rook on home rank
+                if i == 0 and j == 0 and state[0, 2, -2] == 1:
+                    pieces.append(15)
+                    continue
+                if i == 0 and j == 7 and state[0, 6, -2] == 1:
+                    pieces.append(15)
+                    continue
+                if i == 7 and j == 0 and state[7, 2, -2] == 1:
+                    pieces.append(7)
+                    continue
+                if i == 7 and j == 7 and state[7, 6, -2] == 1:
+                    pieces.append(7)
+                    continue
+
+            if piece == 5 and is_white != is_white_turn and i == (4 if is_white else 3) \
+                    and state[(5 if is_white else 2), j, -2] == 1:
+                pieces.append(7 if is_white else 15)
+                continue
+
+            pieces.append(piece + (0 if is_white else 8))
+
+        board_bytes = []
+        for row in bitboard:
+            value = 0
+            for i, square in enumerate(row):
+                if square:
+                    value += (1 << i)
+
     def __init__(self, state=STARTING_STATE):
         # noinspection PyTypeChecker
         super().__init__(parse_fen(state) if type(state) is str else state)
