@@ -1,6 +1,6 @@
 import pickle
 import numpy as np
-from games.chess import Chess, encode_fen, parse_fen, PIECE_LETTERS
+from games.chess import Chess, PIECE_LETTERS
 from tablebases.tablebase_manager import TablebaseManager
 from tablebases.symmetry_transform import SymmetryTransform
 from utils.utils import OptionalPool
@@ -20,7 +20,7 @@ class ChessTablebaseGenerator:
     class Node:
         def __init__(self, state, tablebase_manager):
             # since many nodes will be stored in memory at once during generation, only the fen will be stored
-            self.fen = encode_fen(state)
+            self.board_bytes = Chess.encode_board_bytes(state)
             self.is_maximizing = Chess.is_player_1_turn(state)
             self.optimizer = max if self.is_maximizing else min
 
@@ -33,8 +33,8 @@ class ChessTablebaseGenerator:
                 move_piece_count = np.sum(move[:, :, :12] == 1)
                 if move_piece_count == piece_count:
                     symmetry_transform = SymmetryTransform(move)
-                    move_fen = encode_fen(symmetry_transform.transform_state(move))
-                    self.children.append(move_fen)
+                    move_board_bytes = Chess.encode_board_bytes(symmetry_transform.transform_state(move))
+                    self.children.append(move_board_bytes)
                     self.children_symmetry_transforms.append(symmetry_transform)
                 else:
                     node = ChessTablebaseGenerator.Node(move, tablebase_manager)
@@ -56,8 +56,8 @@ class ChessTablebaseGenerator:
                 self.terminal_distance = np.inf
 
         def init_children(self, nodes):
-            # replace move_fen strings with references to actual nodes
-            self.children = [nodes[child] if type(child) is str else child for child in self.children]
+            # replace move_board_bytes with references to actual nodes
+            self.children = [nodes[child] if type(child) is bytes else child for child in self.children]
 
         def update(self):
             """
@@ -91,25 +91,18 @@ class ChessTablebaseGenerator:
                 updated = True
             return updated
 
-        def mark_resolved(self):
-            if self.outcome is None:
-                # a drawing strategy exists
-                for move, symmetry_transform in zip(self.children, self.children_symmetry_transforms):
-                    if move.outcome is None or move.outcome == 0:
-                        self.best_move, self.best_symmetry_transform = move, symmetry_transform
-                        break
-                else:
-                    print('Warning node found with outcome = None, but no drawing children!')
-                self.outcome = 0
-                self.terminal_distance = np.inf
-
         def get_best_move(self):
             if self.best_move is None:
-                return None
+                return 0, 0, 0, 0
 
-            transformed_move = parse_fen(self.best_move.fen)
-            best_move_fen = encode_fen(self.best_symmetry_transform.untransform_state(transformed_move))
-            return best_move_fen
+            transformed_move = Chess.parse_board_bytes(self.best_move.board_bytes)
+            move = self.best_symmetry_transform.untransform_state(transformed_move)
+            return Chess.get_from_to_move(Chess.parse_board_bytes(self.board_bytes), move)
+
+        def get_move_bytes(self):
+            start_i, start_j, end_i, end_j = self.get_best_move()
+            return TablebaseManager.encode_move_bytes(self.outcome, start_i, start_j, end_i, end_j,
+                                                      self.terminal_distance)
 
     @classmethod
     def piece_position_generator(cls, piece_count):
@@ -162,7 +155,7 @@ class ChessTablebaseGenerator:
                 continue
 
             node = ChessTablebaseGenerator.Node(state, tablebase_manager)
-            nodes[node.fen] = node
+            nodes[node.board_bytes] = node
         return nodes
 
     @classmethod
@@ -193,13 +186,12 @@ class ChessTablebaseGenerator:
                 if node.update():
                     updated = True
 
-        tablebase = {node.fen: (node.get_best_move(), node.outcome, node.terminal_distance)
-                     for node in nodes.values()}
+        tablebase = {node.board_bytes: node.get_move_bytes() for node in nodes.values()}
         with open(f'chess_tablebases/{descriptor}.pickle', 'wb') as file:
             pickle.dump(tablebase, file)
 
 
-def main():
+def generate_tablebases():
     THREE_MAN = 'KQk,KRk,KPk'  # KBk and KNk are theoretical draws
     FOUR_MAN_NO_ENEMY = 'KQQk,KQRk,KQBk,KQNk,KQPk,KRRk,KRBk,KRNk,KRPk,KBBk,KBNk,KBPk,KNNk,KNPk,KPPk'
     FOUR_MAN_ENEMY = 'KQkq,KQkr,KQkb,KQkn,KQkp,KRkr,KRkb,KRkn,KRkp,KBkb,KBkn,KBkp,KNkn,KNkp,KPkp'
@@ -211,4 +203,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    generate_tablebases()

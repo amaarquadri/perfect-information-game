@@ -1,7 +1,7 @@
 import pickle
 from os import listdir
 import numpy as np
-from games.chess import encode_fen, parse_fen, PIECE_LETTERS
+from games.chess import Chess, PIECE_LETTERS
 from tablebases.symmetry_transform import SymmetryTransform
 from utils.utils import choose_random
 
@@ -11,12 +11,50 @@ class TablebaseManager:
     Each tablebase has a descriptor, in a form such as KQkn (king and queen vs king and knight).
     The tablebases are stored in chess_tablebases/{descriptor}.pickle
 
-    Each tablebase consists of a dictionary that maps fens to (start_i, start_j, target_i, target_j, outcome, distance).
+    Each tablebase consists of a dictionary that maps board_bytes to move_bytes.
+    move_bytes can be converted to and from this tuple: (outcome, start_i, start_j, target_i, target_j, distance).
     Only the symmetric variants of each position are stored in the tablebases.
     """
     DRAWING_DESCRIPTORS = ['Kk', 'KBk', 'KNk']
     AVAILABLE_TABLEBASES = [file[:-len('.pickle')]
                             for file in listdir('../tablebases/chess_tablebases') if file.endswith('.pickle')]
+
+    @staticmethod
+    def encode_move_bytes(outcome, start_i, start_j, end_i, end_j, terminal_distance):
+        if terminal_distance < 0:
+            raise ValueError(f'terminal_distance < 0: {terminal_distance}')
+        if np.isinf(terminal_distance):
+            terminal_distance = 2 ** 10 - 1  # maximum value in 10 bits
+        elif terminal_distance >= 2 ** 10 - 1:
+            print(f'Warning: terminal_distance of {terminal_distance} is too large. '
+                  f'Replacing with max value of {2 ** 10 - 2}')
+            # replace with 2^10 - 2 because 2^10 - 1 is reserved for infinity
+            terminal_distance = 2 ** 10 - 2
+        outcome += 1  # remap from -1, 0, 1 to 0, 1, 2
+
+        move_bytes = [outcome * 2 ** 6 + start_i * 2 ** 3 + start_j,
+                      end_i * 2 ** 5 + end_j * 2 ** 2 + terminal_distance // (2 ** 8),
+                      terminal_distance % (2 ** 8)]
+        return bytes(move_bytes)
+
+    @staticmethod
+    def parse_move_bytes(move_bytes):
+        move_bytes = list(move_bytes)  # convert back to list of integers
+        outcome = move_bytes[0] // (2 ** 6)
+        outcome -= 1  # map from 0, 1, 2 back to -1, 0, 1
+
+        start_i = (move_bytes[0] % (2 ** 6)) // (2 ** 3)
+        start_j = move_bytes[0] % (2 ** 3)
+        end_i = move_bytes[1] // (2 ** 5)
+        end_j = (move_bytes[1] % (2 ** 5)) // (2 ** 2)
+
+        terminal_distance = (move_bytes[1] % (2 ** 2)) + move_bytes[2]
+        if terminal_distance == 2 ** 10 - 1:
+            terminal_distance = np.inf
+        elif terminal_distance == 2 ** 10 - 2:
+            print(f'Warning: terminal distance of {terminal_distance} may be incorrect due to overflow!')
+
+        return outcome, start_i, start_j, end_i, end_j, terminal_distance
 
     @classmethod
     def update_tablebase_list(cls):
@@ -62,12 +100,14 @@ class TablebaseManager:
 
         self.ensure_loaded(descriptor)
         tablebase = self.tablebases[descriptor]
-        transformed_move_fen, outcome, distance = tablebase[encode_fen(transformed_state)]
+        move_bytes = tablebase[Chess.encode_board_bytes(transformed_state)]
+        outcome, start_i, start_j, end_i, end_j, terminal_distance = TablebaseManager.parse_move_bytes(move_bytes)
         if outcome_only:
-            return outcome, distance
+            return outcome, terminal_distance
 
-        move_state = symmetry_transform.untransform_state(parse_fen(transformed_move_fen))
-        return move_state, outcome, distance
+        transformed_move_state = Chess.apply_from_to_move(transformed_state, start_i, start_j, end_i, end_j)
+        move_state = symmetry_transform.untransform_state(transformed_move_state)
+        return move_state, outcome, terminal_distance
 
     @staticmethod
     def get_position_descriptor(state):
@@ -79,4 +119,4 @@ class TablebaseManager:
             raise NotImplementedError()
 
         self.ensure_loaded(descriptor)
-        return parse_fen(choose_random(list(self.tablebases[descriptor].keys())))
+        return Chess.parse_board_bytes(choose_random(list(self.tablebases[descriptor].keys())))
