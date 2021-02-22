@@ -14,16 +14,19 @@ class SymmetryTransform:
             # black is attacking, so switch white and black
             self.transform_funcs.append(SymmetryTransform.flip_state_colors)
             i, j = Chess.get_king_pos(state, Chess.BLACK_SLICE)
+            i = Chess.ROWS - 1 - i
         else:
             i, j = Chess.get_king_pos(state, Chess.WHITE_SLICE)
 
-        if not (i < 4):
+        pawnless = np.all(state[:, :, 5] == 0) and np.all(state[:, :, 11] == 0)
+
+        if pawnless and not (i < 4):
             self.transform_funcs.append(SymmetryTransform.flip_state_i)
             i = Chess.ROWS - 1 - i
-        if not (j < 4):
+        if not (j < 4):  # horizontal flipping can be done, even with pawns
             self.transform_funcs.append(SymmetryTransform.flip_state_j)
             j = Chess.COLUMNS - 1 - j
-        if not (i <= j):
+        if pawnless and not (i <= j):
             self.transform_funcs.append(SymmetryTransform.flip_state_diagonal)
 
     @classmethod
@@ -49,7 +52,11 @@ class SymmetryTransform:
     def flip_state_colors(state):
         special_layers = state[..., -2:]
         special_layers[..., -1] = 1 - special_layers[..., -1]
-        return np.concatenate((state[..., Chess.BLACK_SLICE], state[..., Chess.WHITE_SLICE], special_layers), axis=-1)
+        new_state = np.concatenate((state[..., Chess.BLACK_SLICE], state[..., Chess.WHITE_SLICE], special_layers),
+                                   axis=-1)
+        # need to flip board vertically after flipping colours
+        # this ensures that the pawns move in the correct directions
+        return SymmetryTransform.flip_state_i(new_state)
 
     @staticmethod
     def flip_state_i(state):
