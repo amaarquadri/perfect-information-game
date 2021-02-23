@@ -1,4 +1,4 @@
-from src.utils.utils import iter_product
+from utils.utils import iter_product
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 import pygame  # noqa: E402

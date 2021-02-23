@@ -1,5 +1,5 @@
 import numpy as np
-from src.move_selection.move_chooser import MoveChooser
+from move_selection.move_chooser import MoveChooser
 
 
 class MiniMax(MoveChooser):

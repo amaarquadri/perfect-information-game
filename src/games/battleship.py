@@ -2,7 +2,7 @@
 # generator network maps a vector from a random state space to the output choice of piece placement
 import numpy as np
 from .game import Game
-from src.utils.utils import iter_product
+from utils.utils import iter_product
 
 
 class Battleship(Game):

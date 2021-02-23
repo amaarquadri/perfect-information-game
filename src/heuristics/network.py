@@ -3,7 +3,7 @@ import numpy as np
 from multiprocessing import Process, Pipe
 import sys
 from signal import signal, SIGTERM
-from src.utils.utils import get_training_path
+from utils.utils import get_training_path
 
 
 class Network:
@@ -282,7 +282,7 @@ class ProxyNetwork(Network):
 
 
 def train_from_scratch():
-    from src.utils.active_game import ActiveGame as GameClass
+    from utils.active_game import ActiveGame as GameClass
     import os
     import pickle
     net = Network(GameClass)

@@ -1,7 +1,7 @@
 from time import sleep
 import numpy as np
-from src.move_selection.move_chooser import MoveChooser
-from src.utils.utils import choose_random
+from move_selection.move_chooser import MoveChooser
+from utils.utils import choose_random
 
 
 class RawNetwork(MoveChooser):

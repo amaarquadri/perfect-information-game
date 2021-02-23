@@ -1,6 +1,6 @@
-from src.games.game import Game
+from games.game import Game
 import numpy as np
-from src.utils.utils import iter_product
+from utils.utils import iter_product
 
 
 class MultiTicTacToe(Game):

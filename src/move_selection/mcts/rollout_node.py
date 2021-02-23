@@ -1,5 +1,5 @@
 import numpy as np
-from src.move_selection.mcts.abstract_node import AbstractNode
+from move_selection.mcts.abstract_node import AbstractNode
 
 
 class RolloutNode(AbstractNode):
