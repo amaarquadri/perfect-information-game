@@ -1,7 +1,7 @@
-from src.utils.utils import choose_random
+from utils.utils import choose_random
 from time import sleep
 import numpy as np
-from src.move_selection.move_chooser import MoveChooser
+from move_selection.move_chooser import MoveChooser
 
 
 class RandomMoveChooser(MoveChooser):

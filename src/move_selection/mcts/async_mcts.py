@@ -2,9 +2,9 @@ from multiprocessing import Pipe, Pool
 from multiprocessing.context import Process
 from time import time
 import numpy as np
-from src.move_selection.mcts.heuristic_node import HeuristicNode
-from src.move_selection.mcts.rollout_node import RolloutNode
-from src.move_selection.move_chooser import MoveChooser
+from move_selection.mcts.heuristic_node import HeuristicNode
+from move_selection.mcts.rollout_node import RolloutNode
+from move_selection.move_chooser import MoveChooser
 
 
 class AsyncMCTS(MoveChooser):
