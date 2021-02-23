@@ -201,16 +201,22 @@ class ChessTablebaseGenerator:
         if not (0 in pieces and 6 in pieces):
             raise ValueError('White and black kings must be in the descriptor!')
 
-        nodes = {}
-        tablebase_manager = TablebaseManager()
-        pawnless = 'P' not in descriptor and 'p' not in descriptor
-        for some_nodes in pool.map(partial(cls.create_node, descriptor=descriptor, pieces=pieces,
-                                           tablebase_manager=tablebase_manager),
-                                   cls.piece_position_generator(len(pieces), pawnless)):
-            nodes.update(some_nodes)
+        nodes_path = f'chess_tablebases/{descriptor}_nodes.pickle'
+        try:
+            with open(nodes_path, 'rb') as file:
+                nodes = pickle.load(file)
+            print(f'Using existing nodes file: {nodes_path}')
+        except FileNotFoundError:
+            nodes = {}
+            tablebase_manager = TablebaseManager()
+            pawnless = 'P' not in descriptor and 'p' not in descriptor
+            for some_nodes in pool.map(partial(cls.create_node, descriptor=descriptor, pieces=pieces,
+                                               tablebase_manager=tablebase_manager),
+                                       cls.piece_position_generator(len(pieces), pawnless)):
+                nodes.update(some_nodes)
 
-        with open(f'chess_tablebases/{descriptor}_nodes.pickle', 'wb') as file:
-            pickle.dump(nodes, file)
+            with open(nodes_path, 'wb') as file:
+                pickle.dump(nodes, file)
 
         for i, node in enumerate(nodes.values()):
             node.init_children(nodes)
