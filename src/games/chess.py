@@ -4,6 +4,9 @@ from utils.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIR
 from functools import partial
 
 
+PIECE_LETTERS = 'KQRBNPkqrbnp'
+
+
 def parse_algebraic_notation(square, layer_slice=None, as_slice=True):
     letter, number = square
 
@@ -27,20 +30,18 @@ def parse_algebraic_notation(square, layer_slice=None, as_slice=True):
         return i, j
 
 
-def parse_fen(position):
-    pieces, turn, castling, en_passant, *_ = position.split(' ')
+def parse_fen(fen):
+    pieces, turn, castling, en_passant, *_ = fen.split(' ')
     for i in range(2, 9):
         pieces = pieces.replace(str(i), i * '1')
 
-    mapping = 'KQRBNPkqrbnp'
-
     def parse_piece(piece_character):
         if piece_character == '1':
-            return np.zeros(len(mapping))
-        where = np.argwhere(piece_character == np.array(list(mapping)))
+            return np.zeros(len(PIECE_LETTERS))
+        where = np.argwhere(piece_character == np.array(list(PIECE_LETTERS)))
         if len(where) == 0:
             raise ValueError(f'Invalid piece: {piece_character}')
-        return one_hot(where[0, 0], len(mapping))
+        return one_hot(where[0, 0], len(PIECE_LETTERS))
 
     pieces = np.stack([np.stack([parse_piece(piece) for piece in rank], axis=0)
                        for rank in pieces.split('/')], axis=0)
@@ -53,19 +54,17 @@ def parse_fen(position):
         special_moves[parse_algebraic_notation(en_passant.capitalize())] = 1
 
     turn = np.full((8, 8, 1), 1 if turn.lower() == 'w' else 0)
-    return np.concatenate((pieces, special_moves, turn), axis=-1)
+    return np.concatenate((pieces, special_moves, turn), axis=-1).astype(np.uint8)
 
 
 def encode_fen(state):
-    mapping = 'KQRBNPkqrbnp'
-
     def encode_piece(piece_arr):
         where = np.argwhere(piece_arr)
         if len(where) == 0:
             return '1'
         if len(where) > 1:
             raise ValueError('Multiple pieces in same square')
-        return mapping[where[0, 0]]
+        return PIECE_LETTERS[where[0, 0]]
     pieces = '/'.join([''.join([encode_piece(state[rank, file, :12]) for file in range(8)]) for rank in range(8)])
     for i in range(8, 1, -1):
         pieces = pieces.replace(i * '1', str(i))
@@ -73,7 +72,7 @@ def encode_fen(state):
     turn = 'w' if Chess.is_player_1_turn(state) else 'b'
 
     castling = ''
-    for letter, square in [('K', 'G1'), ('Q', 'C1'), ('k', 'G8'), ('q', 'G1')]:
+    for letter, square in [('K', 'G1'), ('Q', 'C1'), ('k', 'G8'), ('q', 'C8')]:
         if state[parse_algebraic_notation(square, layer_slice=-2)] == 1:
             castling += letter
     if len(castling) == 0:
@@ -118,6 +117,133 @@ class Chess(Game):
                             'white_king', 'white_queen', 'white_rook', 'white_bishop', 'white_knight', 'white_pawn',
                             'black_king', 'black_queen', 'black_rook', 'black_bishop', 'black_knight', 'black_pawn']
     KNIGHT_MOVES = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]
+    WHITE_SLICE = slice(0, 6)
+    BLACK_SLICE = slice(6, 12)
+
+    @classmethod
+    def encode_board_bytes(cls, state):
+        # https://codegolf.stackexchange.com/questions/19397/smallest-chess-board-compression
+        bitboard = np.sum(state[:, :, :12], axis=-1) == 1
+        is_white_turn = cls.is_player_1_turn(state)
+        pieces = []
+        for i, j in iter_product(Chess.BOARD_SHAPE):
+            if not bitboard[i, j]:
+                continue
+
+            # KQRBNP, King to move, Rook that can castle or Pawn that moved 2 squares, same 8 for black
+            where = np.argwhere(state[i, j, :12])[0, 0]
+            piece = where % 6
+            is_white = where < 6
+
+            if piece == 0 and is_white == is_white_turn:  # if piece is a king whose turn it is
+                pieces.append(6 if is_white_turn else 14)
+                continue
+
+            if piece == 2 and i == (7 if is_white else 0):  # if piece is a rook on home rank
+                if i == 0 and j == 0 and state[0, 2, -2] == 1:
+                    pieces.append(15)
+                    continue
+                if i == 0 and j == 7 and state[0, 6, -2] == 1:
+                    pieces.append(15)
+                    continue
+                if i == 7 and j == 0 and state[7, 2, -2] == 1:
+                    pieces.append(7)
+                    continue
+                if i == 7 and j == 7 and state[7, 6, -2] == 1:
+                    pieces.append(7)
+                    continue
+
+            if piece == 5 and is_white != is_white_turn and i == (4 if is_white else 3) \
+                    and state[(5 if is_white else 2), j, -2] == 1:
+                pieces.append(7 if is_white else 15)
+                continue
+
+            pieces.append(piece + (0 if is_white else 8))
+
+        board_bytes = []
+        for row in bitboard:
+            value = 0
+            for i, square in enumerate(row):
+                if square:
+                    value += (1 << i)
+            board_bytes.append(value)
+        if np.sum(bitboard) % 2 == 1:
+            board_bytes.append(pieces[0])
+            pieces = pieces[1:]
+        for i in range(0, len(pieces), 2):
+            board_bytes.append(16 * pieces[i] + pieces[i + 1])
+        return bytes(board_bytes)
+
+    @classmethod
+    def parse_board_bytes(cls, board_bytes):
+        board_bytes = list(board_bytes)  # convert back to list of integers
+        bitboard = np.array([[row & (1 << square) for square in range(8)] for row in board_bytes[:8]]) != 0
+        board_bytes = board_bytes[8:]
+        pieces = []
+        piece_count = np.sum(bitboard)
+        if piece_count % 2 == 1:
+            pieces.append(board_bytes[0])
+            board_bytes = board_bytes[1:]
+        for piece_bytes in board_bytes:
+            pieces.append(piece_bytes // 16)
+            pieces.append(piece_bytes % 16)
+
+        if len(pieces) != piece_count:
+            raise ValueError(f'Inconsistent number of pieces! Expected {piece_count} but got {len(pieces)}')
+
+        state = np.zeros(Chess.STATE_SHAPE)
+        en_passant_processed = False
+        for i, j in iter_product(Chess.BOARD_SHAPE):
+            if not bitboard[i, j]:
+                continue
+
+            piece_value = pieces.pop(0)
+            is_white = piece_value < 8
+            piece = piece_value % 8
+
+            if piece == 6:  # if the piece is a king whose turn it is
+                # process turn information
+                if is_white:
+                    state[:, :, -1] = 1
+                piece = 0  # convert to regular king
+            if piece == 7:
+                if i == 0 or i == 7:  # if this is castling information
+                    if i == 0 and j == 0 and not is_white:
+                        state[0, 2, -2] = 1
+                    elif i == 0 and j == 7 and not is_white:
+                        state[0, 6, -2] = 1
+                    elif i == 7 and j == 0 and is_white:
+                        state[7, 2, -2] = 1
+                    elif i == 7 and j == 7 and is_white:
+                        state[7, 6, -2] = 1
+                    else:
+                        raise ValueError(f'Castling information on invalid square! '
+                                         f'i = {i}, j = {j}, is_white = {is_white}')
+                    piece = 2  # convert to regular rook
+                elif i == 3 or i == 4:  # if this is en passant information
+                    if en_passant_processed:
+                        raise ValueError(f'Second en passant square found! i = {i}, j = {j}, is_white = {is_white}')
+                    if i == 4 and is_white:
+                        state[i + 1, j, -2] = 1
+                    elif i == 3 and not is_white:
+                        state[i - 1, j, -2] = 1
+                    else:
+                        raise ValueError(f'En passant rank does not match the correct colour! '
+                                         f'i = {i}, j = {j}, is_white = {is_white}')
+                    en_passant_processed = True
+                    piece = 5  # convert to regular pawn
+                else:
+                    raise ValueError(f'Special piece on invalid square! i = {i}, j = {j}, is_white = {is_white}')
+
+            state[i, j, piece + (0 if is_white else 6)] = 1
+
+        if en_passant_processed:
+            # check if en passant information is consistent with whose turn it is
+            is_white_pawn_en_passant = np.any(state[5, :, -2] == 1)
+            if is_white_pawn_en_passant == cls.is_player_1_turn(state):
+                raise ValueError('The player whose turn it is also has an en passant pawn!')
+
+        return state
 
     def __init__(self, state=STARTING_STATE):
         # noinspection PyTypeChecker
@@ -125,17 +251,19 @@ class Chess(Game):
 
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
-        friendly_slice, enemy_slice, *_ = self.get_stats(self.state)
+        self.state = self.apply_from_to_move(self.state, start_i, start_j, end_i, end_j)
 
-        for move in self.get_possible_moves(self.state):
-            if np.any(self.state[start_i, start_j, friendly_slice] == 1) and \
-                    np.all(self.state[end_i, end_j, friendly_slice] == 0) and \
+    @classmethod
+    def apply_from_to_move(cls, state, start_i, start_j, end_i, end_j):
+        friendly_slice, enemy_slice, *_ = cls.get_stats(state)
+
+        for move in cls.get_possible_moves(state):
+            if np.any(state[start_i, start_j, friendly_slice] == 1) and \
+                    np.all(state[end_i, end_j, friendly_slice] == 0) and \
                     np.all(move[start_i, start_j, :12] == 0) and \
                     np.any(move[end_i, end_j, friendly_slice] == 1):
-                self.state = move
-                break
-        else:
-            raise ValueError('Invalid Move!')
+                return move
+        raise ValueError('Invalid Move!')
 
     @classmethod
     def needs_checkerboard(cls):
@@ -358,41 +486,49 @@ class Chess(Game):
         legal_moves = np.full(cls.MOVE_SHAPE, False)
         friendly_slice, *_ = cls.get_stats(state)
         for move in cls.get_possible_moves(state):
-            from_squares = []  # squares that went from friendly to empty
-            to_squares = []  # squares that went from not friendly to friendly
-            for i, j, in iter_product(cls.BOARD_SHAPE):
-                if np.any(state[i, j, friendly_slice] == 1) and np.all(move[i, j, :12] == 0):
-                    # insert to the start of the list if its a king
-                    if state[i, j, friendly_slice][0] == 1:
-                        from_squares.insert(0, (i, j))
-                    else:
-                        from_squares.append((i, j))
-                elif np.all(state[i, j, friendly_slice] == 0) and np.any(move[i, j, friendly_slice] == 1):
-                    # insert to the start of the list if its a king
-                    if move[i, j, friendly_slice][0] == 1:
-                        to_squares.insert(0, (i, j))
-                    else:
-                        to_squares.append((i, j))
-
-            if (len(from_squares) == 1 and len(to_squares) == 1) or (len(from_squares) == 2 and len(to_squares) == 2):
-                legal_moves[from_squares[0][0], from_squares[0][1], to_squares[0][0], to_squares[0][1]] = True
-            else:
-                raise Exception(f'Invalid number of piece moves: from_squares = {from_squares}, to_squares = {to_squares}')
+            start_i, start_j, end_i, end_j = cls.get_from_to_move(state, move, friendly_slice)
+            legal_moves[start_i, start_j, end_i, end_j] = True
         return legal_moves
+
+    @classmethod
+    def get_from_to_move(cls, state, move, friendly_slice=None):
+        if friendly_slice is None:
+            friendly_slice, *_ = cls.get_stats(state)
+
+        from_squares = []  # squares that went from friendly to empty
+        to_squares = []  # squares that went from not friendly to friendly
+        for i, j, in iter_product(cls.BOARD_SHAPE):
+            if np.any(state[i, j, friendly_slice] == 1) and np.all(move[i, j, :12] == 0):
+                # insert to the start of the list if its a king
+                if state[i, j, friendly_slice][0] == 1:
+                    from_squares.insert(0, (i, j))
+                else:
+                    from_squares.append((i, j))
+            elif np.all(state[i, j, friendly_slice] == 0) and np.any(move[i, j, friendly_slice] == 1):
+                # insert to the start of the list if its a king
+                if move[i, j, friendly_slice][0] == 1:
+                    to_squares.insert(0, (i, j))
+                else:
+                    to_squares.append((i, j))
+
+        if (len(from_squares) == 1 and len(to_squares) == 1) or (len(from_squares) == 2 and len(to_squares) == 2):
+            return from_squares[0][0], from_squares[0][1], to_squares[0][0], to_squares[0][1]
+        else:
+            raise Exception(f'Invalid number of piece moves: from_squares = {from_squares}, to_squares = {to_squares}')
 
     @classmethod
     def get_stats(cls, state):
         if cls.is_player_1_turn(state):
-            friendly_slice = slice(0, 6)
-            enemy_slice = slice(6, 12)
+            friendly_slice = cls.WHITE_SLICE
+            enemy_slice = cls.BLACK_SLICE
             pawn_direction = -1
             queening_row = 0
             pawn_starting_row = 6
             castling_row = 7
             en_passant_row = 3
         else:
-            friendly_slice = slice(6, 12)
-            enemy_slice = slice(0, 6)
+            friendly_slice = cls.BLACK_SLICE
+            enemy_slice = cls.WHITE_SLICE
             pawn_direction = 1
             queening_row = 7
             pawn_starting_row = 1
@@ -402,12 +538,12 @@ class Chess(Game):
             en_passant_row
 
     @classmethod
-    def is_over(cls, state):
-        return len(cls.get_possible_moves(state)) == 0
+    def is_over(cls, state, moves=None):
+        return len(cls.get_possible_moves(state)) == 0 if moves is None else len(moves) == 0
 
     @classmethod
-    def get_winner(cls, state):
-        if not cls.is_over(state):
+    def get_winner(cls, state, moves=None):
+        if not cls.is_over(state, moves):
             raise Exception('Game is not over!')
 
         friendly_slice, enemy_slice, pawn_direction, *_ = cls.get_stats(state)

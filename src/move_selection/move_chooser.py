@@ -30,7 +30,7 @@ class MoveChooser(ABC):
         Must update self.position
 
         @param return_distribution:
-        @return: A list of all the positions that were made a s part of this move
+        @return: A list of all the positions that were made as a part of this move
         """
         pass
 
