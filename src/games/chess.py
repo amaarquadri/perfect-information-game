@@ -574,4 +574,4 @@ class Chess(Game):
 
     @classmethod
     def heuristic(cls, state):
-        return np.sum(np.dot(state, [100, 9, 5, 3.25, 3, 1, 100, -9, -5, -3.25, -3, -1, 0, 0]))
+        return np.sum(np.dot(state, [100, 9, 5, 3.25, 3, 1, -100, -9, -5, -3.25, -3, -1, 0, 0]))
