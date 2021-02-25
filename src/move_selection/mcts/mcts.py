@@ -1,9 +1,9 @@
 from time import time
 from multiprocessing import Pool
 import numpy as np
-from src.move_selection.move_chooser import MoveChooser
-from src.move_selection.mcts.rollout_node import RolloutNode
-from src.move_selection.mcts.heuristic_node import HeuristicNode
+from move_selection.move_chooser import MoveChooser
+from move_selection.mcts.rollout_node import RolloutNode
+from move_selection.mcts.heuristic_node import HeuristicNode
 
 
 # TODO: add hash table to keep track of multiple move combinations that lead to the same position

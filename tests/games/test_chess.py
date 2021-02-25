@@ -1,7 +1,7 @@
 import unittest
 import json
 import numpy as np
-from src.games.chess import Chess, parse_fen, encode_fen
+from games.chess import Chess, parse_fen, encode_fen
 
 
 class TestChess(unittest.TestCase):

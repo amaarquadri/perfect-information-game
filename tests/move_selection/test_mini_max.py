@@ -1,6 +1,6 @@
 import unittest
-from src.move_selection.mini_max import MiniMax
-from src.games.tic_tac_toe import TicTacToe as GameClass
+from move_selection.mini_max import MiniMax
+from games.tic_tac_toe import TicTacToe as GameClass
 
 
 class TestMiniMax(unittest.TestCase):
