@@ -107,6 +107,7 @@ class TablebaseManager:
         tablebase = self.tablebases[descriptor]
         move_bytes = tablebase[GameClass.encode_board_bytes(transformed_state)]
         outcome, start_i, start_j, end_i, end_j, terminal_distance = TablebaseManager.parse_move_bytes(move_bytes)
+        outcome = symmetry_transform.transform_outcome(outcome)
         if outcome_only:
             return outcome, terminal_distance
 
@@ -121,7 +122,7 @@ class TablebaseManager:
 
     def get_random_endgame(self, descriptor):
         if descriptor not in self.AVAILABLE_TABLEBASES:
-            raise NotImplementedError()
+            raise NotImplementedError(f'No tablebase available for descriptor = {descriptor}')
 
         self.ensure_loaded(descriptor)
         return GameClass.parse_board_bytes(choose_random(list(self.tablebases[descriptor].keys())))

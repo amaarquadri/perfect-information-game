@@ -55,9 +55,12 @@ class SymmetryTransform:
             state = transform_func(state)
         return state
 
+    def transform_outcome(self, outcome):
+        return -outcome if SymmetryTransform.flip_state_colors in self.transform_funcs else outcome
+
     @staticmethod
     def flip_state_colors(state):
-        special_layers = state[..., -2:]
+        special_layers = np.copy(state[..., -2:])
         special_layers[..., -1] = 1 - special_layers[..., -1]
         new_state = np.concatenate((state[..., GameClass.BLACK_SLICE], state[..., GameClass.WHITE_SLICE], special_layers),
                                    axis=-1)

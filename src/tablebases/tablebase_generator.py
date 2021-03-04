@@ -44,6 +44,9 @@ class TablebaseGenerator:
                     node = TablebaseGenerator.Node(move, move_descriptor, tablebase_manager)
                     node.children = []
                     node.outcome, node.terminal_distance = tablebase_manager.query_position(move, outcome_only=True)
+                    if np.isnan(node.outcome) or np.isnan(node.terminal_distance):
+                        raise ValueError(
+                            f'Could not find position in existing tablebase! descriptor = {move_descriptor}')
                     self.children.append(node)
                     self.children_symmetry_transforms.append(SymmetryTransform.identity())
 
@@ -78,6 +81,8 @@ class TablebaseGenerator:
                     best_move, best_symmetry_transform = move, symmetry_transform
                 elif move.outcome == best_move.outcome:
                     if move.outcome == 0:
+                        # TODO: fix bugs in draw logic
+                        #  AI is losing KRkr from some drawn position
                         # if is_maximizing, then it is white's turn
                         # white is always up in material advantage (for the endgame tablebases)
                         # if we are up in material, try to delay the draw
