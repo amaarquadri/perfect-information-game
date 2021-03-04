@@ -3,13 +3,13 @@ from os import listdir
 import numpy as np
 from games.chess import Chess, PIECE_LETTERS
 from tablebases.symmetry_transform import SymmetryTransform
-from utils.utils import choose_random
+from utils.utils import choose_random, get_training_path
 
 
 class TablebaseManager:
     """
     Each tablebase has a descriptor, in a form such as KQkn (king and queen vs king and knight).
-    The tablebases are stored in chess_tablebases/{descriptor}.pickle
+    The tablebases are stored in {get_training_path(GameClass)}/tablebases/{descriptor}.pickle
 
     Each tablebase consists of a dictionary that maps board_bytes to move_bytes.
     move_bytes can be converted to and from this tuple: (outcome, start_i, start_j, target_i, target_j, distance).
@@ -17,7 +17,7 @@ class TablebaseManager:
     """
     DRAWING_DESCRIPTORS = ['Kk', 'KBk', 'KNk']
     AVAILABLE_TABLEBASES = [file[:-len('.pickle')]
-                            for file in listdir('../tablebases/chess_tablebases') if file.endswith('.pickle')]
+                            for file in listdir(f'{get_training_path(Chess)}/tablebases') if file.endswith('.pickle')]
 
     @staticmethod
     def encode_move_bytes(outcome, start_i, start_j, end_i, end_j, terminal_distance):
@@ -58,7 +58,7 @@ class TablebaseManager:
 
     @classmethod
     def update_tablebase_list(cls):
-        tablebases = [file[:-len('.pickle')] for file in listdir('../tablebases/chess_tablebases')
+        tablebases = [file[:-len('.pickle')] for file in listdir(f'{get_training_path(Chess)}/tablebases')
                       if file.endswith('.pickle')]
         cls.AVAILABLE_TABLEBASES.extend([tablebase for tablebase in tablebases
                                          if tablebase not in cls.AVAILABLE_TABLEBASES])
@@ -69,7 +69,7 @@ class TablebaseManager:
 
     def ensure_loaded(self, descriptor):
         if descriptor not in self.tablebases:
-            with open(f'../tablebases/chess_tablebases/{descriptor}.pickle', 'rb') as file:
+            with open(f'{get_training_path(Chess)}/tablebases/{descriptor}.pickle', 'rb') as file:
                 self.tablebases[descriptor] = pickle.load(file)
 
     def query_position(self, state, outcome_only=False):

@@ -3,7 +3,7 @@ import numpy as np
 from games.chess import Chess, PIECE_LETTERS
 from tablebases.tablebase_manager import TablebaseManager
 from tablebases.symmetry_transform import SymmetryTransform
-from utils.utils import OptionalPool
+from utils.utils import OptionalPool, get_training_path
 from functools import partial
 
 
@@ -201,7 +201,7 @@ class ChessTablebaseGenerator:
         if not (0 in pieces and 6 in pieces):
             raise ValueError('White and black kings must be in the descriptor!')
 
-        nodes_path = f'chess_tablebases/{descriptor}_nodes.pickle'
+        nodes_path = f'{get_training_path(Chess)}/tablebases/{descriptor}_nodes.pickle'
         try:
             with open(nodes_path, 'rb') as file:
                 nodes = pickle.load(file)
@@ -234,7 +234,7 @@ class ChessTablebaseGenerator:
         node_move_bytes = pool.map(ChessTablebaseGenerator.Node.get_move_bytes, nodes)
         tablebase = {node.board_bytes: move_bytes for node, move_bytes in zip(nodes, node_move_bytes)}
 
-        with open(f'chess_tablebases/{descriptor}.pickle', 'wb') as file:
+        with open(f'{get_training_path(Chess)}/tablebases/{descriptor}.pickle', 'wb') as file:
             pickle.dump(tablebase, file)
 
 
