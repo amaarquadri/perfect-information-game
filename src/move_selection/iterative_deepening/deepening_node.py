@@ -2,18 +2,22 @@ import numpy as np
 
 
 class DeepeningNode:
-    def __init__(self, GameClass, state):
+    def __init__(self, GameClass, state, heuristic_func=None):
         if state is None:
             state = GameClass.STARTING_STATE
+        if heuristic_func is None:
+            heuristic_func = GameClass.heuristic
+
         self.GameClass = GameClass
         self.state = state
+        self.heuristic_func = heuristic_func
         self.is_maximizing = GameClass.is_player_1_turn(state)
         if GameClass.is_over(state):
             outcome = GameClass.is_over()
             self.heuristic = 0 if outcome == 0 else outcome * np.inf
             self.terminal = True
         else:
-            self.heuristic = GameClass.heuristic(state)
+            self.heuristic = heuristic_func(state)
             self.terminal = False
         self.children = None
 
@@ -27,7 +31,7 @@ class DeepeningNode:
         if self.children is None:
             # this is currently a leaf node, so deepen one final layer, then return
             moves = self.GameClass.get_possible_moves(self.state)
-            self.children = [DeepeningNode(self.GameClass, move) for move in moves]
+            self.children = [DeepeningNode(self.GameClass, move, self.heuristic_func) for move in moves]
             self.sort_children()
             self.heuristic = self.children[0].heuristic
             return self.heuristic
