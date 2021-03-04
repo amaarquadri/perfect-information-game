@@ -1,0 +1,27 @@
+{
+  "stages": [
+    {
+      "training_type": "MCTS Rollout",
+      "threads": 14,
+      "expansions_per_move": 100,
+      "c": "np.sqrt(2)"
+    },
+    {
+      "training_type": "Supervised Learning",
+      "kernel_size": "(4, 4)",
+      "convolutional_filters_per_layer": 16,
+      "residual_layers": 6,
+      "value_head_neurons": 16,
+      "policy_loss_value": 1
+    },
+    {
+      "training_type": "Reinforcement Learning",
+      "threads": 14,
+      "game_batch_size": 2,
+      "expansions_per_move": 500,
+      "c": "np.sqrt(2)",
+      "d": 1,
+      "replay_buffer_size": 1000
+    }
+  ]
+}
