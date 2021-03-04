@@ -35,3 +35,4 @@ uncommenting the corresponding line that starts with `CONFIG = `
 - [Working with Numpy in Cython](https://cython.readthedocs.io/en/latest/src/tutorial/numpy.html)
 - [Chess Pieces Images](https://commons.wikimedia.org/wiki/Category:PNG_chess_pieces/Standard_transparent)
 - [Chess test cases](https://www.chessprogramming.org/Perft_Results) and more [chess test cases](https://gist.github.com/peterellisjones/8c46c28141c162d1d8a0f0badbc9cff9)
+- [Chess Position Encoding Scheme](https://codegolf.stackexchange.com/a/19446)

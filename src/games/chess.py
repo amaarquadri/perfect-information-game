@@ -122,7 +122,7 @@ class Chess(Game):
 
     @classmethod
     def encode_board_bytes(cls, state):
-        # https://codegolf.stackexchange.com/questions/19397/smallest-chess-board-compression
+        # https://codegolf.stackexchange.com/a/19446
         bitboard = np.sum(state[:, :, :12], axis=-1) == 1
         is_white_turn = cls.is_player_1_turn(state)
         pieces = []
