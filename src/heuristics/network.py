@@ -1,8 +1,5 @@
 from time import time
 import numpy as np
-from multiprocessing import Process, Pipe
-import sys
-from signal import signal, SIGTERM
 from utils.utils import get_training_path
 
 
@@ -16,7 +13,7 @@ class Network:
     It will internally handle conversion too and from move distribution matrices using GameClass.get_legal_moves
     """
 
-    def __init__(self, GameClass, model_path=None, reinforcement_training=False):
+    def __init__(self, GameClass, model_path=None, reinforcement_training=False, hyper_params=None):
         self.GameClass = GameClass
         self.model_path = model_path
 
@@ -24,10 +21,14 @@ class Network:
         self.model = None
 
         self.reinforcement_training = reinforcement_training
+        self.hyper_params = hyper_params if hyper_params is not None else {}
         self.tensor_board = None
         self.epoch = 0
 
     def initialize(self):
+        """
+        Initializes the Network's model.
+        """
         # Note: keras imports are within functions to prevent initializing keras in processes that import from this file
         from keras.models import load_model
         from keras.callbacks import TensorBoard
@@ -45,7 +46,7 @@ class Network:
                 raise Exception('Output shape of loaded model doesn\'t match!')
             # TODO: recompile model with loss_weights and learning schedule from config file
         else:
-            self.model = self.create_model()
+            self.model = self.create_model(**self.hyper_params)
 
         if self.reinforcement_training:
             self.tensor_board = TensorBoard(log_dir=f'{get_training_path(self.GameClass)}/logs/'
@@ -53,7 +54,8 @@ class Network:
                                             histogram_freq=0, write_graph=True)
             self.tensor_board.set_model(self.model)
 
-    def create_model(self, kernel_size=(4, 4), residual_layers=6, policy_loss_value=1):
+    def create_model(self, kernel_size=(4, 4), convolutional_filters=64, residual_layers=6,
+                     value_head_neurons=16, policy_loss_value=1):
         """
         https://www.youtube.com/watch?v=OPgRNY3FaxA
         """
@@ -68,16 +70,16 @@ class Network:
         input_tensor = Input(input_shape)
 
         # convolutional layer
-        x = Conv2D(16, kernel_size, padding='same')(input_tensor)
+        x = Conv2D(convolutional_filters, kernel_size, padding='same')(input_tensor)
         x = BatchNormalization()(x)
         x = Activation('relu')(x)
 
         # residual layers
         for _ in range(residual_layers):
-            y = Conv2D(16, kernel_size, padding='same')(x)
+            y = Conv2D(convolutional_filters, kernel_size, padding='same')(x)
             y = BatchNormalization()(y)
             y = Activation('relu')(y)
-            y = Conv2D(16, kernel_size, padding='same')(y)
+            y = Conv2D(convolutional_filters, kernel_size, padding='same')(y)
             y = BatchNormalization()(y)
             # noinspection PyTypeChecker
             x = Add()([x, y])
@@ -96,7 +98,7 @@ class Network:
         value = BatchNormalization()(value)
         value = Activation('relu')(value)
         value = Flatten()(value)
-        value = Dense(16, activation='relu')(value)
+        value = Dense(value_head_neurons, activation='relu')(value)
         value = Dense(1, activation='tanh', name='value')(value)
 
         model = Model(input_tensor, [policy, value])
@@ -138,8 +140,8 @@ class Network:
         from keras.callbacks import TensorBoard, EarlyStopping
 
         split = int((1 - validation_fraction) * len(data))
-        train_input, train_output = self.process_data(self.GameClass, data[:split])
-        test_input, test_output = self.process_data(self.GameClass, data[split:])
+        train_input, train_output = self.get_training_data(self.GameClass, data[:split])
+        test_input, test_output = self.get_training_data(self.GameClass, data[split:])
         print('Training Samples:', train_input.shape[0])
         print('Validation Samples:', test_input.shape[0])
 
@@ -167,7 +169,16 @@ class Network:
         return self.model.get_config() == network.model.get_config()
 
     @classmethod
-    def process_data(cls, GameClass, data, one_hot=False, shuffle=True):
+    def get_training_data(cls, GameClass, data, one_hot=False, shuffle=True):
+        """
+
+
+        :param GameClass:
+        :param data: A list of game, outcome tuples. Each game is a list of position, distribution tuples.
+        :param one_hot:
+        :param shuffle:
+        :return:
+        """
         states = []
         policy_outputs = []
         value_outputs = []
@@ -201,112 +212,3 @@ class Network:
 
         return input_data, [policy_outputs, value_outputs]
 
-    @staticmethod
-    def spawn_dual_architecture_process(GameClass, model_path=None, pipes_per_section=1):
-        parent_a_pipes, worker_a_pipes = zip(*[Pipe() for _ in range(pipes_per_section)])
-        parent_b_pipes, worker_b_pipes = zip(*[Pipe() for _ in range(pipes_per_section)])
-        worker_training_data_pipe, parent_training_data_pipe = Pipe(duplex=False)
-        process = Process(target=Network.dual_architecture_process_loop,
-                          args=(GameClass, model_path, worker_a_pipes, worker_b_pipes, worker_training_data_pipe))
-        proxy_a_networks = [ProxyNetwork(GameClass, parent_a_pipe) for parent_a_pipe in parent_a_pipes]
-        proxy_b_networks = [ProxyNetwork(GameClass, parent_b_pipe) for parent_b_pipe in parent_b_pipes]
-        return process, proxy_a_networks, proxy_b_networks, parent_training_data_pipe
-
-    @staticmethod
-    def dual_architecture_process_loop(GameClass, model_path, worker_a_pipes, worker_b_pipes, training_data_pipe):
-        worker_pipes = worker_a_pipes + worker_b_pipes
-
-        network = Network(GameClass, model_path, reinforcement_training=True)
-        network.initialize()
-
-        def on_terminate_process(_):
-            network.finish_training()
-            network.save(model_path)
-            sys.exit(0)
-        signal(SIGTERM, on_terminate_process)
-
-        last_save = 0  # initialize to 0 to ensure that the network is saved at the start
-        while True:
-            if training_data_pipe.poll():
-                data = training_data_pipe.recv()
-                states, policies, values = data
-                network.train_step(states, policies, values)
-                if time() - last_save > 30 * 60:  # every 30 minutes
-                    network.save(f'{model_path[:-3]}-{time()}.h5')
-                    last_save = time()
-
-            # collect requests from whichever workers finish first
-            request_indices = []
-            requests = []
-            while len(request_indices) < len(worker_pipes) // 2:
-                for i, worker_pipe in enumerate(worker_pipes):
-                    if i not in request_indices and worker_pipe.poll():
-                        request_indices.append(i)
-                        requests.append(worker_pipe.recv())
-
-            # concatenate is used instead of stack because each request already has shape (k,) + GameClass.STATE_SHAPE
-            raw_policies, evaluations = network.predict(np.concatenate(requests, axis=0))
-
-            # send the results back to the workers as fast as possible
-            pos = 0
-            for i, request in zip(request_indices, requests):
-                new_pos = pos + request.shape[0]
-                # This send call will not block because the receiver will always be waiting to read the result
-                worker_pipes[i].send((raw_policies[pos:new_pos], evaluations[pos:new_pos]))
-                pos = new_pos
-
-
-class ProxyNetwork(Network):
-    def __init__(self, GameClass, model_pipe):
-        super().__init__(GameClass)
-        self.model_pipe = model_pipe
-
-    def initialize(self):
-        pass
-
-    def predict(self, states):
-        self.model_pipe.send(states)
-        return self.model_pipe.recv()
-
-    def create_model(self, kernel_size=(4, 4), residual_layers=6, policy_loss_weight=1):
-        raise NotImplementedError('ProxyNetwork does not support this operation!')
-
-    def train(self, data, validation_fraction=0.2):
-        raise NotImplementedError('ProxyNetwork does not support this operation!')
-
-    def save(self, model_path):
-        raise NotImplementedError('ProxyNetwork does not support this operation!')
-
-    def equal_model_architecture(self, network):
-        raise NotImplementedError('ProxyNetwork does not support this operation!')
-
-
-def train_from_scratch():
-    from utils.active_game import ActiveGame as GameClass
-    import os
-    import pickle
-    net = Network(GameClass)
-    net.initialize()
-    print('Network size: ', net.model.count_params())
-
-    def load_data(game_type):
-        data = []
-        for file in sorted(os.listdir(f'{get_training_path(GameClass)}/games/{game_type}')):
-            if file[-7:] != '.pickle':
-                continue
-            with open(f'{get_training_path(GameClass)}/games/{game_type}/{file}', 'rb') as fin:
-                data.append(pickle.load(fin))
-        return data
-
-    net.train(load_data('rollout_mcts_games'))
-
-    # reinforcement_data = load_data('reinforcement_learning_games')
-    # sets = int(len(reinforcement_data) / 1200)
-    # for k in range(sets):
-    #     net.train(reinforcement_data[k * len(reinforcement_data) // sets:(k + 1) * len(reinforcement_data) // sets])
-
-    net.save(f'{get_training_path(GameClass)}/models/model_reinforcement.h5')
-
-
-if __name__ == '__main__':
-    train_from_scratch()
