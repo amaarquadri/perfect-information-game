@@ -1,38 +1,44 @@
 import numpy as np
+from utils.active_game import ActiveGame as GameClass
 from games.chess import Chess
 from utils.utils import iter_product
 
 
+if not issubclass(GameClass, Chess):
+    raise NotImplementedError('Cannot run SymmetryTransform for classes that do not inherit from Chess!')
+
+
 class SymmetryTransform:
     # noinspection PyChainedComparisons
-    PAWNLESS_UNIQUE_SQUARE_INDICES = [(i, j) for i, j in iter_product(Chess.BOARD_SHAPE) if i < 4 and j < 4 and i <= j]
-    UNIQUE_SQUARE_INDICES = [(i, j) for i, j in iter_product(Chess.BOARD_SHAPE) if j < 4]
+    PAWNLESS_UNIQUE_SQUARE_INDICES = [(i, j) for i, j in iter_product(GameClass.BOARD_SHAPE)
+                                      if i < 4 and j < 4 and i <= j]
+    UNIQUE_SQUARE_INDICES = [(i, j) for i, j in iter_product(GameClass.BOARD_SHAPE) if j < 4]
 
     def __init__(self, state):
         self.transform_funcs = []
 
-        if Chess.heuristic(state) < 0:
+        if GameClass.heuristic(state) < 0:
             # black is attacking, so switch white and black
             self.transform_funcs.append(SymmetryTransform.flip_state_colors)
-            i, j = Chess.get_king_pos(state, Chess.BLACK_SLICE)
-            i = Chess.ROWS - 1 - i
+            i, j = GameClass.get_king_pos(state, GameClass.BLACK_SLICE)
+            i = GameClass.ROWS - 1 - i
         else:
-            i, j = Chess.get_king_pos(state, Chess.WHITE_SLICE)
+            i, j = GameClass.get_king_pos(state, GameClass.WHITE_SLICE)
 
         pawnless = np.all(state[:, :, 5] == 0) and np.all(state[:, :, 11] == 0)
 
         if pawnless and not (i < 4):
             self.transform_funcs.append(SymmetryTransform.flip_state_i)
-            i = Chess.ROWS - 1 - i
+            i = GameClass.ROWS - 1 - i
         if not (j < 4):  # horizontal flipping can be done, even with pawns
             self.transform_funcs.append(SymmetryTransform.flip_state_j)
-            j = Chess.COLUMNS - 1 - j
+            j = GameClass.COLUMNS - 1 - j
         if pawnless and not (i <= j):
             self.transform_funcs.append(SymmetryTransform.flip_state_diagonal)
 
     @classmethod
     def identity(cls):
-        identity = SymmetryTransform(Chess.STARTING_STATE)
+        identity = SymmetryTransform(GameClass.STARTING_STATE)
         identity.transform_funcs = []
         return identity
 
@@ -53,7 +59,7 @@ class SymmetryTransform:
     def flip_state_colors(state):
         special_layers = state[..., -2:]
         special_layers[..., -1] = 1 - special_layers[..., -1]
-        new_state = np.concatenate((state[..., Chess.BLACK_SLICE], state[..., Chess.WHITE_SLICE], special_layers),
+        new_state = np.concatenate((state[..., GameClass.BLACK_SLICE], state[..., GameClass.WHITE_SLICE], special_layers),
                                    axis=-1)
         # need to flip board vertically after flipping colours
         # this ensures that the pawns move in the correct directions

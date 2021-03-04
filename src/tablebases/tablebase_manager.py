@@ -1,9 +1,14 @@
 import pickle
 from os import listdir
 import numpy as np
-from games.chess import Chess, PIECE_LETTERS
+from utils.active_game import ActiveGame as GameClass
+from games.chess import Chess
 from tablebases.symmetry_transform import SymmetryTransform
 from utils.utils import choose_random, get_training_path
+
+
+if not issubclass(GameClass, Chess):
+    raise NotImplementedError('Cannot run TablebaseManager for classes that do not inherit from Chess!')
 
 
 class TablebaseManager:
@@ -17,7 +22,7 @@ class TablebaseManager:
     """
     DRAWING_DESCRIPTORS = ['Kk', 'KBk', 'KNk']
     AVAILABLE_TABLEBASES = [file[:-len('.pickle')]
-                            for file in listdir(f'{get_training_path(Chess)}/tablebases') if file.endswith('.pickle')]
+                            for file in listdir(f'{get_training_path(GameClass)}/tablebases') if file.endswith('.pickle')]
 
     @staticmethod
     def encode_move_bytes(outcome, start_i, start_j, end_i, end_j, terminal_distance):
@@ -58,7 +63,7 @@ class TablebaseManager:
 
     @classmethod
     def update_tablebase_list(cls):
-        tablebases = [file[:-len('.pickle')] for file in listdir(f'{get_training_path(Chess)}/tablebases')
+        tablebases = [file[:-len('.pickle')] for file in listdir(f'{get_training_path(GameClass)}/tablebases')
                       if file.endswith('.pickle')]
         cls.AVAILABLE_TABLEBASES.extend([tablebase for tablebase in tablebases
                                          if tablebase not in cls.AVAILABLE_TABLEBASES])
@@ -69,7 +74,7 @@ class TablebaseManager:
 
     def ensure_loaded(self, descriptor):
         if descriptor not in self.tablebases:
-            with open(f'{get_training_path(Chess)}/tablebases/{descriptor}.pickle', 'rb') as file:
+            with open(f'{get_training_path(GameClass)}/tablebases/{descriptor}.pickle', 'rb') as file:
                 self.tablebases[descriptor] = pickle.load(file)
 
     def query_position(self, state, outcome_only=False):
@@ -100,23 +105,23 @@ class TablebaseManager:
 
         self.ensure_loaded(descriptor)
         tablebase = self.tablebases[descriptor]
-        move_bytes = tablebase[Chess.encode_board_bytes(transformed_state)]
+        move_bytes = tablebase[GameClass.encode_board_bytes(transformed_state)]
         outcome, start_i, start_j, end_i, end_j, terminal_distance = TablebaseManager.parse_move_bytes(move_bytes)
         if outcome_only:
             return outcome, terminal_distance
 
-        transformed_move_state = Chess.apply_from_to_move(transformed_state, start_i, start_j, end_i, end_j)
+        transformed_move_state = GameClass.apply_from_to_move(transformed_state, start_i, start_j, end_i, end_j)
         move_state = symmetry_transform.untransform_state(transformed_move_state)
         return move_state, outcome, terminal_distance
 
     @staticmethod
     def get_position_descriptor(state):
         piece_counts = [np.sum(state[:, :, i] == 1) for i in range(12)]
-        return ''.join([piece_count * letter for piece_count, letter in zip(piece_counts, PIECE_LETTERS)])
+        return ''.join([piece_count * letter for piece_count, letter in zip(piece_counts, GameClass.PIECE_LETTERS)])
 
     def get_random_endgame(self, descriptor):
         if descriptor not in self.AVAILABLE_TABLEBASES:
             raise NotImplementedError()
 
         self.ensure_loaded(descriptor)
-        return Chess.parse_board_bytes(choose_random(list(self.tablebases[descriptor].keys())))
+        return GameClass.parse_board_bytes(choose_random(list(self.tablebases[descriptor].keys())))

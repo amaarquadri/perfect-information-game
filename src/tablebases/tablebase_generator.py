@@ -1,17 +1,22 @@
 import pickle
 import numpy as np
-from games.chess import Chess, PIECE_LETTERS
+from utils.active_game import ActiveGame as GameClass
+from games.chess import Chess
 from tablebases.tablebase_manager import TablebaseManager
 from tablebases.symmetry_transform import SymmetryTransform
 from utils.utils import OptionalPool, get_training_path
 from functools import partial
 
 
-class ChessTablebaseGenerator:
+if not issubclass(GameClass, Chess):
+    raise NotImplementedError('Cannot run TablebaseGenerator for classes that do not inherit from Chess!')
+
+
+class TablebaseGenerator:
     """
     Tablebases will always be generated with white as the side who is up in material.
     If material is equal, then it will be treated as if white is up in material.
-    Material comparison is determined using Chess.heuristic.
+    Material comparison is determined using GameClass.heuristic.
 
     Symmetry will be applied to ensure that for the attacking king: i < 4, j < 4, i <= j.
 
@@ -20,23 +25,23 @@ class ChessTablebaseGenerator:
     class Node:
         def __init__(self, state, descriptor, tablebase_manager):
             # since many nodes will be stored in memory at once during generation, only the fen will be stored
-            self.board_bytes = Chess.encode_board_bytes(state)
-            self.is_maximizing = Chess.is_player_1_turn(state)
+            self.board_bytes = GameClass.encode_board_bytes(state)
+            self.is_maximizing = GameClass.is_player_1_turn(state)
 
             # create children, but leave references to other nodes as move_fen strings for now
             self.children = []
             self.children_symmetry_transforms = []
-            moves = Chess.get_possible_moves(state)
+            moves = GameClass.get_possible_moves(state)
             for move in moves:
                 # need to compare descriptors (piece count is not robust to pawn promotions)
                 move_descriptor = TablebaseManager.get_position_descriptor(move)
                 if move_descriptor == descriptor:
                     symmetry_transform = SymmetryTransform(move)
-                    move_board_bytes = Chess.encode_board_bytes(symmetry_transform.transform_state(move))
+                    move_board_bytes = GameClass.encode_board_bytes(symmetry_transform.transform_state(move))
                     self.children.append(move_board_bytes)
                     self.children_symmetry_transforms.append(symmetry_transform)
                 else:
-                    node = ChessTablebaseGenerator.Node(move, move_descriptor, tablebase_manager)
+                    node = TablebaseGenerator.Node(move, move_descriptor, tablebase_manager)
                     node.children = []
                     node.outcome, node.terminal_distance = tablebase_manager.query_position(move, outcome_only=True)
                     self.children.append(node)
@@ -44,8 +49,8 @@ class ChessTablebaseGenerator:
 
             self.best_move = None
             self.best_symmetry_transform = None
-            if Chess.is_over(state, moves):
-                self.outcome = Chess.get_winner(state, moves)
+            if GameClass.is_over(state, moves):
+                self.outcome = GameClass.get_winner(state, moves)
                 self.terminal_distance = 0
             else:
                 # assume that everything is a draw (by fortress) unless proven otherwise
@@ -119,9 +124,9 @@ class ChessTablebaseGenerator:
                 print('Warning: destroy_connections not called. Calling now...')
                 self.destroy_connections()
 
-            transformed_move = Chess.parse_board_bytes(self.best_move)
+            transformed_move = GameClass.parse_board_bytes(self.best_move)
             move = self.best_symmetry_transform.untransform_state(transformed_move)
-            return Chess.get_from_to_move(Chess.parse_board_bytes(self.board_bytes), move)
+            return GameClass.get_from_to_move(GameClass.parse_board_bytes(self.board_bytes), move)
 
         @staticmethod
         def get_move_bytes(node):
@@ -154,9 +159,9 @@ class ChessTablebaseGenerator:
 
             for pointer in range(piece_count - 1, 0, -1):  # intentionally skip index 0
                 indices[pointer] = indices[pointer][0], indices[pointer][1] + 1
-                if indices[pointer][1] == Chess.COLUMNS:
+                if indices[pointer][1] == GameClass.COLUMNS:
                     indices[pointer] = indices[pointer][0] + 1, 0
-                    if indices[pointer][0] == Chess.ROWS:
+                    if indices[pointer][0] == GameClass.ROWS:
                         indices[pointer] = 0, 0
                         continue
                 break
@@ -171,17 +176,17 @@ class ChessTablebaseGenerator:
         nodes = {}
         for is_white_turn in True, False:
             # create the state
-            state = np.zeros(Chess.STATE_SHAPE)
+            state = np.zeros(GameClass.STATE_SHAPE)
             for (i, j), k in zip(piece_indices, pieces):
                 state[i, j, k] = 1
             if is_white_turn:
                 state[:, :, -1] = 1
 
             # check if the state is illegal because the player whose turn it isn't is in check
-            friendly_slice, enemy_slice, pawn_direction, *_ = Chess.get_stats(state)
+            friendly_slice, enemy_slice, pawn_direction, *_ = GameClass.get_stats(state)
             # We need to flip the slices and pawn_direction because the stats are computed for the move,
             # not the state preceding it
-            if not Chess.king_safe(state, enemy_slice, friendly_slice, -pawn_direction):
+            if not GameClass.king_safe(state, enemy_slice, friendly_slice, -pawn_direction):
                 continue
 
             if np.any(state[0, :, 5] == 1) or np.any(state[7, :, 5] == 1) \
@@ -189,19 +194,19 @@ class ChessTablebaseGenerator:
                 # ignore states with pawns on the first or last ranks
                 continue
 
-            node = ChessTablebaseGenerator.Node(state, descriptor, tablebase_manager)
+            node = TablebaseGenerator.Node(state, descriptor, tablebase_manager)
             nodes[node.board_bytes] = node
         return nodes
 
     @classmethod
     def generate_tablebase(cls, descriptor, pool):
-        pieces = sorted([PIECE_LETTERS.index(letter) for letter in descriptor])
+        pieces = sorted([GameClass.PIECE_LETTERS.index(letter) for letter in descriptor])
         if len(set(pieces)) < len(pieces):
             raise NotImplementedError('Tablebases with duplicate pieces not implemented!')
         if not (0 in pieces and 6 in pieces):
             raise ValueError('White and black kings must be in the descriptor!')
 
-        nodes_path = f'{get_training_path(Chess)}/tablebases/{descriptor}_nodes.pickle'
+        nodes_path = f'{get_training_path(GameClass)}/tablebases/{descriptor}_nodes.pickle'
         try:
             with open(nodes_path, 'rb') as file:
                 nodes = pickle.load(file)
@@ -231,10 +236,10 @@ class ChessTablebaseGenerator:
         nodes = list(nodes.values())
         for node in nodes:
             node.destroy_connections()
-        node_move_bytes = pool.map(ChessTablebaseGenerator.Node.get_move_bytes, nodes)
+        node_move_bytes = pool.map(TablebaseGenerator.Node.get_move_bytes, nodes)
         tablebase = {node.board_bytes: move_bytes for node, move_bytes in zip(nodes, node_move_bytes)}
 
-        with open(f'{get_training_path(Chess)}/tablebases/{descriptor}.pickle', 'wb') as file:
+        with open(f'{get_training_path(GameClass)}/tablebases/{descriptor}.pickle', 'wb') as file:
             pickle.dump(tablebase, file)
 
 
@@ -245,7 +250,7 @@ def generate_tablebases(threads=12):
     with OptionalPool(threads) as pool:
         for section in [THREE_MAN, FOUR_MAN_WITH_ENEMY, FOUR_MAN_NO_ENEMY]:
             for descriptor in section.split(','):
-                ChessTablebaseGenerator.generate_tablebase(descriptor, pool)
+                TablebaseGenerator.generate_tablebase(descriptor, pool)
                 print(f'Completed {descriptor}')
                 # need to refresh every time due to pawn promotions
                 TablebaseManager.update_tablebase_list()
