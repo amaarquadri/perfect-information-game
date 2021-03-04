@@ -4,95 +4,6 @@ from utils.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIR
 from functools import partial
 
 
-PIECE_LETTERS = 'KQRBNPkqrbnp'
-
-
-def parse_algebraic_notation(square, layer_slice=None, as_slice=True):
-    letter, number = square
-
-    where = np.argwhere(np.array(list('87654321')) == number)
-    if len(where) == 0:
-        raise ValueError(f'Invalid number: {number}')
-    i = where[0, 0]
-
-    where = np.argwhere(np.array(list('ABCDEFGH')) == letter)
-    if len(where) == 0:
-        raise ValueError(f'Invalid letter: {letter}')
-    j = where[0, 0]
-
-    if as_slice:
-        if layer_slice is None:
-            layer_slice = slice(None)
-        if type(layer_slice) is int:
-            layer_slice = slice(layer_slice, layer_slice + 1)
-        return slice(i, i + 1), slice(j, j + 1), layer_slice
-    else:
-        return i, j
-
-
-def parse_fen(fen):
-    pieces, turn, castling, en_passant, *_ = fen.split(' ')
-    for i in range(2, 9):
-        pieces = pieces.replace(str(i), i * '1')
-
-    def parse_piece(piece_character):
-        if piece_character == '1':
-            return np.zeros(len(PIECE_LETTERS))
-        where = np.argwhere(piece_character == np.array(list(PIECE_LETTERS)))
-        if len(where) == 0:
-            raise ValueError(f'Invalid piece: {piece_character}')
-        return one_hot(where[0, 0], len(PIECE_LETTERS))
-
-    pieces = np.stack([np.stack([parse_piece(piece) for piece in rank], axis=0)
-                       for rank in pieces.split('/')], axis=0)
-
-    special_moves = np.zeros((8, 8, 1))
-    for letter, square in zip('KQkq', ['G1', 'C1', 'G8', 'C8']):
-        if letter in castling:
-            special_moves[parse_algebraic_notation(square)] = 1
-    if en_passant != '-':
-        special_moves[parse_algebraic_notation(en_passant.capitalize())] = 1
-
-    turn = np.full((8, 8, 1), 1 if turn.lower() == 'w' else 0)
-    return np.concatenate((pieces, special_moves, turn), axis=-1).astype(np.uint8)
-
-
-def encode_fen(state):
-    def encode_piece(piece_arr):
-        where = np.argwhere(piece_arr)
-        if len(where) == 0:
-            return '1'
-        if len(where) > 1:
-            raise ValueError('Multiple pieces in same square')
-        return PIECE_LETTERS[where[0, 0]]
-    pieces = '/'.join([''.join([encode_piece(state[rank, file, :12]) for file in range(8)]) for rank in range(8)])
-    for i in range(8, 1, -1):
-        pieces = pieces.replace(i * '1', str(i))
-
-    turn = 'w' if Chess.is_player_1_turn(state) else 'b'
-
-    castling = ''
-    for letter, square in [('K', 'G1'), ('Q', 'C1'), ('k', 'G8'), ('q', 'C8')]:
-        if state[parse_algebraic_notation(square, layer_slice=-2)] == 1:
-            castling += letter
-    if len(castling) == 0:
-        castling = '-'
-
-    en_passant = None
-    for letter in 'ABCDEFGH':
-        for number in '36':
-            square = letter + number
-            if state[parse_algebraic_notation(square, layer_slice=-2)] == 1:
-                if en_passant is None:
-                    en_passant = square.lower()
-                else:
-                    raise ValueError(f'Multiple en passant flags detected: {en_passant}, {square}')
-    if en_passant is None:
-        en_passant = '-'
-
-    return ' '.join([pieces, turn, castling, en_passant, '-', '-'])
-
-
 class Chess(Game):
     """
     The game state is represented by an 8x8x14 matrix. The 14 layers correspond to:
@@ -105,8 +16,8 @@ class Chess(Game):
     castling move (C1, G1, C8, and G8), or the square where a pawn will end up after a legal
     en passant capture (rows 3 and 6).
     """
-    STARTING_STATE = parse_fen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
-    STATE_SHAPE = STARTING_STATE.shape  # 8, 8, 14
+    STARTING_STATE = None  # defined after this class's definition
+    STATE_SHAPE = (8, 8, 14)  # 8, 8, 14
     ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 8, 8, 14
     BOARD_SHAPE = (ROWS, COLUMNS)  # 8, 8
     MOVE_SHAPE = (ROWS, COLUMNS, ROWS, COLUMNS)  # 8, 8, 8, 8: start_i, start_j, end_i, end_j
@@ -119,6 +30,94 @@ class Chess(Game):
     KNIGHT_MOVES = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]
     WHITE_SLICE = slice(0, 6)
     BLACK_SLICE = slice(6, 12)
+    PIECE_LETTERS = 'KQRBNPkqrbnp'
+
+    @classmethod
+    def parse_algebraic_notation(cls, square, layer_slice=None, as_slice=True):
+        letter, number = square
+
+        where = np.argwhere(np.array(list('87654321')) == number)
+        if len(where) == 0:
+            raise ValueError(f'Invalid number: {number}')
+        i = where[0, 0]
+
+        where = np.argwhere(np.array(list('ABCDEFGH')) == letter)
+        if len(where) == 0:
+            raise ValueError(f'Invalid letter: {letter}')
+        j = where[0, 0]
+
+        if as_slice:
+            if layer_slice is None:
+                layer_slice = slice(None)
+            if type(layer_slice) is int:
+                layer_slice = slice(layer_slice, layer_slice + 1)
+            return slice(i, i + 1), slice(j, j + 1), layer_slice
+        else:
+            return i, j
+
+    @classmethod
+    def parse_fen(cls, fen):
+        pieces, turn, castling, en_passant, *_ = fen.split(' ')
+        for i in range(2, 9):
+            pieces = pieces.replace(str(i), i * '1')
+
+        def parse_piece(piece_character):
+            if piece_character == '1':
+                return np.zeros(len(cls.PIECE_LETTERS))
+            where = np.argwhere(piece_character == np.array(list(cls.PIECE_LETTERS)))
+            if len(where) == 0:
+                raise ValueError(f'Invalid piece: {piece_character}')
+            return one_hot(where[0, 0], len(cls.PIECE_LETTERS))
+
+        pieces = np.stack([np.stack([parse_piece(piece) for piece in rank], axis=0)
+                           for rank in pieces.split('/')], axis=0)
+
+        special_moves = np.zeros((8, 8, 1))
+        for letter, square in zip('KQkq', ['G1', 'C1', 'G8', 'C8']):
+            if letter in castling:
+                special_moves[cls.parse_algebraic_notation(square)] = 1
+        if en_passant != '-':
+            special_moves[cls.parse_algebraic_notation(en_passant.capitalize())] = 1
+
+        turn = np.full((8, 8, 1), 1 if turn.lower() == 'w' else 0)
+        return np.concatenate((pieces, special_moves, turn), axis=-1).astype(np.uint8)
+
+    @classmethod
+    def encode_fen(cls, state):
+        def encode_piece(piece_arr):
+            where = np.argwhere(piece_arr)
+            if len(where) == 0:
+                return '1'
+            if len(where) > 1:
+                raise ValueError('Multiple pieces in same square')
+            return cls.PIECE_LETTERS[where[0, 0]]
+
+        pieces = '/'.join([''.join([encode_piece(state[rank, file, :12]) for file in range(8)]) for rank in range(8)])
+        for i in range(8, 1, -1):
+            pieces = pieces.replace(i * '1', str(i))
+
+        turn = 'w' if Chess.is_player_1_turn(state) else 'b'
+
+        castling = ''
+        for letter, square in [('K', 'G1'), ('Q', 'C1'), ('k', 'G8'), ('q', 'C8')]:
+            if state[cls.parse_algebraic_notation(square, layer_slice=-2)] == 1:
+                castling += letter
+        if len(castling) == 0:
+            castling = '-'
+
+        en_passant = None
+        for letter in 'ABCDEFGH':
+            for number in '36':
+                square = letter + number
+                if state[cls.parse_algebraic_notation(square, layer_slice=-2)] == 1:
+                    if en_passant is None:
+                        en_passant = square.lower()
+                    else:
+                        raise ValueError(f'Multiple en passant flags detected: {en_passant}, {square}')
+        if en_passant is None:
+            en_passant = '-'
+
+        return ' '.join([pieces, turn, castling, en_passant, '-', '-'])
 
     @classmethod
     def encode_board_bytes(cls, state):
@@ -247,7 +246,7 @@ class Chess(Game):
 
     def __init__(self, state=STARTING_STATE):
         # noinspection PyTypeChecker
-        super().__init__(parse_fen(state) if type(state) is str else state)
+        super().__init__(self.parse_fen(state) if type(state) is str else state)
 
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
@@ -575,3 +574,7 @@ class Chess(Game):
     @classmethod
     def heuristic(cls, state):
         return np.sum(np.dot(state, [100, 9, 5, 3.25, 3, 1, -100, -9, -5, -3.25, -3, -1, 0, 0]))
+
+
+# need to define this after the Chess class is created so that we can use the parse_fen function
+Chess.STARTING_STATE = Chess.parse_fen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')

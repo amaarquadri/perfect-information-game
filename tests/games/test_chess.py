@@ -1,7 +1,7 @@
 import unittest
 import json
 import numpy as np
-from games.chess import Chess, parse_fen, encode_fen
+from games.chess import Chess
 
 
 class TestChess(unittest.TestCase):
@@ -22,7 +22,7 @@ class TestChess(unittest.TestCase):
         :return:
         """
         with open('chess_test_cases.json') as f:
-            test_cases = json.load(f)
+            test_cases = sorted(json.load(f), key=lambda case: case['nodes'])
 
         for test_case in test_cases:
             if test_case['nodes'] < 1000_000:
@@ -33,31 +33,29 @@ class TestChess(unittest.TestCase):
                 else:
                     print('pass ' + test_case['fen'])
 
-    def test_again(self):
+    def test_chess_programming_cases(self):
         """
         Test cases taken from https://www.chessprogramming.org/Perft_Results
-
-        :return:
         """
         self.assertEqual(self.test_move_counts(Chess.STARTING_STATE, depth=3), [20, 400, 8902])
 
-        self.assertEqual(self.test_move_counts(parse_fen(
+        self.assertEqual(self.test_move_counts(Chess.parse_fen(
             'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -'), depth=3),
             [48, 2039, 97862])
 
-        self.assertEqual(self.test_move_counts(parse_fen('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - '), depth=4),
-                         [14, 191, 2812, 43238])  # 43373 (135 too many)
+        self.assertEqual(self.test_move_counts(Chess.parse_fen('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - '), depth=4),
+                         [14, 191, 2812, 43238])
 
-        self.assertEqual(self.test_move_counts(parse_fen(
+        self.assertEqual(self.test_move_counts(Chess.parse_fen(
             'r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1'), depth=3),
             [6, 264, 9467])
 
-        self.assertEqual(self.test_move_counts(parse_fen(
+        self.assertEqual(self.test_move_counts(Chess.parse_fen(
             'rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8'), depth=3),
             [44, 1486, 62379])
 
         self.assertEqual(self.test_move_counts(
-            parse_fen('r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 '), depth=3),
+            Chess.parse_fen('r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 '), depth=3),
             [46, 2079, 89890])
 
     def test(self):
@@ -73,7 +71,7 @@ class TestChess(unittest.TestCase):
         :param depth:
         :return:
         """
-        import chess
+        import chess  # import Python chess library for comparison to find bugs
 
         def get_fen(board, move):
             board.push(move)
@@ -86,7 +84,7 @@ class TestChess(unittest.TestCase):
 
         chess_board = chess.Board(fen)
         chess_moves = sorted([get_fen(chess_board, move) for move in chess_board.generate_legal_moves()])
-        moves = sorted([encode_fen(move) for move in Chess.get_possible_moves(parse_fen(fen))])
+        moves = sorted([Chess.encode_fen(move) for move in Chess.get_possible_moves(Chess.parse_fen(fen))])
 
         if len(moves) != len(chess_moves):
             raise AssertionError
@@ -104,16 +102,16 @@ class TestChess(unittest.TestCase):
 
         for test_case in test_cases:
             fen = test_case['fen']
-            state = parse_fen(fen)
+            state = Chess.parse_fen(fen)
             self.test_encodings(state)
             for move in Chess.get_possible_moves(state):
                 self.test_encodings(move)
 
     def test_encodings(self, state):
         if not np.all(state == Chess.parse_board_bytes(Chess.encode_board_bytes(state))):
-            raise AssertionError(f'Failed to consistently process board_bytes: {encode_fen(state)}')
-        if not np.all(state == parse_fen(encode_fen(state))):
-            raise AssertionError(f'Failed to consistently process fen: {encode_fen(state)}')
+            raise AssertionError(f'Failed to consistently process board_bytes: {Chess.encode_fen(state)}')
+        if not np.all(state == Chess.parse_fen(Chess.encode_fen(state))):
+            raise AssertionError(f'Failed to consistently process fen: {Chess.encode_fen(state)}')
 
 
 if __name__ == '__main__':
