@@ -1,6 +1,5 @@
 from games.game import Game
 import numpy as np
-from tablebases.tablebase_manager import TablebaseManager
 from utils.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
 from functools import partial
 
@@ -32,6 +31,7 @@ class Chess(Game):
     WHITE_SLICE = slice(0, 6)
     BLACK_SLICE = slice(6, 12)
     PIECE_LETTERS = 'KQRBNPkqrbnp'
+    DRAWING_DESCRIPTORS = ['Kk', 'KBk', 'KNk']
 
     @classmethod
     def parse_algebraic_notation(cls, square, layer_slice=None, as_slice=True):
@@ -538,8 +538,14 @@ class Chess(Game):
             en_passant_row
 
     @classmethod
+    def get_position_descriptor(cls, state):
+        piece_counts = [np.sum(state[:, :, i] == 1) for i in range(12)]
+        return ''.join([piece_count * letter
+                        for piece_count, letter in zip(piece_counts, cls.PIECE_LETTERS)])
+
+    @classmethod
     def is_draw_by_insufficient_material(cls, state):
-        return TablebaseManager.get_position_descriptor(cls, state) in TablebaseManager.DRAWING_DESCRIPTORS
+        return cls.get_position_descriptor(state) in cls.DRAWING_DESCRIPTORS
 
     @classmethod
     def is_over(cls, state, moves=None):

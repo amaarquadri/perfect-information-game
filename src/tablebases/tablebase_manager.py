@@ -15,8 +15,6 @@ class TablebaseManager:
     move_bytes can be converted to and from this tuple: (outcome, start_i, start_j, target_i, target_j, distance).
     Only the symmetric variants of each position are stored in the tablebases.
     """
-    DRAWING_DESCRIPTORS = ['Kk', 'KBk', 'KNk']
-
     @staticmethod
     def encode_move_bytes(outcome, start_i, start_j, end_i, end_j, terminal_distance):
         if terminal_distance < 0:
@@ -93,9 +91,9 @@ class TablebaseManager:
         symmetry_transform = SymmetryTransform(self.GameClass, state)
         transformed_state = symmetry_transform.transform_state(state)
 
-        descriptor = self.get_position_descriptor(self.GameClass, transformed_state)
+        descriptor = self.GameClass.get_position_descriptor(transformed_state)
 
-        if descriptor in self.DRAWING_DESCRIPTORS:
+        if descriptor in self.GameClass.DRAWING_DESCRIPTORS:
             return (0, 0) if outcome_only else (None, 0, 0)
 
         if descriptor not in self.available_tablebases:
@@ -112,12 +110,6 @@ class TablebaseManager:
         transformed_move_state = self.GameClass.apply_from_to_move(transformed_state, start_i, start_j, end_i, end_j)
         move_state = symmetry_transform.untransform_state(transformed_move_state)
         return move_state, outcome, terminal_distance
-
-    @staticmethod
-    def get_position_descriptor(GameClass, state):
-        piece_counts = [np.sum(state[:, :, i] == 1) for i in range(12)]
-        return ''.join([piece_count * letter
-                        for piece_count, letter in zip(piece_counts, GameClass.PIECE_LETTERS)])
 
     def get_random_endgame(self, descriptor):
         if descriptor not in self.available_tablebases:

@@ -2,6 +2,8 @@ from games.chess import Chess
 
 
 class KingOfTheHillChess(Chess):
+    DRAWING_DESCRIPTORS = []
+
     @classmethod
     def is_draw_by_insufficient_material(cls, state):
         return False
