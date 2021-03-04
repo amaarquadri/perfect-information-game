@@ -18,4 +18,6 @@ It is not clear if this trend would continue as the training finishes.
 Based on the learning curve, the following models (with the original 6 residual layers) were chosen for their respective difficulty levels:  
 - Easy: model_reinforcement-1604045224.7152517 (0 hours into training)  
 - Medium: model_reinforcement-1604092085.6274474 (13 hours into training)  
-- Hard: model_reinforcement-1604228204.9054377 (2 days 3 hours into training)  
+- Hard: model_reinforcement-1604228204.9054377 (2 days 3 hours into training)    
+
+Training was done on a computer with an AMD Ryzen 3700X CPU and an Nvidia RTX 2060 Super graphics card for neural network evaluations and training.
