@@ -5,4 +5,6 @@ The policy loss was given a weight of 50,000 and the value loss was given a weig
 Then the network was further trained using reinforcement learning with 500 expansions per move, c=0.1, and d=0.5.  
 The replay buffer was a fixed size of 1000 games, and it was initialized with the 1000 MCTS rollout games.  
 A total of ? games were played during this stage, and models were saved every 30 minutes.  
-This graph shows the training process:  
+This graph shows the training process:    
+
+Training was done on a computer with an AMD Ryzen 3700X CPU and an Nvidia RTX 2060 Super graphics card for neural network evaluations and training.
