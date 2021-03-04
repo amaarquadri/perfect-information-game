@@ -1,5 +1,6 @@
 from games.game import Game
 import numpy as np
+from tablebases.tablebase_manager import TablebaseManager
 from utils.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
 from functools import partial
 
@@ -537,13 +538,21 @@ class Chess(Game):
             en_passant_row
 
     @classmethod
+    def is_draw_by_insufficient_material(cls, state):
+        return TablebaseManager.get_position_descriptor(cls, state) in TablebaseManager.DRAWING_DESCRIPTORS
+
+    @classmethod
     def is_over(cls, state, moves=None):
-        return len(cls.get_possible_moves(state)) == 0 if moves is None else len(moves) == 0
+        return cls.is_draw_by_insufficient_material(state) or \
+               (len(cls.get_possible_moves(state)) == 0 if moves is None else len(moves) == 0)
 
     @classmethod
     def get_winner(cls, state, moves=None):
         if not cls.is_over(state, moves):
             raise Exception('Game is not over!')
+
+        if cls.is_draw_by_insufficient_material(state):
+            return 0
 
         friendly_slice, enemy_slice, pawn_direction, *_ = cls.get_stats(state)
         king_i, king_j = cls.get_king_pos(state, friendly_slice)

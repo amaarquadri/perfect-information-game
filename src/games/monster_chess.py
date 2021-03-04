@@ -9,4 +9,6 @@ class MonsterChess(Chess):
 
     The state
     """
-    pass
+    @classmethod
+    def is_draw_by_insufficient_material(cls, state):
+        return False
