@@ -9,8 +9,8 @@ class Network:
     return 1 if player 1 (white in chess, red in checkers etc.) is going to win, -1 if player 2 is going to win,
     and 0 if the game is going to be a draw.
 
-    Network will receive all inputs and output moves in the format of flattened arrays of legal moves. \
-    It will internally handle conversion too and from move distribution matrices using GameClass.get_legal_moves
+    The Network's model will input a binary matrix with a shape of GameClass.STATE_SHAPE and output a tuple consisting
+    of the probability distribution over legal moves and the position's evaluation.
     """
 
     def __init__(self, GameClass, model_path=None, reinforcement_training=False, hyper_params=None):
@@ -115,9 +115,10 @@ class Network:
         For any of the given states, if no moves are legal, then the corresponding probability distribution will be a
         list with a single 1. This is done to allow for pass moves which are not encapsulated by GameClass.MOVE_SHAPE.
 
-        :param states: The input positions with shape (k,) + GameClass.State_Shape, where k is the number of positions.
+        :param states: The input positions with shape (k,) + GameClass.STATE_SHAPE, where k is the number of positions.
         :return: A list of length k. Each element of the list is a tuple where the 0th element is the probability
-                 distribution on legal moves, and the 1st element is the evaluation (a float in (-1, 1)).
+                 distribution on legal moves (ordered correspondingly with GameClass.get_possible_moves), and the 1st
+                 element is the evaluation (a float in (-1, 1)).
         """
         raw_policies, evaluations = self.predict(states)
 
