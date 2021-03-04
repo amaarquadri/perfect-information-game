@@ -1,0 +1,25 @@
+from games.chess import Chess
+
+
+class KingOfTheHillChess(Chess):
+    @classmethod
+    def get_king_of_the_hill_winner(cls, state):
+        white_king_i, white_king_j = cls.get_king_pos(state, cls.WHITE_SLICE)
+        if white_king_i in [3, 4] and white_king_j in [3, 4]:
+            return 1
+
+        black_king_i, black_king_j = cls.get_king_pos(state, cls.BLACK_SLICE)
+        if black_king_i in [3, 4] and black_king_j in [3, 4]:
+            return -1
+        return None
+
+    @classmethod
+    def is_over(cls, state, moves=None):
+        return cls.get_king_of_the_hill_winner(state) is not None or \
+               (len(cls.get_possible_moves(state)) == 0 if moves is None else len(moves) == 0)
+
+    @classmethod
+    def get_winner(cls, state, moves=None):
+        king_of_the_hill_winner = cls.get_king_of_the_hill_winner(state)
+        return king_of_the_hill_winner if king_of_the_hill_winner is not None else \
+            super(KingOfTheHillChess, cls).get_winner(state, moves)
