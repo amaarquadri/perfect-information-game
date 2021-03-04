@@ -1,6 +1,19 @@
 # Perfect Information Game
 Creating 2D perfect information board games, and playing them with machine learning systems.
 
+## What's in this repo?
+- Implementations for a bunch of board games including [Chess](https://en.wikipedia.org/wiki/Chess), 
+  [Checkers](https://en.wikipedia.org/wiki/Draughts), [Connect 4](https://en.wikipedia.org/wiki/Connect_Four), 
+  [Othello (Reversi)](https://en.wikipedia.org/wiki/Reversi), and [The Game of the Amazons](https://en.wikipedia.org/wiki/Game_of_the_Amazons)
+- Implementations of various algorithms for selecting moves including [Minimax](https://youtu.be/l-hh51ncgDI) 
+  (with alpha-beta pruning), [Monte Carlo tree search](https://youtu.be/UXW2yZndl7U) using randomized rollouts, 
+  [iterative deepening](https://youtu.be/U4ogK0MIzqk?t=1566), and 
+  [policy-value driven Monte Carlo tree search](https://arxiv.org/pdf/1905.13521.pdf)
+- Code for generating [endgame tablebases](https://en.wikipedia.org/wiki/Endgame_tablebase) for Chess using 
+  [retrograde analysis](https://www.chessprogramming.org/Retrograde_Analysis)
+- Code for training neural networks from scratch using [self-play reinforcement learning](https://youtu.be/v9M2Ho9I9Qo)
+- Over 4500 lines of Python code and counting
+
 ## Getting Started
 - Ensure Python is installed
 - Install requirements: \
@@ -15,11 +28,13 @@ uncommenting the corresponding line that starts with `CONFIG = `
 
 ## How I Trained the Models
 - [Connect 4](/training/Connect4)
-- [Othello/Reversi](/training/Othello)
-- [Amazons (6x6 Board)](/training/Amazons/6x6)
+- [Othello (Reversi)](/training/Othello)
+- [The Game of the Amazons (6x6 Board)](/training/Amazons/6x6)
 
 ## Play Against Live Models on my Website
-- Connect 4:  [Easy](https://www.amaarquadri.com/play?game=connect4&difficulty=easy&ai-time=1&log-stats=true), [Medium](https://www.amaarquadri.com/play?game=connect4&difficulty=medium&ai-time=1&log-stats=true), [Hard](https://www.amaarquadri.com/play?game=connect4&difficulty=hard&ai-time=1&log-stats=true)
+- Connect 4: [Easy](https://www.amaarquadri.com/play?game=connect4&difficulty=easy&ai-time=1&log-stats=true), 
+  [Medium](https://www.amaarquadri.com/play?game=connect4&difficulty=medium&ai-time=1&log-stats=true), 
+  [Hard](https://www.amaarquadri.com/play?game=connect4&difficulty=hard&ai-time=1&log-stats=true)
 - Othello: Coming Soon
 - Amazons (6x6 Board): Coming Soon
 
@@ -33,6 +48,6 @@ uncommenting the corresponding line that starts with `CONFIG = `
 - [Lessons From Alpha Zero (part 5): Performance Optimization](https://medium.com/oracledevs/lessons-from-alpha-zero-part-5-performance-optimization-664b38dc509e)
 - [How much training data do you need?](https://medium.com/@malay.haldar/how-much-training-data-do-you-need-da8ec091e956)
 - [Working with Numpy in Cython](https://cython.readthedocs.io/en/latest/src/tutorial/numpy.html)
-- [Chess Pieces Images](https://commons.wikimedia.org/wiki/Category:PNG_chess_pieces/Standard_transparent)
+- [Chess Piece Images](https://commons.wikimedia.org/wiki/Category:PNG_chess_pieces/Standard_transparent)
 - [Chess test cases](https://www.chessprogramming.org/Perft_Results) and more [chess test cases](https://gist.github.com/peterellisjones/8c46c28141c162d1d8a0f0badbc9cff9)
 - [Chess Position Encoding Scheme](https://codegolf.stackexchange.com/a/19446)
