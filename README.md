@@ -26,6 +26,7 @@ uncommenting the corresponding line that starts with `CONFIG = `
 ## Resources I Used
 - [How to Keep Improving When You're Better Than Any Teacher - Iterated Distillation and Amplification](https://youtu.be/v9M2Ho9I9Qo)
 - [Multiple Policy Value Monte Carlo Tree Search](https://arxiv.org/pdf/1905.13521.pdf)
+- [Mastering Chess and Shogi by Self-Play with a General Reinforcement Learning Algorithm](https://arxiv.org/pdf/1712.01815.pdf)
 - [Parallel Monte-Carlo Tree Search](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.159.4373&rep=rep1&type=pdf)
 - [A Lock-free Multithreaded Monte-Carlo Tree Search Algorithm](https://webdocs.cs.ualberta.ca/~mmueller/ps/enzenberger-mueller-acg12.pdf)
 - [Time Management for Monte Carlo Tree Search](https://dke.maastrichtuniversity.nl/m.winands/documents/time_management_for_monte_carlo_tree_search.pdf)
