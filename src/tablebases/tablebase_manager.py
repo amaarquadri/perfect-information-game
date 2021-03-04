@@ -1,7 +1,6 @@
 import pickle
 from os import listdir
 import numpy as np
-from games.chess import Chess
 from tablebases.symmetry_transform import SymmetryTransform
 from utils.utils import choose_random, get_training_path
 from tablebases.utils import get_verified_chess_subclass
@@ -94,7 +93,7 @@ class TablebaseManager:
         symmetry_transform = SymmetryTransform(self.GameClass, state)
         transformed_state = symmetry_transform.transform_state(state)
 
-        descriptor = self.get_position_descriptor(transformed_state)
+        descriptor = self.get_position_descriptor(self.GameClass, transformed_state)
 
         if descriptor in self.DRAWING_DESCRIPTORS:
             return (0, 0) if outcome_only else (None, 0, 0)
@@ -115,10 +114,10 @@ class TablebaseManager:
         return move_state, outcome, terminal_distance
 
     @staticmethod
-    def get_position_descriptor(state):
+    def get_position_descriptor(GameClass, state):
         piece_counts = [np.sum(state[:, :, i] == 1) for i in range(12)]
         return ''.join([piece_count * letter
-                        for piece_count, letter in zip(piece_counts, Chess.PIECE_LETTERS)])
+                        for piece_count, letter in zip(piece_counts, GameClass.PIECE_LETTERS)])
 
     def get_random_endgame(self, descriptor):
         if descriptor not in self.available_tablebases:
