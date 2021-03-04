@@ -1,7 +1,5 @@
 from time import sleep
-import numpy as np
 from move_selection.move_chooser import MoveChooser
-from utils.utils import choose_random
 
 
 class RawNetwork(MoveChooser):
@@ -27,8 +25,8 @@ class RawNetwork(MoveChooser):
         chosen_moves = []
 
         while self.GameClass.is_player_1_turn(self.position) == is_ai_player_1:
-            moves = self.GameClass.get_possible_moves(self.position)
-            self.position = choose_random(moves)
-            chosen_moves.append((self.position, np.full_like(moves, 1 / len(moves)))
+            self.position, distribution = self.network.choose_move(self.position, return_distribution=True,
+                                                                   optimal=self.optimal)
+            chosen_moves.append((self.position, distribution)
                                 if return_distribution else self.position)
         return chosen_moves
