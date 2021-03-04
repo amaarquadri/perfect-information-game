@@ -14,6 +14,13 @@ Creating 2D perfect information board games, and playing them with machine learn
 - Code for training neural networks from scratch using [self-play reinforcement learning](https://youtu.be/v9M2Ho9I9Qo)
 - Over 4500 lines of Python code and counting
 
+## Play Against Live Models on my Website
+- Connect 4: [Easy](https://www.amaarquadri.com/play?game=connect4&difficulty=easy&ai-time=1&log-stats=true), 
+  [Medium](https://www.amaarquadri.com/play?game=connect4&difficulty=medium&ai-time=1&log-stats=true), 
+  [Hard](https://www.amaarquadri.com/play?game=connect4&difficulty=hard&ai-time=1&log-stats=true)
+- Othello: Coming Soon
+- Amazons (6x6 Board): Coming Soon
+
 ## Getting Started
 - Ensure Python is installed
 - Install requirements: \
@@ -30,13 +37,6 @@ uncommenting the corresponding line that starts with `CONFIG = `
 - [Connect 4](/training/Connect4)
 - [Othello (Reversi)](/training/Othello)
 - [The Game of the Amazons (6x6 Board)](/training/Amazons/6x6)
-
-## Play Against Live Models on my Website
-- Connect 4: [Easy](https://www.amaarquadri.com/play?game=connect4&difficulty=easy&ai-time=1&log-stats=true), 
-  [Medium](https://www.amaarquadri.com/play?game=connect4&difficulty=medium&ai-time=1&log-stats=true), 
-  [Hard](https://www.amaarquadri.com/play?game=connect4&difficulty=hard&ai-time=1&log-stats=true)
-- Othello: Coming Soon
-- Amazons (6x6 Board): Coming Soon
 
 ## Resources I Used
 - [How to Keep Improving When You're Better Than Any Teacher - Iterated Distillation and Amplification](https://youtu.be/v9M2Ho9I9Qo)
