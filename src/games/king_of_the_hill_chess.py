@@ -9,6 +9,12 @@ class KingOfTheHillChess(Chess):
         return False
 
     @classmethod
+    def get_possible_moves(cls, state):
+        if cls.get_king_of_the_hill_winner(state) is not None:
+            return []
+        return super(KingOfTheHillChess, cls).get_possible_moves(state)
+
+    @classmethod
     def get_king_of_the_hill_winner(cls, state):
         white_king_i, white_king_j = cls.get_king_pos(state, cls.WHITE_SLICE)
         if white_king_i in [3, 4] and white_king_j in [3, 4]:

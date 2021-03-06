@@ -320,6 +320,9 @@ class Chess(Game):
 
     @classmethod
     def get_possible_moves(cls, state):
+        if cls.is_draw_by_insufficient_material(state):
+            return []
+
         friendly_slice, enemy_slice, pawn_direction, queening_row, pawn_starting_row, castling_row, en_passant_row = \
             cls.get_stats(state)
         moves = []
