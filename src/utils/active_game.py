@@ -5,5 +5,6 @@
 # from games.connect4 import Connect4 as ActiveGame
 # from games.othello import Othello as ActiveGame
 # from games.tic_tac_toe import TicTacToe as ActiveGame
-from games.chess import Chess as ActiveGame
+# from games.chess import Chess as ActiveGame
 # from games.monster_chess import MonsterChess as ActiveGame
+from games.king_of_the_hill_chess import KingOfTheHillChess as ActiveGame
