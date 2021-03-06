@@ -18,6 +18,9 @@ def main(user_is_player_1=False):
     while True:
         if GameClass.is_player_1_turn(pygame_ui.get_position()) == user_is_player_1:
             user_chosen_position = pygame_ui.get_user_move()
+            if user_chosen_position is None:
+                print('User quit game!')
+                return
             move_chooser.report_user_move(user_chosen_position)
             if GameClass.is_over(user_chosen_position):
                 break
