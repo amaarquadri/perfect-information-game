@@ -64,7 +64,7 @@ class TablebaseManager:
 
     def update_tablebase_list(self):
         tablebases = [file[:-len('.pickle')] for file in listdir(f'{get_training_path(self.GameClass)}/tablebases')
-                      if file.endswith('.pickle')]
+                      if file.endswith('.pickle') and '_nodes' not in file]
         self.available_tablebases.extend([tablebase for tablebase in tablebases
                                          if tablebase not in self.available_tablebases])
 
