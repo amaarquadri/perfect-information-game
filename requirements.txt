@@ -5,6 +5,7 @@ keras
 pygame
 easygui
 chess  # only used for testing
+
 # for debugging:
 # memory_profiler
 # matplotlib
