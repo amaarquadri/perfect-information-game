@@ -55,3 +55,40 @@ With optimal defense by black:
 11. Ke5#
 </p>
 </details>
+
+This insane position is white to play and win in 28 moves!
+![White to Play and Win in 28 Moves](/training/KingOfTheHillChess/tablebases/puzzle_4.png)
+<details><summary>Click to Show Solution</summary>
+<p>
+
+With optimal defense by black:
+1. Qd4+ Ke8
+2. Kb7 Ke7
+3. Kc7 Qh6
+4. Qe5+ Qe6
+5. Qg7+ Ke8
+6. Qh7 Qd5
+7. Kb6 Qd6+
+8. Kb5 Qd5+
+9. Kb4 Qd4+
+10. Kb3 Kd8
+11. Qf7 Qc5
+12. Qc4 Qe5
+13. Qc6 Qd4
+14. Qe6 Qc5
+15. Qf7 Qd4
+16. Kc2 Qe3
+17. Qh7 Ke8
+18. Qg7 Qf3
+19. Kd2 Kd8
+20. Qc3 Qf4+
+21. Qe3 Qg4
+22. Kd3 Kd7
+23. Qh6 Qb4
+24. Qf6 Qg4
+25. Ke3 Qc4
+26. Qd4+ Qd5
+27. Qxd5+ Kc7
+28. Ke4#
+</p>
+</details>
