@@ -8,9 +8,11 @@ This position is black to play and draw:
 ![Black to Play and Draw](/training/KingOfTheHillChess/tablebases/puzzle_1.png)  
 <details><summary>Click to Show Solution</summary>
 <p>
+
 1. ...  KC7  
 2. BF4+ KB6  
 3. BE3+ KC7  
+
 (draw by three-fold repetition)  
 This is because anything other than repeating moves will lead to a win for the opposing side.  
 For example:  
