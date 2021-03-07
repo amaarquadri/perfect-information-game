@@ -56,8 +56,28 @@ With optimal defense by black:
 </p>
 </details>
 
+This similar position is white to play and win.
+![White to Play and Win](/training/KingOfTheHillChess/tablebases/puzzle_4.png)
+<details><summary>Click to Show Solution</summary>
+<p>
+
+With optimal defense by black:
+1. Nd7 Kb5
+2. Bg8 Kb4
+3. Ne5 Kc5
+4. Nf3 Kc6
+5. Kb8 Kb6
+6. Kc8 Kc6
+7. Kd8 Kd6
+8. Ke8 Kc6
+9. Ke7 Kb6
+10. Ke6 Ka6
+11. Ke5#
+</p>
+</details>
+
 This insane position is white to play and win in 28 moves!
-![White to Play and Win in 28 Moves](/training/KingOfTheHillChess/tablebases/puzzle_4.png)
+![White to Play and Win in 28 Moves](/training/KingOfTheHillChess/tablebases/puzzle_5.png)
 <details><summary>Click to Show Solution</summary>
 <p>
 
