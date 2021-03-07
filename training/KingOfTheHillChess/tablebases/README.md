@@ -36,7 +36,7 @@ White must settle for a draw because otherwise black will get to the center firs
 </p>
 </details>
 
-This position is white to play and win.
+This position is white to play and win.  
 ![White to Play and Win](/training/KingOfTheHillChess/tablebases/puzzle_3.png)
 <details><summary>Click to Show Solution</summary>
 <p>
