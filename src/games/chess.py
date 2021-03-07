@@ -475,6 +475,15 @@ class Chess(Game):
         return king_pos
 
     @classmethod
+    def is_check(cls, state):
+        """
+        True if the player whose turn it is is in check.
+        """
+        friendly_slice, enemy_slice, pawn_direction, *_ = cls.get_stats(state)
+        king_pos_i, king_pos_j = cls.get_king_pos(state, friendly_slice)
+        return not cls.square_safe(state, king_pos_i, king_pos_j, enemy_slice, -pawn_direction)
+
+    @classmethod
     def king_safe(cls, move, friendly_slice, enemy_slice, pawn_direction):
         """
         Returns False if the provided move results in a state that is not valid because the king would be in check.
@@ -563,9 +572,7 @@ class Chess(Game):
         if cls.is_draw_by_insufficient_material(state):
             return 0
 
-        friendly_slice, enemy_slice, pawn_direction, *_ = cls.get_stats(state)
-        king_i, king_j = cls.get_king_pos(state, friendly_slice)
-        if cls.square_safe(state, king_i, king_j, enemy_slice, -pawn_direction):
+        if not cls.is_check(state):
             return 0  # stalemate
 
         if cls.is_player_1_turn(state):
