@@ -4,7 +4,7 @@ All other chess rules apply as normal including stalemate, three-fold repetition
 
 While creating endgame tablebases for this variant of chess, I came across several interesting positions.
 
-This position is black to play and draw:
+This position is black to play and draw:  
 ![Black to Play and Draw](/training/KingOfTheHillChess/tablebases/puzzle_1.png)  
 <details><summary>Click to Show Solution</summary>
 <p>
