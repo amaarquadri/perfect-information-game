@@ -29,3 +29,8 @@ class TablebaseChooser(MoveChooser):
         print(f'Outcome: {outcome}, distance: {distance}')
         self.position = move
         return [move]
+
+    def report_user_move(self, user_chosen_position):
+        super(TablebaseChooser, self).report_user_move(user_chosen_position)
+        if self.backup_move_chooser is not None:
+            self.backup_move_chooser.report_user_move(user_chosen_position)
