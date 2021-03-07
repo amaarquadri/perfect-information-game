@@ -36,7 +36,7 @@ class TestTablebaseGenerator(unittest.TestCase):
 
     @staticmethod
     def validate_node(board_bytes, graph, manager):
-        move_bytes = graph[board_bytes]
+        move_bytes = graph[board_bytes][0]
         *_, expected_terminal_distance = manager.parse_move_bytes(move_bytes)
         seen_positions = set()
         pos = board_bytes
