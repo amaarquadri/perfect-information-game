@@ -57,6 +57,10 @@ class Chess(Game):
             return i, j
 
     @classmethod
+    def encode_algebraic_notation(cls, target_i, target_j):
+        return 'ABCDEFGH'[target_j] + '87654321'[target_i]
+
+    @classmethod
     def parse_fen(cls, fen):
         pieces, turn, castling, en_passant, *_ = fen.split(' ')
         for i in range(2, 9):
@@ -268,6 +272,41 @@ class Chess(Game):
     @classmethod
     def needs_checkerboard(cls):
         return True
+
+    @classmethod
+    def get_move_notation(cls, state, move):
+        friendly_slice, enemy_slice, *_ = cls.get_stats(state)
+        start_i, start_j, end_i, end_j = cls.get_from_to_move(state, move, friendly_slice)
+        where = np.argwhere(state[start_i, start_j, :12])
+        if len(where) == 0:
+            raise ValueError(f'No piece located at ({start_i}, {start_j})!')
+        piece = cls.PIECE_LETTERS[where[0, 0]].upper()
+        square = cls.encode_algebraic_notation(end_i, end_j).lower()
+
+        is_capture = np.any(state[end_i, end_j, enemy_slice] == 1)
+
+        moves_ = cls.get_possible_moves(move)
+        optimal_score = 1 if cls.is_player_1_turn(state) else -1
+        is_checkmate = cls.is_over(move, moves_) and cls.get_winner(move, moves_) == optimal_score
+        is_check = cls.is_check(move)
+
+        if piece == 'K' and start_j == 4 and end_j == 6:
+            move_notation = 'O-O'
+        elif piece == 'K' and start_j == 4 and end_j == 2:
+            move_notation = 'O-O-O'
+        elif piece == 'P' and is_capture:
+            file = cls.encode_algebraic_notation(start_i, start_j).lower()[0]
+            move_notation = f'{file}x{square}'
+        else:
+            move_notation = '' if piece == 'P' else piece
+            if is_capture:
+                move_notation += 'x'
+            move_notation += square
+        if is_checkmate:
+            move_notation += '#'
+        elif is_check:
+            move_notation += '+'
+        return move_notation
 
     @classmethod
     def create_move(cls, state, i, j, target_i, target_j):
