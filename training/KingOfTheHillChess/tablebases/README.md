@@ -23,3 +23,35 @@ For example:
 5. KD5#  
 </p>
 </details>
+
+This position is white to play. What is the optimal result and the best move?
+![White to Play](/training/KingOfTheHillChess/tablebases/puzzle_2.png)
+<details><summary>Click to Show Solution</summary>
+<p>
+
+1. ...  ND6
+
+(draw by stalemate)  
+White must settle for a draw because otherwise black will get to the center first.
+</p>
+</details>
+
+This position is white to play and win.
+![White to Play and Win](/training/KingOfTheHillChess/tablebases/puzzle_3.png)
+<details><summary>Click to Show Solution</summary>
+<p>
+
+With optimal defense by black:
+1. Nb5 Kd7
+2. Bg8 Ke7
+3. Nd4 Kd6
+4. Nf3 Kc6
+5. Kb8 Kb6
+6. Kc8 Kc6
+7. Kd8 Kd6
+8. Ke8 Kc5
+9. Ke7 Kc6
+10. Ke6 Kc5
+11. Ke5#
+</p>
+</details>
