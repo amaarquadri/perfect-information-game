@@ -16,7 +16,7 @@ class SymmetryTransform:
 
         if GameClass.heuristic(state) < 0:
             # black is attacking, so switch white and black
-            self.transform_funcs.append(SymmetryTransform.flip_state_colors)
+            self.transform_funcs.append(self.flip_state_colors)
             i, j = GameClass.get_king_pos(state, GameClass.BLACK_SLICE)
             i = GameClass.ROWS - 1 - i
         else:
@@ -53,7 +53,7 @@ class SymmetryTransform:
         return state
 
     def transform_outcome(self, outcome):
-        return -outcome if SymmetryTransform.flip_state_colors in self.transform_funcs else outcome
+        return -outcome if self.flip_state_colors in self.transform_funcs else outcome
 
     def flip_state_colors(self, state):
         special_layers = np.copy(state[..., -2:])
