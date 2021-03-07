@@ -15,6 +15,7 @@ class TablebaseManager:
     move_bytes can be converted to and from this tuple: (outcome, start_i, start_j, target_i, target_j, distance).
     Only the symmetric variants of each position are stored in the tablebases.
     """
+
     @staticmethod
     def encode_move_bytes(outcome, start_i, start_j, end_i, end_j, terminal_distance):
         if terminal_distance < 0:
@@ -44,7 +45,7 @@ class TablebaseManager:
         end_i = move_bytes[1] // (2 ** 5)
         end_j = (move_bytes[1] % (2 ** 5)) // (2 ** 2)
 
-        terminal_distance = (move_bytes[1] % (2 ** 2)) + move_bytes[2]
+        terminal_distance = (move_bytes[1] % (2 ** 2)) * (2 ** 8) + move_bytes[2]
         if terminal_distance == 2 ** 10 - 1:
             terminal_distance = np.inf
         elif terminal_distance == 2 ** 10 - 2:
