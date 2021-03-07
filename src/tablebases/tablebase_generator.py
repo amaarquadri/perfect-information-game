@@ -228,11 +228,15 @@ class TablebaseGenerator:
             node.init_children(nodes)
 
         updated = True
+        iterations = 0
         while updated:
             updated = False
             for node in nodes.values():
                 if node.update():
                     updated = True
+            iterations += 1
+            if iterations % 10 == 0:
+                print(f'{iterations} iterations completed')
 
         nodes = list(nodes.values())
         for node in nodes:
