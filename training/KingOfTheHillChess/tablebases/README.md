@@ -56,7 +56,7 @@ With optimal defense by black:
 </p>
 </details>
 
-This similar position is white to play and win.
+This similar position is white to play and win.  
 ![White to Play and Win](/training/KingOfTheHillChess/tablebases/puzzle_4.png)
 <details><summary>Click to Show Solution</summary>
 <p>
