@@ -13,6 +13,7 @@ Creating 2D perfect information board games, and playing them with machine learn
   [retrograde analysis](https://www.chessprogramming.org/Retrograde_Analysis)
 - Code for training neural networks from scratch using [self-play reinforcement learning](https://youtu.be/v9M2Ho9I9Qo)
 - Over 4500 lines of Python code and counting
+- Some cool [chess puzzles](/training/KingOfTheHillChess/tablebases/README.md) that I discovered along the way
 
 ## Play Against Live Models on my Website
 - Connect 4: [Easy](https://www.amaarquadri.com/play?game=connect4&difficulty=easy&ai-time=1&log-stats=true), 
