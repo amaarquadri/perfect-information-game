@@ -24,6 +24,8 @@ class TablebaseGenerator:
             # since many nodes will be stored in memory at once during generation, only the fen will be stored
             self.board_bytes = self.GameClass.encode_board_bytes(state)
             self.is_maximizing = self.GameClass.is_player_1_turn(state)
+            heuristic = self.GameClass.heuristic(state)
+            self.has_material_advantage = (heuristic > 0) if self.is_maximizing else (heuristic < 0)
 
             # create children, but leave references to other nodes as move_fen strings for now
             self.children = []
@@ -47,6 +49,8 @@ class TablebaseGenerator:
                     self.children.append(node)
                     self.children_symmetry_transforms.append(SymmetryTransform.identity(self.GameClass))
 
+            # TODO: remove reliance on the fact that:
+            #  if self.GameClass.is_over(state) then len(self.GameClass.get_possible_moves(state)) == 0
             self.best_move = None
             self.best_symmetry_transform = None
             if self.GameClass.is_over(state, moves):
@@ -79,12 +83,10 @@ class TablebaseGenerator:
                 elif move.outcome == best_move.outcome:
                     if move.outcome == 0:
                         # TODO: fix bugs in draw logic
-                        #  AI is losing KRkr from some drawn position
-                        # if is_maximizing, then it is white's turn
-                        # white is always up in material advantage (for the endgame tablebases)
+                        #  AI is losing KRkr (regular chess) from some drawn positions
                         # if we are up in material, try to delay the draw
-                        # if we are down in material, try to hasten the draw
-                        if (move.terminal_distance > best_move.terminal_distance) if self.is_maximizing \
+                        # if we are down in material (or equal), try to hasten the draw
+                        if (move.terminal_distance > best_move.terminal_distance) if self.has_material_advantage \
                                 else (move.terminal_distance < best_move.terminal_distance):
                             best_move, best_symmetry_transform = move, symmetry_transform
                     elif (move.terminal_distance < best_move.terminal_distance) if move.outcome != losing_outcome \
@@ -95,14 +97,18 @@ class TablebaseGenerator:
             if best_move != self.best_move:
                 self.best_move = best_move
                 self.best_symmetry_transform = best_symmetry_transform
-                updated = True
+                # don't update for draws because of potential infinite loops (although that shouldn't happen in theory)
+                if self.outcome != 0:
+                    updated = True
             if self.outcome != best_move.outcome:
                 self.outcome = best_move.outcome
                 updated = True
             if self.terminal_distance != best_move.terminal_distance + 1:
                 # note that this arithmetic will work, even with np.inf
                 self.terminal_distance = best_move.terminal_distance + 1
-                updated = True
+                # don't update for draws because of potential infinite loops (although that shouldn't happen in theory)
+                if self.outcome != 0:
+                    updated = True
             return updated
 
         def destroy_connections(self):
