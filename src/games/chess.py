@@ -2,6 +2,7 @@ from games.game import Game
 import numpy as np
 from utils.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
 from functools import partial
+import easygui
 
 
 class Chess(Game):
@@ -255,17 +256,32 @@ class Chess(Game):
 
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
-        self.state = self.apply_from_to_move(self.state, start_i, start_j, end_i, end_j)
+
+        friendly_slice, _, _, queening_row, *_ = self.get_stats(self.state)
+        promotion = None
+        if self.state[start_i, start_j, friendly_slice][5] == 1 and end_i == queening_row:
+            promotion = easygui.choicebox('Pick a piece to promote to', 'Promotion Picker',
+                                          choices=['Queen', 'Rook', 'Bishop', 'Knight'])
+            if promotion is None:
+                print('Warning: user cancelled. defaulting to queen promotion.')
+                promotion = 'Q'
+            promotion = promotion[0]
+            if promotion == 'K':
+                promotion = 'N'
+            promotion = self.PIECE_LETTERS.index(promotion)
+
+        self.state = self.apply_from_to_move(self.state, start_i, start_j, end_i, end_j, promotion)
 
     @classmethod
-    def apply_from_to_move(cls, state, start_i, start_j, end_i, end_j):
+    def apply_from_to_move(cls, state, start_i, start_j, end_i, end_j, promotion=None):
         friendly_slice, enemy_slice, *_ = cls.get_stats(state)
 
         for move in cls.get_possible_moves(state):
             if np.any(state[start_i, start_j, friendly_slice] == 1) and \
                     np.all(state[end_i, end_j, friendly_slice] == 0) and \
                     np.all(move[start_i, start_j, :12] == 0) and \
-                    np.any(move[end_i, end_j, friendly_slice] == 1):
+                    np.any(move[end_i, end_j, friendly_slice] == 1) and \
+                    (promotion is None or move[end_i, end_j, friendly_slice][promotion] == 1):
                 return move
         raise ValueError('Invalid Move!')
 
@@ -350,6 +366,9 @@ class Chess(Game):
     @classmethod
     def promote_on_move(cls, move, target_i, target_j, friendly_slice):
         promoting_moves = []
+        # the promotions must be returned in the order of decreasing piece value
+        # this will ensure that Chess.apply_from_to_move defaults to auto-queen
+        # this will also help alpha-beta pruning based algorithms since the most likely good moves are ranked earlier
         for promotion in range(1, 5):
             promoting_move = np.copy(move)
             promoting_move[target_i, target_j, :12] = 0
