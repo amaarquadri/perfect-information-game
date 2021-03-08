@@ -3,6 +3,7 @@ from functools import partial
 import numpy as np
 from tablebases.tablebase_generator import TablebaseGenerator
 from tablebases.tablebase_manager import TablebaseManager
+from tablebases.symmetry_transform import SymmetryTransform
 from games.king_of_the_hill_chess import KingOfTheHillChess as GameClass
 from utils.utils import OptionalPool
 
@@ -31,24 +32,24 @@ class TestTablebaseGenerator(unittest.TestCase):
             return None, 0
 
         move = GameClass.apply_from_to_move(state, start_i, start_j, end_i, end_j)
+        move = SymmetryTransform(GameClass, move).transform_state(move)
         move_board_bytes = GameClass.encode_board_bytes(move)
         return move_board_bytes, terminal_distance
 
     @staticmethod
-    def validate_node(board_bytes, graph, manager):
-        move_bytes = graph[board_bytes][0]
-        *_, expected_terminal_distance = manager.parse_move_bytes(move_bytes)
+    def validate_node(board_bytes, graph):
+        expected_terminal_distance = graph[board_bytes][1]
         seen_positions = set()
-        pos = board_bytes
+        pos_board_bytes = board_bytes
         depth = 0
-        while pos is not None:
-            if pos in seen_positions:
+        while pos_board_bytes is not None:
+            if pos_board_bytes in seen_positions:
                 if expected_terminal_distance != np.inf:
                     raise AssertionError(f'Terminal distance is finite but infinite loop found! '
                                          f'Fen: {GameClass.encode_fen(GameClass.parse_board_bytes(board_bytes))}')
                 break
-            seen_positions.add(pos)
-            pos = graph[board_bytes][0]
+            seen_positions.add(pos_board_bytes)
+            pos_board_bytes = graph[pos_board_bytes][0]
             depth += 1
         else:
             if expected_terminal_distance != depth:
@@ -57,19 +58,19 @@ class TestTablebaseGenerator(unittest.TestCase):
                                      f'Fen: {GameClass.encode_fen(GameClass.parse_board_bytes(board_bytes))}')
 
     def test_terminal_distances(self):
-        descriptor = 'KQkq'
         manager = TablebaseManager(GameClass)
-        manager.ensure_loaded(descriptor)
-        nodes = manager.tablebases[descriptor]
+        for descriptor in ['Kk', 'KQk', 'KRk', 'KBk', 'KNk', 'KPk']:
+            manager.ensure_loaded(descriptor)
+            nodes = manager.tablebases[descriptor]
 
-        with OptionalPool(12) as pool:
-            new_values = pool.starmap(partial(self.get_move_board_bytes_and_terminal_distance, manager=manager),
-                                      list(nodes.items()))
-            graph = {board_bytes: new_values for board_bytes, new_value in zip(nodes.keys(), new_values)}
-            print('Created graph')
+            with OptionalPool(12) as pool:
+                new_values = pool.starmap(partial(self.get_move_board_bytes_and_terminal_distance, manager=manager),
+                                          list(nodes.items()))
+                graph = {board_bytes: new_values for board_bytes, new_value in zip(nodes.keys(), new_values)}
+                print(f'Created graph for {descriptor}')
 
-            pool.map(partial(self.validate_node, graph=graph, manager=manager), graph.keys())
-        print('Completed!')
+                map(partial(self.validate_node, graph=graph), graph.keys())
+            print(f'Completed {descriptor}!')
 
 
 if __name__ == '__main__':
