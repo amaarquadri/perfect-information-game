@@ -1,4 +1,5 @@
 from perfect_information_game.utils import iter_product
+from importlib import resources
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 import pygame  # noqa: E402
@@ -8,27 +9,31 @@ class PygameUI:
     """
     The highlight image must have a transparent background (https://onlinepngtools.com/create-transparent-png).
     """
-    HIGHLIGHT_IMAGE_PATH = '../resources/blue_border.png'
-    LIGHT_SQUARE_IMAGE_PATH = '../resources/light_square.png'
-    DARK_SQUARE_IMAGE_PATH = '../resources/dark_square.png'
+    HIGHLIGHT_IMAGE = 'blue_border'
+    LIGHT_SQUARE_IMAGE = 'light_square'
+    DARK_SQUARE_IMAGE = 'dark_square'
     FLIP_LR = False
+
+    @staticmethod
+    def load_img(file_name):
+        return pygame.image.load(resources.open_binary('perfect_information_game.resources', f'{file_name}.png'))
 
     def __init__(self, GameClass, starting_position=None):
         self.GameClass = GameClass
         pygame.init()
         # Note pygame inverts x and y
         self.canvas = pygame.display.set_mode((64 * GameClass.COLUMNS, 64 * GameClass.ROWS))
-        self.imgs = [pygame.image.load(f'../resources/{file_name}.png') if file_name is not None else None
+        self.imgs = [self.load_img(file_name) if file_name is not None else None
                      for file_name in GameClass.REPRESENTATION_FILES]
         if GameClass.needs_checkerboard():
             self.checkerboard = True
-            self.light_square = pygame.image.load(PygameUI.LIGHT_SQUARE_IMAGE_PATH)
-            self.dark_square = pygame.image.load(PygameUI.DARK_SQUARE_IMAGE_PATH)
+            self.light_square = self.load_img(PygameUI.LIGHT_SQUARE_IMAGE)
+            self.dark_square = self.load_img(PygameUI.DARK_SQUARE_IMAGE)
         else:
             self.checkerboard = False
             self.light_square = None
             self.dark_square = None
-        self.highlight_img = pygame.image.load(PygameUI.HIGHLIGHT_IMAGE_PATH)
+        self.highlight_img = self.load_img(PygameUI.HIGHLIGHT_IMAGE)
         if starting_position is None:
             starting_position = GameClass.STARTING_STATE
         self.board = GameClass(starting_position)
