@@ -1,11 +1,10 @@
 import unittest
 from functools import partial
 import numpy as np
-from tablebases.tablebase_generator import TablebaseGenerator
-from tablebases.tablebase_manager import TablebaseManager
-from tablebases.symmetry_transform import SymmetryTransform
-from games.king_of_the_hill_chess import KingOfTheHillChess as GameClass
-from utils.utils import OptionalPool
+from perfect_information_game.tablebases import TablebaseManager
+from perfect_information_game.tablebases import SymmetryTransform
+from perfect_information_game.games import KingOfTheHillChess as GameClass
+from perfect_information_game.utils import OptionalPool
 
 
 class TestTablebaseGenerator(unittest.TestCase):

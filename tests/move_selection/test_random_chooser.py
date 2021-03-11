@@ -1,6 +1,6 @@
 import unittest
-from move_selection.random_chooser import RandomMoveChooser
-from games.checkers import Checkers as GameClass
+from perfect_information_game.move_selection import RandomMoveChooser
+from perfect_information_game.games import Checkers as GameClass
 
 
 class TestRandomMoveChooser(unittest.TestCase):

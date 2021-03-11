@@ -1,0 +1,6 @@
+recursive-include perfect_information_game *.py
+recursive-include perfect_information_game/resources *.png
+include LICENSE.txt
+include README.md
+recursive-include tests *.py
+recursive-include tests *.json
