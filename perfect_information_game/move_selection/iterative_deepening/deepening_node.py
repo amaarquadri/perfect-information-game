@@ -13,7 +13,7 @@ class DeepeningNode:
         self.heuristic_func = heuristic_func
         self.is_maximizing = GameClass.is_player_1_turn(state)
         if GameClass.is_over(state):
-            outcome = GameClass.is_over()
+            outcome = GameClass.get_winner(state)
             self.heuristic = 0 if outcome == 0 else outcome * np.inf
             self.terminal = True
         else:
