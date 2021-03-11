@@ -8,9 +8,9 @@ class PygameUI:
     """
     The highlight image must have a transparent background (https://onlinepngtools.com/create-transparent-png).
     """
-    HIGHLIGHT_IMAGE_PATH = '../../resources/blue_border.png'
-    LIGHT_SQUARE_IMAGE_PATH = '../../resources/light_square.png'
-    DARK_SQUARE_IMAGE_PATH = '../../resources/dark_square.png'
+    HIGHLIGHT_IMAGE_PATH = '../resources/blue_border.png'
+    LIGHT_SQUARE_IMAGE_PATH = '../resources/light_square.png'
+    DARK_SQUARE_IMAGE_PATH = '../resources/dark_square.png'
     FLIP_LR = False
 
     def __init__(self, GameClass, starting_position=None):
@@ -18,7 +18,7 @@ class PygameUI:
         pygame.init()
         # Note pygame inverts x and y
         self.canvas = pygame.display.set_mode((64 * GameClass.COLUMNS, 64 * GameClass.ROWS))
-        self.imgs = [pygame.image.load(f'../../resources/{file_name}.png') if file_name is not None else None
+        self.imgs = [pygame.image.load(f'../resources/{file_name}.png') if file_name is not None else None
                      for file_name in GameClass.REPRESENTATION_FILES]
         if GameClass.needs_checkerboard():
             self.checkerboard = True
