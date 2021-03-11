@@ -10,11 +10,7 @@ from utils.utils import OptionalPool
 
 class TestTablebaseGenerator(unittest.TestCase):
     def test_K_vs_k(self):
-        generator = TablebaseGenerator(GameClass)
-        manager = generator.tablebase_manager
-        with OptionalPool(12) as pool:
-            generator.generate_tablebase('Kk', pool)
-
+        manager = TablebaseManager(GameClass)
         manager.ensure_loaded('Kk')
         nodes = manager.tablebases['Kk']
         if any([manager.parse_move_bytes(move_bytes)[0] == 0 for move_bytes in nodes.values()]):
@@ -58,10 +54,18 @@ class TestTablebaseGenerator(unittest.TestCase):
                                      f'Fen: {GameClass.encode_fen(GameClass.parse_board_bytes(board_bytes))}')
 
     def test_terminal_distances(self):
+        # passed for:
+        # TWO_MAN = 'Kk'
+        # THREE_MAN = 'KQk,KRk,KBk,KNk,KPk'
+        # FOUR_MAN_NO_ENEMY_NO_DUPLICATE = 'KQRk,KQBk,KQNk,KRBk,KRNk,KBNk'
+        # KQkq
+        FOUR_MAN_WITH_ENEMY = 'KQkq,KQkr,KQkb,KQkn,KQkp,KRkr,KRkb,KRkn,KRkp,KBkb,KBkn,KBkp,KNkn,KNkp,KPkp'
         manager = TablebaseManager(GameClass)
-        for descriptor in ['Kk', 'KQk', 'KRk', 'KBk', 'KNk', 'KPk']:
+        for descriptor in FOUR_MAN_WITH_ENEMY.split(',')[1:-6]:
+            print(f'Testing {descriptor}')
             manager.ensure_loaded(descriptor)
             nodes = manager.tablebases[descriptor]
+            print(f'Loaded nodes for {descriptor}')
 
             with OptionalPool(12) as pool:
                 new_values = pool.starmap(partial(self.get_move_board_bytes_and_terminal_distance, manager=manager),
