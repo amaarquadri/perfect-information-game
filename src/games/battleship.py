@@ -1,7 +1,7 @@
 # Use Gan: one network choosing placement, one shooting
 # generator network maps a vector from a random state space to the output choice of piece placement
 import numpy as np
-from .game import Game
+from games.game import Game
 from utils.utils import iter_product
 
 

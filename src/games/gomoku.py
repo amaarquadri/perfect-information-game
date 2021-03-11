@@ -1,4 +1,4 @@
-from .game import Game
+from games.game import Game
 import numpy as np
 from utils.utils import iter_product
 
