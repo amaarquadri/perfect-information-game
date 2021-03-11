@@ -1,4 +1,4 @@
-![license](https://img.shields.io/github/license/amaarquadri/perfect-information-game)
+![license](https://img.shields.io/github/license/amaarquadri/perfect-information-game.svg)
 ![release](https://img.shields.io/github/v/release/amaarquadri/perfect-information-game?include_prereleases)
 ![total lines](https://img.shields.io/tokei/lines/github/amaarquadri/perfect-information-game)
 
