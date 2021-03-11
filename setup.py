@@ -28,7 +28,7 @@ setup(name='perfect-information-game',
           'check-manifest',
           'twine'
       ]},
-      package_dir={'': 'src'},
+      package_dir={'': 'perfect_information_game'},
       packages=packages,
       classifiers=['License :: OSI Approved :: MIT License',
                    'Programming Language :: Python :: 3',

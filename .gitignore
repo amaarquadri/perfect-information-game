@@ -3,4 +3,4 @@
 *__pycache__
 /build/
 /dist/
-/src/perfect_information_game.egg-info/
+/perfect_information_game/perfect_information_game.egg-info/

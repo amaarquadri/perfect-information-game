@@ -1,4 +1,4 @@
-# This is imported here so that all the files in src/scripts can reference it
+# This is imported here so that all the files in perfect_information_game/scripts can reference it
 # noinspection PyUnresolvedReferences
 # from games.amazons import Amazons as ActiveGame
 # from games.checkers import Checkers as ActiveGame
