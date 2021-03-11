@@ -108,6 +108,9 @@ class TablebaseManager:
         if outcome_only:
             return outcome, terminal_distance
 
+        if terminal_distance == 0:
+            return None, outcome, terminal_distance
+
         transformed_move_state = self.GameClass.apply_from_to_move(transformed_state, start_i, start_j, end_i, end_j)
         move_state = symmetry_transform.untransform_state(transformed_move_state)
         return move_state, outcome, terminal_distance
