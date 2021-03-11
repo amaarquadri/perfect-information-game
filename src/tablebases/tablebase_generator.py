@@ -254,3 +254,6 @@ class TablebaseGenerator:
             pickle.dump(tablebase, file)
 
         self.tablebase_manager.update_tablebase_list()
+
+# create a copy of ChessTablebaseGenerator with the legacy name to allow unpickling
+# TablebaseGenerator = ChessTablebaseGenerator
