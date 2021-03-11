@@ -111,6 +111,25 @@ class TablebaseGenerator:
                     updated = True
             return updated
 
+        def check_recursion(self):
+            """
+            Performs a sanity check on the results and prints a warning if inconsistencies are found.
+            
+            :return:
+            """
+            seen_positions = set()
+            move = self
+            while move is not None:
+                if move.board_bytes in seen_positions:
+                    if self.terminal_distance < np.inf:
+                        print('Warning: terminal distance was finite despite infinite loop!')
+                        self.terminal_distance = np.inf
+                    return True  # reached infinite loop
+                else:
+                    seen_positions.add(move.board_bytes)
+                move = self.best_move
+            return False
+
         def destroy_connections(self):
             """
             Deletes links to children, and replaces best_move link with a copy of the best_move's board_bytes
