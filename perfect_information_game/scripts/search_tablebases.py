@@ -1,6 +1,5 @@
-from tablebases.tablebase_manager import TablebaseManager
-from utils.utils import get_training_path
-from utils.active_game import ActiveGame as GameClass
+from perfect_information_game.tablebases import TablebaseManager
+from perfect_information_game.utils import get_training_path, ActiveGame as GameClass
 import pickle
 import numpy as np
 

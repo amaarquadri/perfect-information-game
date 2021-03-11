@@ -1,5 +1,5 @@
-from utils.active_game import ActiveGame as GameClass
-from learning.utils import train_from_config
+from perfect_information_game.utils import ActiveGame as GameClass
+from perfect_information_game.learning import train_from_config
 
 
 if __name__ == '__main__':

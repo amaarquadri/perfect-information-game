@@ -1,6 +1,6 @@
 import numpy as np
-from move_selection.move_chooser import MoveChooser
-from move_selection.iterative_deepening.deepening_node import DeepeningNode
+from perfect_information_game.move_selection import MoveChooser
+from perfect_information_game.move_selection.iterative_deepening import DeepeningNode
 
 
 class IterativeDeepening(MoveChooser):

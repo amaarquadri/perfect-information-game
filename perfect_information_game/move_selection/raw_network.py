@@ -1,5 +1,5 @@
 from time import sleep
-from move_selection.move_chooser import MoveChooser
+from perfect_information_game.move_selection import MoveChooser
 
 
 class RawNetwork(MoveChooser):

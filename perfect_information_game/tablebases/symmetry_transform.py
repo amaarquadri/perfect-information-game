@@ -1,7 +1,7 @@
 import numpy as np
-from games.chess import Chess
-from utils.utils import iter_product
-from tablebases.utils import get_verified_chess_subclass
+from perfect_information_game.games import Chess
+from perfect_information_game.utils import iter_product
+from perfect_information_game.tablebases import get_verified_chess_subclass
 
 
 class SymmetryTransform:

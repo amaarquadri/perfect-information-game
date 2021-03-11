@@ -5,9 +5,9 @@ from multiprocessing import Process, Pipe
 import sys
 from signal import signal, SIGTERM
 import numpy as np
-from heuristics.network import Network
-from heuristics.proxy_network import ProxyNetwork
-from utils.utils import get_training_path
+from perfect_information_game.heuristics import Network
+from perfect_information_game.heuristics import ProxyNetwork
+from perfect_information_game.utils import get_training_path
 
 
 def spawn_training_process(GameClass, model_path=None, threads=1):

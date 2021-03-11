@@ -2,9 +2,9 @@ import json
 # noinspection PyUnresolvedReferences
 import numpy as np  # used in eval
 import easygui
-from heuristics.utils import train_from_scratch
-from learning.learning import SelfPlayReinforcementLearning, MCTSRolloutGameGenerator
-from utils.utils import get_training_path
+from perfect_information_game.heuristics import train_from_scratch
+from perfect_information_game.learning import SelfPlayReinforcementLearning, MCTSRolloutGameGenerator
+from perfect_information_game.utils import get_training_path
 
 
 def parse_float(value):

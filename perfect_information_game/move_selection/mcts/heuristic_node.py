@@ -1,5 +1,5 @@
 import numpy as np
-from move_selection.mcts.abstract_node import AbstractNode
+from perfect_information_game.move_selection.mcts import AbstractNode
 
 
 class HeuristicNode(AbstractNode):

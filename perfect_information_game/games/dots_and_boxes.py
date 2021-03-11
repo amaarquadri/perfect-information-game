@@ -1,4 +1,4 @@
-from games.game import Game
+from perfect_information_game.games import Game
 
 
 class DotsAndBoxes(Game):

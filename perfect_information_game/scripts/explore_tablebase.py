@@ -1,7 +1,6 @@
-from utils.active_game import ActiveGame as GameClass
-from move_selection.tablebase_chooser import TablebaseChooser
-from ui.pygame_ui import PygameUI
-from utils.utils import get_training_path
+from perfect_information_game.utils import get_training_path, ActiveGame as GameClass
+from perfect_information_game.move_selection import TablebaseChooser
+from perfect_information_game.ui import PygameUI
 from time import sleep
 
 

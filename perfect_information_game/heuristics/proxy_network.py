@@ -1,4 +1,4 @@
-from heuristics.network import Network
+from perfect_information_game.heuristics import Network
 
 
 class ProxyNetwork(Network):

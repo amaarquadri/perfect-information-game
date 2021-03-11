@@ -1,6 +1,4 @@
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()
+from perfect_information_game.move_selection.iterative_deepening.deepening_node import DeepeningNode
+from perfect_information_game.move_selection.iterative_deepening.async_iterative_deepening \
+    import AsyncIterativeDeepening
+from perfect_information_game.move_selection.iterative_deepening.iterative_deepening import IterativeDeepening

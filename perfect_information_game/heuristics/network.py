@@ -1,6 +1,6 @@
 from time import time
 import numpy as np
-from utils.utils import get_training_path
+from perfect_information_game.utils import get_training_path
 
 
 class Network:

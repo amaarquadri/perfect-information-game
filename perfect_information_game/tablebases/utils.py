@@ -1,4 +1,4 @@
-from games.chess import Chess
+from perfect_information_game.games import Chess
 
 
 def get_verified_chess_subclass(GameClass):

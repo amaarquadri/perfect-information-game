@@ -1,6 +1,6 @@
-from games.game import Game
+from perfect_information_game.games import Game
 import numpy as np
-from utils.utils import iter_product
+from perfect_information_game.utils import iter_product
 
 
 class Gomoku(Game):

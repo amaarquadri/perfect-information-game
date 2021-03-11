@@ -1,9 +1,9 @@
 import pickle
 import numpy as np
-from tablebases.tablebase_manager import TablebaseManager
-from tablebases.symmetry_transform import SymmetryTransform
-from utils.utils import get_training_path
-from tablebases.utils import get_verified_chess_subclass
+from perfect_information_game.tablebases import TablebaseManager
+from perfect_information_game.tablebases import SymmetryTransform
+from perfect_information_game.utils import get_training_path
+from perfect_information_game.tablebases import get_verified_chess_subclass
 from functools import partial
 
 

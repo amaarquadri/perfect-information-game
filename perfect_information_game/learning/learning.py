@@ -3,11 +3,11 @@ import pickle
 from time import time
 from multiprocessing import Process, Queue, Event
 import numpy as np
-from move_selection.mcts.rollout_node import RolloutNode
-from move_selection.mcts.heuristic_node import HeuristicNode
-from heuristics.network import Network
-from heuristics.utils import spawn_training_process
-from utils.utils import get_training_path
+from perfect_information_game.move_selection.mcts import RolloutNode
+from perfect_information_game.move_selection.mcts import HeuristicNode
+from perfect_information_game.heuristics import Network
+from perfect_information_game.heuristics import spawn_training_process
+from perfect_information_game.utils import get_training_path
 
 
 class SelfPlayReinforcementLearning:

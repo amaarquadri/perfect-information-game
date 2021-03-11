@@ -1,6 +1,6 @@
-from games.game import Game
+from perfect_information_game.games import Game
 import numpy as np
-from utils.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
+from perfect_information_game.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
 from functools import partial
 import easygui
 
