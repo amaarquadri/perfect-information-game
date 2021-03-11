@@ -1,3 +1,6 @@
-/venv
-/.idea
+/venv/
+/.idea/
 *__pycache__
+/build/
+/dist/
+/src/perfect_information_game.egg-info/
