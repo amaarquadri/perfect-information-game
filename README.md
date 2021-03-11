@@ -13,7 +13,7 @@ Creating 2D perfect information board games, and playing them with machine learn
   [retrograde analysis](https://www.chessprogramming.org/Retrograde_Analysis)
 - Code for training neural networks from scratch using [self-play reinforcement learning](https://youtu.be/v9M2Ho9I9Qo)
 - Over 4500 lines of Python code and counting
-- Some cool [chess puzzles](/training/KingOfTheHillChess/tablebases/README.md) that I discovered along the way
+- Some cool [chess puzzles](https://www.github.com/amaarquadri/perfect-information-game/blob/master/training/KingOfTheHillChess/tablebases/README.md) that I discovered along the way
 
 ## Play Against Live Models on my Website
 - Connect 4: [Easy](https://www.amaarquadri.com/play?game=connect4&difficulty=easy&ai-time=1&log-stats=true), 
@@ -35,9 +35,9 @@ Creating 2D perfect information board games, and playing them with machine learn
 uncommenting the corresponding line that starts with `CONFIG = `
 
 ## How I Trained the Models
-- [Connect 4](/training/Connect4)
-- [Othello (Reversi)](/training/Othello)
-- [The Game of the Amazons (6x6 Board)](/training/Amazons/6x6)
+- [Connect 4](https://www.github.com/amaarquadri/perfect-information-game/blob/master/training/Connect4/README.md)
+- [Othello (Reversi)](https://www.github.com/amaarquadri/perfect-information-game/blob/master/training/Othello/README.md)
+- [The Game of the Amazons (6x6 Board)](https://www.github.com/amaarquadri/perfect-information-game/blob/master/training/Amazons/6x6/README.md)
 
 ## Resources I Used
 - [How to Keep Improving When You're Better Than Any Teacher - Iterated Distillation and Amplification](https://youtu.be/v9M2Ho9I9Qo)
