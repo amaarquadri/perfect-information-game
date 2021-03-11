@@ -1,5 +1,6 @@
 from perfect_information_game.tablebases import TablebaseGenerator
-from perfect_information_game.utils import OptionalPool, ActiveGame as GameClass
+from perfect_information_game.utils import OptionalPool
+from perfect_information_game.games import Chess as GameClass
 
 
 def generate_tablebases(threads=12):

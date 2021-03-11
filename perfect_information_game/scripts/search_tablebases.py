@@ -1,5 +1,6 @@
 from perfect_information_game.tablebases import TablebaseManager
-from perfect_information_game.utils import get_training_path, ActiveGame as GameClass
+from perfect_information_game.utils import get_training_path
+from perfect_information_game.games import Chess as GameClass
 import pickle
 import numpy as np
 

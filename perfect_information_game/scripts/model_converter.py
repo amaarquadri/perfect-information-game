@@ -1,6 +1,7 @@
 from keras.models import load_model
 import tensorflowjs as tfjs
-from perfect_information_game.utils import get_training_path, ActiveGame as GameClass
+from perfect_information_game.utils import get_training_path
+from perfect_information_game.games import Chess as GameClass
 import os
 import fileinput
 

@@ -1,5 +1,6 @@
 import os
-from perfect_information_game.utils import get_training_path, ActiveGame as GameClass
+from perfect_information_game.utils import get_training_path
+from perfect_information_game.games import Chess as GameClass
 
 
 def start_tensor_board(enable_venv_manually=False):

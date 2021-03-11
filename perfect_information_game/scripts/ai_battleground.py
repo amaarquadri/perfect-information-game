@@ -1,6 +1,7 @@
 from time import time
 import numpy as np
-from perfect_information_game.utils import get_training_path, ActiveGame as GameClass
+from perfect_information_game.utils import get_training_path
+from perfect_information_game.games import Chess as GameClass
 from perfect_information_game.ui import PygameUI
 from perfect_information_game.heuristics import Network
 from perfect_information_game.move_selection.mcts import AsyncMCTS

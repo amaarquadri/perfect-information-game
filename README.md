@@ -34,7 +34,7 @@ Creating 2D perfect information board games, and playing them with machine learn
 `python src/scripts/play_vs_ai.py`
 - View games files that were generated during training: \
 `python src/scripts/view_game_file.py`
-- Switch the active game by uncommenting the corresponding line in `src/utils/active_game.py`
+- Switch the active game by changing the import in the corresponding script
 - For games with multiple versions, select the desired version by opening the corresponding file under `src/games/` and 
 uncommenting the corresponding line that starts with `CONFIG = `
 

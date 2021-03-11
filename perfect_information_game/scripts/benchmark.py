@@ -4,7 +4,7 @@ import tensorflow as tf
 from keras import Sequential
 from keras.layers import Conv2D, Flatten, Dense
 from perfect_information_game.move_selection.mcts import RolloutNode
-from perfect_information_game.utils import ActiveGame as GameClass
+from perfect_information_game.games import Chess as GameClass
 
 
 def get_model():
