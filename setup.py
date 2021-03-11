@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.1'
+VERSION = '0.0.4'
 packages = find_packages()
 with open('README.md', 'r') as file:
     long_description = file.read()
@@ -11,7 +11,6 @@ setup(name='perfect-information-game',
       long_description=long_description,
       long_description_content_type='text/markdown',
       license='MIT',
-      py_modules=[],
       python_requires='>=3.8',
       install_requires=[
           'numpy',
@@ -28,7 +27,6 @@ setup(name='perfect-information-game',
           'check-manifest',
           'twine'
       ]},
-      package_dir={'': 'perfect_information_game'},
       packages=packages,
       classifiers=['License :: OSI Approved :: MIT License',
                    'Programming Language :: Python :: 3',
@@ -39,3 +37,4 @@ setup(name='perfect-information-game',
       author_email='amaarquadri@gmail.com')
 # TODO: see if there are more relevant classifiers: https://pypi.org/classifiers/
 # python setup.py bdist_wheel sdist
+# twine upload dist/*
