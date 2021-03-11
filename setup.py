@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.9'
+VERSION = '0.0.11'
 packages = find_packages()
 with open('README.md', 'r') as file:
     long_description = file.read()
@@ -28,6 +28,7 @@ setup(name='perfect-information-game',
           'twine'
       ]},
       packages=packages,
+      package_data={'perfect_information_game.resources': ['*.png']},
       classifiers=['License :: OSI Approved :: MIT License',
                    'Programming Language :: Python :: 3',
                    'Programming Language :: Python :: 3.8',
