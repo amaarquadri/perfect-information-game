@@ -14,6 +14,9 @@ def generate_tablebases(threads=12):
     with OptionalPool(threads) as pool:
         for section in [FOUR_MAN_WITH_ENEMY]:
             for descriptor in section.split(','):
+                if descriptor in GameClass.DRAWING_DESCRIPTORS:
+                    print(f'Skipping drawing descriptor: {descriptor}')
+                    continue
                 print(f'Generating tablebase for {descriptor}')
                 generator.generate_tablebase(descriptor, pool)
                 print(f'Completed {descriptor}')
