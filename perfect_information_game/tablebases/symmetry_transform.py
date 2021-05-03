@@ -48,6 +48,7 @@ class SymmetryTransform:
         return state
 
     def untransform_state(self, state):
+        # since all transform_funcs are their own inverses, we can just run through them in reverse
         for transform_func in self.transform_funcs[::-1]:
             state = transform_func(state)
         return state
