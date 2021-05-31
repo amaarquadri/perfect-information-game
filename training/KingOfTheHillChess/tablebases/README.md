@@ -41,7 +41,7 @@ This position is white to play and win.
 <details><summary>Click to Show Solution</summary>
 <p>
 
-With optimal defense by black:
+[With optimal defense by black](https://www.chess.com/a/2Px3GGXBL2AW5c):
 1. Nb5 Kd7
 2. Bg8 Ke7
 3. Nd4 Kd6
