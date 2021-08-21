@@ -251,7 +251,6 @@ class Chess(Game):
         return state
 
     def __init__(self, state=STARTING_STATE):
-        # noinspection PyTypeChecker
         super().__init__(self.parse_fen(state) if type(state) is str else state)
 
     def perform_user_move(self, clicks):
