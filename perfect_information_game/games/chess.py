@@ -377,7 +377,7 @@ class Chess(Game):
         return promoting_moves
 
     @classmethod
-    def get_possible_moves(cls, state):
+    def get_pseudo_legal_moves(cls, state):
         if cls.is_draw_by_insufficient_material(state):
             return []
 
@@ -480,6 +480,11 @@ class Chess(Game):
                                 move = cls.create_move(state, i, j, target_i, target_j)
                                 move[i, target_j, :12] = 0
                                 moves.append(move)
+        return enemy_slice, friendly_slice, moves, pawn_direction
+
+    @classmethod
+    def get_possible_moves(cls, state):
+        enemy_slice, friendly_slice, moves, pawn_direction = cls.get_pseudo_legal_moves(state)
 
         king_safe_func = partial(cls.king_safe,
                                  friendly_slice=friendly_slice,  enemy_slice=enemy_slice, pawn_direction=pawn_direction)
