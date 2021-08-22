@@ -13,7 +13,7 @@ def parse_float(value):
     elif type(value) is str:
         try:
             return float(eval(value))
-        except Exception as e:
+        except Exception as e:  # need to catch Exception instead of ValueError because of eval
             raise ValueError(f'Cannot interpret {value} as a float!') from e
 
 
