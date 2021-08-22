@@ -279,9 +279,7 @@ class Chess(Game):
     def apply_from_to_move(cls, state, start_i, start_j, end_i, end_j, promotion=None, allow_pseudo_legal=False):
         friendly_slice, enemy_slice, *_ = cls.get_stats(state)
 
-        allowable_moves = cls.get_pseudo_legal_moves(state) if allow_pseudo_legal else cls.get_possible_moves(state)
-
-        for move in allowable_moves:
+        for move in cls.get_pseudo_legal_moves(state) if allow_pseudo_legal else cls.get_possible_moves(state):
             if np.any(state[start_i, start_j, friendly_slice] == 1) and \
                     np.all(state[end_i, end_j, friendly_slice] == 0) and \
                     np.all(move[start_i, start_j, :12] == 0) and \
