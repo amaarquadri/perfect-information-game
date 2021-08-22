@@ -65,7 +65,7 @@ class TestChess(unittest.TestCase):
         """
         Recursively searches the tree of possible moves, starting from the given fen, until the specified depth.
         If a position is found where the calculated number of moves possible differs from that given by the python
-        chess library, then an exception is raised.
+        chess library, then an AssertionError is raised.
 
         :param fen:
         :param depth:
