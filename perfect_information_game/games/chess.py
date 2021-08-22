@@ -1,4 +1,4 @@
-from perfect_information_game.games import Game
+from perfect_information_game.games import Game, InvalidMoveException
 import numpy as np
 from perfect_information_game.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
 from functools import partial
@@ -287,7 +287,7 @@ class Chess(Game):
                     np.any(move[end_i, end_j, friendly_slice] == 1) and \
                     (promotion is None or move[end_i, end_j, friendly_slice][promotion] == 1):
                 return move
-        raise ValueError('Invalid Move!')
+        raise InvalidMoveException('Invalid Move!')
 
     @classmethod
     def needs_checkerboard(cls):
