@@ -21,7 +21,7 @@ class AsyncMCTS(MoveChooser):
         """
         super().__init__(GameClass, starting_position)
         if network is not None and threads != 1:
-            raise Exception('Threads != 1 with Network != None')
+            raise ValueError('Threads != 1 with Network != None')
 
         self.parent_pipe, worker_pipe = Pipe()
         self.worker_process = Process(target=self.loop_func,
