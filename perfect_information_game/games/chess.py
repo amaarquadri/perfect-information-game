@@ -253,21 +253,25 @@ class Chess(Game):
     def __init__(self, state=STARTING_STATE):
         super().__init__(self.parse_fen(state) if type(state) is str else state)
 
+    @classmethod
+    def ask_user_for_promotion(cls):
+        promotion = easygui.choicebox('Pick a piece to promote to', 'Promotion Picker',
+                                      choices=['Queen', 'Rook', 'Bishop', 'Knight'])
+        if promotion is None:
+            print('Warning: user cancelled. defaulting to queen promotion.')
+            promotion = 'Q'
+        promotion = promotion[0]
+        if promotion == 'K':
+            promotion = 'N'
+        return cls.PIECE_LETTERS.index(promotion)
+
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
 
         friendly_slice, _, _, queening_row, *_ = self.get_stats(self.state)
         promotion = None
         if self.state[start_i, start_j, friendly_slice][5] == 1 and end_i == queening_row:
-            promotion = easygui.choicebox('Pick a piece to promote to', 'Promotion Picker',
-                                          choices=['Queen', 'Rook', 'Bishop', 'Knight'])
-            if promotion is None:
-                print('Warning: user cancelled. defaulting to queen promotion.')
-                promotion = 'Q'
-            promotion = promotion[0]
-            if promotion == 'K':
-                promotion = 'N'
-            promotion = self.PIECE_LETTERS.index(promotion)
+            promotion = self.ask_user_for_promotion()
 
         self.state = self.apply_from_to_move(self.state, start_i, start_j, end_i, end_j, promotion)
 
