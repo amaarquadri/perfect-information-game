@@ -1,4 +1,4 @@
-from perfect_information_game.games import Game
+from perfect_information_game.games import Game, InvalidMoveException
 import numpy as np
 from perfect_information_game.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
 from functools import partial
@@ -251,8 +251,19 @@ class Chess(Game):
         return state
 
     def __init__(self, state=STARTING_STATE):
-        # noinspection PyTypeChecker
         super().__init__(self.parse_fen(state) if type(state) is str else state)
+
+    @classmethod
+    def ask_user_for_promotion(cls):
+        promotion = easygui.choicebox('Pick a piece to promote to', 'Promotion Picker',
+                                      choices=['Queen', 'Rook', 'Bishop', 'Knight'])
+        if promotion is None:
+            print('Warning: user cancelled. defaulting to queen promotion.')
+            promotion = 'Q'
+        promotion = promotion[0]
+        if promotion == 'K':
+            promotion = 'N'
+        return cls.PIECE_LETTERS.index(promotion)
 
     def perform_user_move(self, clicks):
         (start_i, start_j), (end_i, end_j) = clicks
@@ -260,30 +271,24 @@ class Chess(Game):
         friendly_slice, _, _, queening_row, *_ = self.get_stats(self.state)
         promotion = None
         if self.state[start_i, start_j, friendly_slice][5] == 1 and end_i == queening_row:
-            promotion = easygui.choicebox('Pick a piece to promote to', 'Promotion Picker',
-                                          choices=['Queen', 'Rook', 'Bishop', 'Knight'])
-            if promotion is None:
-                print('Warning: user cancelled. defaulting to queen promotion.')
-                promotion = 'Q'
-            promotion = promotion[0]
-            if promotion == 'K':
-                promotion = 'N'
-            promotion = self.PIECE_LETTERS.index(promotion)
+            promotion = self.ask_user_for_promotion()
 
         self.state = self.apply_from_to_move(self.state, start_i, start_j, end_i, end_j, promotion)
 
     @classmethod
-    def apply_from_to_move(cls, state, start_i, start_j, end_i, end_j, promotion=None):
+    def apply_from_to_move(cls, state, start_i, start_j, end_i, end_j, promotion=None, allow_pseudo_legal=False):
         friendly_slice, enemy_slice, *_ = cls.get_stats(state)
 
-        for move in cls.get_possible_moves(state):
+        allowable_moves = cls.get_pseudo_legal_moves(state) if allow_pseudo_legal else cls.get_possible_moves(state)
+
+        for move in allowable_moves:
             if np.any(state[start_i, start_j, friendly_slice] == 1) and \
                     np.all(state[end_i, end_j, friendly_slice] == 0) and \
                     np.all(move[start_i, start_j, :12] == 0) and \
                     np.any(move[end_i, end_j, friendly_slice] == 1) and \
                     (promotion is None or move[end_i, end_j, friendly_slice][promotion] == 1):
                 return move
-        raise ValueError('Invalid Move!')
+        raise InvalidMoveException('Invalid Move!')
 
     @classmethod
     def needs_checkerboard(cls):
@@ -377,7 +382,7 @@ class Chess(Game):
         return promoting_moves
 
     @classmethod
-    def get_possible_moves(cls, state):
+    def get_pseudo_legal_moves(cls, state):
         if cls.is_draw_by_insufficient_material(state):
             return []
 
@@ -480,6 +485,12 @@ class Chess(Game):
                                 move = cls.create_move(state, i, j, target_i, target_j)
                                 move[i, target_j, :12] = 0
                                 moves.append(move)
+        return moves
+
+    @classmethod
+    def get_possible_moves(cls, state):
+        friendly_slice, enemy_slice, pawn_direction, *_ = cls.get_stats(state)
+        moves = cls.get_pseudo_legal_moves(state)
 
         king_safe_func = partial(cls.king_safe,
                                  friendly_slice=friendly_slice,  enemy_slice=enemy_slice, pawn_direction=pawn_direction)

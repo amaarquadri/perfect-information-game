@@ -1,4 +1,5 @@
 # classes must be imported after their dependencies
+from perfect_information_game.games.invalid_move_exception import InvalidMoveException
 from perfect_information_game.games.game import Game
 from perfect_information_game.games.amazons import Amazons
 from perfect_information_game.games.battleship import Battleship

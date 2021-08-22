@@ -1,4 +1,5 @@
 from perfect_information_game.utils import iter_product
+from perfect_information_game.games import InvalidMoveException
 from importlib import resources
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
@@ -108,7 +109,7 @@ class PygameUI:
                             self.board.perform_user_move(clicks)
                             self.draw()
                             return self.board.get_state()
-                        except ValueError:
+                        except InvalidMoveException:
                             print('Invalid Move! Try again.')
                             clicks = []
 
@@ -140,7 +141,7 @@ class PygameUI:
                             try:
                                 self.board.perform_user_move(clicks)
                                 self.draw()
-                            except ValueError:
+                            except InvalidMoveException:
                                 print('Invalid Move! Try again.')
                             clicks = []
                     elif event.button == pygame.BUTTON_RIGHT:

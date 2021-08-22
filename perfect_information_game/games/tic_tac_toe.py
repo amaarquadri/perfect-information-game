@@ -1,4 +1,4 @@
-from perfect_information_game.games import Game
+from perfect_information_game.games import Game, InvalidMoveException
 import numpy as np
 from perfect_information_game.utils import iter_product
 
@@ -20,7 +20,7 @@ class TicTacToe(Game):
     def perform_user_move(self, clicks):
         i, j = clicks[0]
         if np.any(self.state[i, j, :2] != 0):
-            raise ValueError('Invalid Move!')
+            raise InvalidMoveException('Invalid Move!')
 
         new_state = self.null_move(self.state)
         new_state[i, j, :2] = [1, 0] if self.is_player_1_turn(self.state) else [0, 1]

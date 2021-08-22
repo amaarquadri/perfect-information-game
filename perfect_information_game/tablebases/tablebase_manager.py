@@ -13,7 +13,7 @@ class TablebaseManager:
 
     Each tablebase consists of a dictionary that maps board_bytes to move_bytes.
     move_bytes can be converted to and from this tuple: (outcome, start_i, start_j, target_i, target_j, distance).
-    Only the symmetric variants of each position are stored in the tablebases.
+    Only the symmetrically unique variants of each position are stored in the tablebases.
     """
 
     @staticmethod
