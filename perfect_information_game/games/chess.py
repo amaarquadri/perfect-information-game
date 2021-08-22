@@ -279,10 +279,7 @@ class Chess(Game):
     def apply_from_to_move(cls, state, start_i, start_j, end_i, end_j, promotion=None, allow_pseudo_legal=False):
         friendly_slice, enemy_slice, *_ = cls.get_stats(state)
 
-        if allow_pseudo_legal:
-            _, _, allowable_moves, _ = cls.get_pseudo_legal_moves(state)
-        else:
-            allowable_moves = cls.get_possible_moves(state)
+        allowable_moves = cls.get_pseudo_legal_moves(state) if allow_pseudo_legal else cls.get_possible_moves(state)
 
         for move in allowable_moves:
             if np.any(state[start_i, start_j, friendly_slice] == 1) and \
@@ -488,11 +485,12 @@ class Chess(Game):
                                 move = cls.create_move(state, i, j, target_i, target_j)
                                 move[i, target_j, :12] = 0
                                 moves.append(move)
-        return enemy_slice, friendly_slice, moves, pawn_direction
+        return moves
 
     @classmethod
     def get_possible_moves(cls, state):
-        enemy_slice, friendly_slice, moves, pawn_direction = cls.get_pseudo_legal_moves(state)
+        friendly_slice, enemy_slice, pawn_direction, *_ = cls.get_stats(state)
+        moves = cls.get_pseudo_legal_moves(state)
 
         king_safe_func = partial(cls.king_safe,
                                  friendly_slice=friendly_slice,  enemy_slice=enemy_slice, pawn_direction=pawn_direction)
