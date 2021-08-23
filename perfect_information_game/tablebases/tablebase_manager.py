@@ -59,9 +59,8 @@ class TablebaseManager:
         # dictionary mapping descriptors to tablebases
         self.tablebases = {}
 
-        self.available_tablebases = [file[:-len('.pickle')]
-                                     for file in listdir(f'{get_training_path(self.GameClass)}/tablebases')
-                                     if file.endswith('.pickle') and '_nodes' not in file]
+        self.available_tablebases = []
+        self.update_tablebase_list()
 
     def update_tablebase_list(self):
         tablebases = [file[:-len('.pickle')] for file in listdir(f'{get_training_path(self.GameClass)}/tablebases')
@@ -84,9 +83,10 @@ class TablebaseManager:
         If the position is a draw by insufficient material, then (None, 0, 0) will be returned.
 
         :param state:
-        :param outcome_only: If True, then only the state after the move has been made will not be calculated.
+        :param outcome_only: If True, then the state after the move has been made will not be calculated.
         """
         if np.any(state[:, :, -2] == 1):
+            # any positions with en passant or castling are excluded from the tablebase
             return (np.nan, np.nan) if outcome_only else (None, np.nan, np.nan)
 
         symmetry_transform = SymmetryTransform(self.GameClass, state)
@@ -135,4 +135,5 @@ class TablebaseManager:
         return self.get_random_endgame(descriptor,
                                        lambda board_bytes, move_bytes:
                                        self.parse_move_bytes(move_bytes)[0] == outcome
+                                       # ensure game is not already finished
                                        and not self.GameClass.is_over(self.GameClass.parse_board_bytes(board_bytes)))

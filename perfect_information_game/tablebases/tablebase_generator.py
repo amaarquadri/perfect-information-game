@@ -1,9 +1,7 @@
 import pickle
 import numpy as np
-from perfect_information_game.tablebases import TablebaseManager
-from perfect_information_game.tablebases import SymmetryTransform
+from perfect_information_game.tablebases import TablebaseManager, SymmetryTransform, get_verified_chess_subclass
 from perfect_information_game.utils import get_training_path
-from perfect_information_game.tablebases import get_verified_chess_subclass
 from functools import partial
 
 
@@ -13,9 +11,10 @@ class TablebaseGenerator:
     If material is equal, then it will be treated as if white is up in material.
     Material comparison is determined using GameClass.heuristic.
 
-    Symmetry will be applied to ensure that for the attacking king: i < 4, j < 4, i <= j.
+    If there are no pawns, symmetry will be applied to ensure that for the attacking king: i < 4, j < 4, i <= j.
+    If there are pawns, symmetry will be applied to ensure that for the attacking king: j < 4.
 
-    The tablebase will not support any positions where pawns are present or castling is possible.
+    The tablebase will not support any positions where en passant or castling is possible.
     """
     class Node:
         def __init__(self, GameClass, state, descriptor, tablebase_manager):
