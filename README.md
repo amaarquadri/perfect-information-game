@@ -1,6 +1,6 @@
 ![license](https://img.shields.io/github/license/amaarquadri/perfect-information-game.svg)
 ![release](https://img.shields.io/github/v/release/amaarquadri/perfect-information-game?include_prereleases)
-![total lines](https://img.shields.io/tokei/lines/github/amaarquadri/perfect-information-game)
+![total lines of code](https://img.shields.io/tokei/lines/github/amaarquadri/perfect-information-game)
 
 # Perfect Information Game
 Creating 2D perfect information board games, and playing them with machine learning systems.
