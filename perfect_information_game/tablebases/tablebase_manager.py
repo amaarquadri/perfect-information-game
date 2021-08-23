@@ -11,7 +11,7 @@ class TablebaseManager:
     Each tablebase has a descriptor, in a form such as KQkn (king and queen vs king and knight).
     The tablebases are stored in {get_training_path(GameClass)}/tablebases/{descriptor}.pickle
 
-    Each tablebase consists of a dictionary that maps board_bytes to move_bytes.
+    Each tablebase is a dictionary that maps board_bytes to move_bytes.
     move_bytes can be converted to and from this tuple: (outcome, start_i, start_j, target_i, target_j, distance).
     Only the symmetrically unique variants of each position are stored in the tablebases.
     """
@@ -129,7 +129,8 @@ class TablebaseManager:
                                    if condition(board_bytes, move_bytes)]
             if len(allowed_board_bytes) == 0:
                 return None
-        return self.GameClass.parse_board_bytes(choose_random(allowed_board_bytes))
+        state = self.GameClass.parse_board_bytes(choose_random(allowed_board_bytes))
+        return SymmetryTransform.random(self.GameClass, descriptor).transform_state(state)
 
     def get_random_endgame_with_outcome(self, descriptor, outcome):
         return self.get_random_endgame(descriptor,

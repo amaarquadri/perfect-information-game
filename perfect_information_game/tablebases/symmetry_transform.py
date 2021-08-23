@@ -39,6 +39,27 @@ class SymmetryTransform:
         identity.transform_funcs = []
         return identity
 
+    @staticmethod
+    def random(GameClass, descriptor):
+        """
+        Returns a random symmetry transform for the given descriptor.
+        """
+        random = SymmetryTransform.identity(GameClass)
+        pawnless = 'p' not in descriptor and 'P' not in descriptor
+        if pawnless:
+            if np.random.random() < 0.5:
+                random.transform_funcs.append(SymmetryTransform.flip_state_colors)
+            if np.random.random() < 0.5:
+                random.transform_funcs.append(SymmetryTransform.flip_state_i)
+            if np.random.random() < 0.5:
+                random.transform_funcs.append(SymmetryTransform.flip_state_j)
+            if np.random.random() < 0.5:
+                random.transform_funcs.append(SymmetryTransform.flip_state_diagonal)
+        else:
+            if np.random.random() < 0.5:
+                random.transform_funcs.append(SymmetryTransform.flip_state_j)
+        return random
+
     def is_identity(self):
         return len(self.transform_funcs) == 0
 
