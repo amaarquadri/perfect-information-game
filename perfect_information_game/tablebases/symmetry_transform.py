@@ -14,22 +14,22 @@ class SymmetryTransform:
         self.GameClass = get_verified_chess_subclass(GameClass)
         self.transform_funcs = []
 
-        if GameClass.heuristic(state) < 0:
+        if self.GameClass.heuristic(state) < 0:
             # black is attacking, so switch white and black
             self.transform_funcs.append(self.flip_state_colors)
-            i, j = GameClass.get_king_pos(state, GameClass.BLACK_SLICE)
-            i = GameClass.ROWS - 1 - i
+            i, j = self.GameClass.get_king_pos(state, self.GameClass.BLACK_SLICE)
+            i = self.GameClass.ROWS - 1 - i
         else:
-            i, j = GameClass.get_king_pos(state, GameClass.WHITE_SLICE)
+            i, j = self.GameClass.get_king_pos(state, self.GameClass.WHITE_SLICE)
 
         pawnless = np.all(state[:, :, 5] == 0) and np.all(state[:, :, 11] == 0)
 
         if pawnless and not (i < 4):
             self.transform_funcs.append(SymmetryTransform.flip_state_i)
-            i = GameClass.ROWS - 1 - i
+            i = self.GameClass.ROWS - 1 - i
         if not (j < 4):  # horizontal flipping can be done, even with pawns
             self.transform_funcs.append(SymmetryTransform.flip_state_j)
-            j = GameClass.COLUMNS - 1 - j
+            j = self.GameClass.COLUMNS - 1 - j
         if pawnless and not (i <= j):
             self.transform_funcs.append(SymmetryTransform.flip_state_diagonal)
 
