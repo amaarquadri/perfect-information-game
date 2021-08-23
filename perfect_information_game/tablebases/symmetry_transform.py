@@ -58,7 +58,7 @@ class SymmetryTransform:
 
     def flip_state_colors(self, state):
         special_layers = np.copy(state[..., -2:])
-        special_layers[..., -1] = 1 - special_layers[..., -1]
+        special_layers[..., -1] = 1 - special_layers[..., -1]  # flip whose turn it is
         new_state = np.concatenate((state[..., self.GameClass.BLACK_SLICE], state[..., self.GameClass.WHITE_SLICE],
                                     special_layers),
                                    axis=-1)
