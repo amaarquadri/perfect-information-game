@@ -41,7 +41,7 @@ This position is white to play and win.
 <details><summary>Click to Show Solution</summary>
 <p>
 
-With optimal defense by black:
+[With optimal defense by black](https://www.chess.com/a/2Px3GGXBL2AW5c):
 1. Nb5 Kd7
 2. Bg8 Ke7
 3. Nd4 Kd6
@@ -61,7 +61,7 @@ This similar position is white to play and win.
 <details><summary>Click to Show Solution</summary>
 <p>
 
-With optimal defense by black:
+[With optimal defense by black](https://www.chess.com/a/26pgvkm9p2AW5c):
 1. Nd7 Kb5
 2. Bg8 Kb4
 3. Ne5 Kc5
@@ -81,7 +81,7 @@ This insane position is white to play and win in 28 moves!
 <details><summary>Click to Show Solution</summary>
 <p>
 
-With optimal defense by black:
+[With optimal defense by black](https://www.chess.com/a/cipgRjCa2AW5c):
 1. Qd4+ Ke8
 2. Kb7 Ke7
 3. Kc7 Qh6

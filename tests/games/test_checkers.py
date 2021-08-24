@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from games.checkers import Checkers
+from perfect_information_game.games import Checkers
 
 
 class TestCheckers(unittest.TestCase):
