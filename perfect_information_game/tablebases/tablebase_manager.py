@@ -11,7 +11,7 @@ class TablebaseManager:
     Each tablebase has a descriptor, in a form such as KQkn (king and queen vs king and knight).
     The tablebases are stored in {get_training_path(GameClass)}/tablebases/{descriptor}.pickle
 
-    Each tablebase consists of a dictionary that maps board_bytes to move_bytes.
+    Each tablebase is a dictionary that maps board_bytes to move_bytes.
     move_bytes can be converted to and from this tuple: (outcome, start_i, start_j, target_i, target_j, distance).
     Only the symmetrically unique variants of each position are stored in the tablebases.
     """
@@ -59,9 +59,8 @@ class TablebaseManager:
         # dictionary mapping descriptors to tablebases
         self.tablebases = {}
 
-        self.available_tablebases = [file[:-len('.pickle')]
-                                     for file in listdir(f'{get_training_path(self.GameClass)}/tablebases')
-                                     if file.endswith('.pickle') and '_nodes' not in file]
+        self.available_tablebases = []
+        self.update_tablebase_list()
 
     def update_tablebase_list(self):
         tablebases = [file[:-len('.pickle')] for file in listdir(f'{get_training_path(self.GameClass)}/tablebases')
@@ -84,9 +83,10 @@ class TablebaseManager:
         If the position is a draw by insufficient material, then (None, 0, 0) will be returned.
 
         :param state:
-        :param outcome_only: If True, then only the state after the move has been made will not be calculated.
+        :param outcome_only: If True, then the state after the move has been made will not be calculated.
         """
         if np.any(state[:, :, -2] == 1):
+            # any positions with en passant or castling are excluded from the tablebase
             return (np.nan, np.nan) if outcome_only else (None, np.nan, np.nan)
 
         symmetry_transform = SymmetryTransform(self.GameClass, state)
@@ -129,10 +129,12 @@ class TablebaseManager:
                                    if condition(board_bytes, move_bytes)]
             if len(allowed_board_bytes) == 0:
                 return None
-        return self.GameClass.parse_board_bytes(choose_random(allowed_board_bytes))
+        state = self.GameClass.parse_board_bytes(choose_random(allowed_board_bytes))
+        return SymmetryTransform.random(self.GameClass, descriptor).transform_state(state)
 
     def get_random_endgame_with_outcome(self, descriptor, outcome):
         return self.get_random_endgame(descriptor,
                                        lambda board_bytes, move_bytes:
                                        self.parse_move_bytes(move_bytes)[0] == outcome
+                                       # ensure game is not already finished
                                        and not self.GameClass.is_over(self.GameClass.parse_board_bytes(board_bytes)))
