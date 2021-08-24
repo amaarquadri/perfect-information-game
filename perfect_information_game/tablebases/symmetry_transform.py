@@ -22,7 +22,8 @@ class SymmetryTransform:
         else:
             i, j = self.GameClass.get_king_pos(state, self.GameClass.WHITE_SLICE)
 
-        pawnless = np.all(state[:, :, 5] == 0) and np.all(state[:, :, 11] == 0)
+        pawnless = np.all(state[:, :, self.GameClass.WHITE_SLICE][self.GameClass.PAWN] == 0) and \
+            np.all(state[:, :, self.GameClass.BLACK_SLICE][self.GameClass.PAWN] == 0)
 
         if pawnless and not (i < 4):
             self.transform_funcs.append(SymmetryTransform.flip_state_i)
