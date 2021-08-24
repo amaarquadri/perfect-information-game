@@ -12,11 +12,11 @@ class SymmetryTransform:
 
     def __init__(self, GameClass, state):
         self.GameClass = get_verified_chess_subclass(GameClass)
-        self.transform_funcs = []
+        self.flip_colors = self.flip_i = self.flip_j = self.flip_diagonal = False
 
         if self.GameClass.heuristic(state) < 0:
             # black is attacking, so switch white and black
-            self.transform_funcs.append(self.flip_state_colors)
+            self.flip_colors = True
             i, j = self.GameClass.get_king_pos(state, self.GameClass.BLACK_SLICE)
             i = self.GameClass.ROWS - 1 - i
         else:
@@ -26,18 +26,18 @@ class SymmetryTransform:
             np.all(state[:, :, self.GameClass.BLACK_PAWN] == 0)
 
         if pawnless and not (i < 4):
-            self.transform_funcs.append(SymmetryTransform.flip_state_i)
+            self.flip_i = True
             i = self.GameClass.ROWS - 1 - i
         if not (j < 4):  # horizontal flipping can be done, even with pawns
-            self.transform_funcs.append(SymmetryTransform.flip_state_j)
+            self.flip_j = True
             j = self.GameClass.COLUMNS - 1 - j
         if pawnless and not (i <= j):
-            self.transform_funcs.append(SymmetryTransform.flip_state_diagonal)
+            self.flip_diagonal = True
 
     @staticmethod
     def identity(GameClass):
         identity = SymmetryTransform(GameClass, GameClass.STARTING_STATE)
-        identity.transform_funcs = []
+        identity.flip_colors = identity.flip_i = identity.flip_j = identity.flip_diagonal = False
         return identity
 
     @staticmethod
@@ -47,41 +47,48 @@ class SymmetryTransform:
         """
         random = SymmetryTransform.identity(GameClass)
         pawnless = 'p' not in descriptor and 'P' not in descriptor
+
+        random.flip_colors = np.random.random() < 0.5
+        random.flip_j = np.random.random() < 0.5
         if pawnless:
-            if np.random.random() < 0.5:
-                random.transform_funcs.append(SymmetryTransform.flip_state_colors)
-            if np.random.random() < 0.5:
-                random.transform_funcs.append(SymmetryTransform.flip_state_i)
-            if np.random.random() < 0.5:
-                random.transform_funcs.append(SymmetryTransform.flip_state_j)
-            if np.random.random() < 0.5:
-                random.transform_funcs.append(SymmetryTransform.flip_state_diagonal)
-        else:
-            if np.random.random() < 0.5:
-                random.transform_funcs.append(SymmetryTransform.flip_state_j)
+            random.flip_i = np.random.random() < 0.5
+            random.flip_diagonal = np.random.random() < 0.5
         return random
 
     def is_identity(self):
-        return len(self.transform_funcs) == 0
+        return not self.flip_colors and not self.flip_i and not self.flip_j and not self.flip_diagonal
 
     def transform_state(self, state):
-        for transform_func in self.transform_funcs:
-            state = transform_func(state)
+        if self.flip_colors:
+            state = self.flip_state_colors(self.GameClass, state)
+        if self.flip_i:
+            state = self.flip_state_i(state)
+        if self.flip_j:
+            state = self.flip_state_j(state)
+        if self.flip_diagonal:
+            state = self.flip_state_diagonal(state)
         return state
 
     def untransform_state(self, state):
         # since all transform_funcs are their own inverses, we can just run through them in reverse
-        for transform_func in self.transform_funcs[::-1]:
-            state = transform_func(state)
+        if self.flip_diagonal:
+            state = self.flip_state_diagonal(state)
+        if self.flip_j:
+            state = self.flip_state_j(state)
+        if self.flip_i:
+            state = self.flip_state_i(state)
+        if self.flip_colors:
+            state = self.flip_state_colors(self.GameClass, state)
         return state
 
     def transform_outcome(self, outcome):
-        return -outcome if self.flip_state_colors in self.transform_funcs else outcome
+        return -outcome if self.flip_colors else outcome
 
-    def flip_state_colors(self, state):
+    @staticmethod
+    def flip_state_colors(GameClass, state):
         special_layers = np.copy(state[..., -2:])
         special_layers[..., -1] = 1 - special_layers[..., -1]  # flip whose turn it is
-        new_state = np.concatenate((state[..., self.GameClass.BLACK_SLICE], state[..., self.GameClass.WHITE_SLICE],
+        new_state = np.concatenate((state[..., GameClass.BLACK_SLICE], state[..., GameClass.WHITE_SLICE],
                                     special_layers),
                                    axis=-1)
         # need to flip board vertically after flipping colours
