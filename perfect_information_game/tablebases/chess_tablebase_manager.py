@@ -25,6 +25,7 @@ class ChessTablebaseManager(AbstractTablebaseManager):
                              will not be included in the returned tuple.
         """
         if np.any(state[:, :, -2] == 1):
+            # any positions with en passant or castling are excluded from the tablebase
             return (np.nan, np.nan) if outcome_only else (None, np.nan, np.nan)
 
         symmetry_transform = SymmetryTransform(self.GameClass, state)
@@ -52,3 +53,7 @@ class ChessTablebaseManager(AbstractTablebaseManager):
         transformed_move_state = self.GameClass.apply_from_to_move(transformed_state, start_i, start_j, end_i, end_j)
         move_state = symmetry_transform.untransform_state(transformed_move_state)
         return move_state, outcome, terminal_distance
+
+    def get_random_endgame(self, descriptor, condition=None):
+        state = super().get_random_endgame(descriptor, condition)
+        return SymmetryTransform.random(self.GameClass, descriptor).transform_state(state)

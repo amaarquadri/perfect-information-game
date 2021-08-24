@@ -64,4 +64,5 @@ class AbstractTablebaseManager(ABC):
         return self.get_random_endgame(descriptor,
                                        lambda board_bytes, move_bytes:
                                        self.GameClass.parse_move_bytes(move_bytes)[1] == outcome
+                                       # ensure game is not already finished
                                        and not self.GameClass.is_over(self.GameClass.parse_board_bytes(board_bytes)))
