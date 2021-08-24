@@ -31,6 +31,9 @@ class Chess(Game):
     KNIGHT_MOVES = [(-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1)]
     WHITE_SLICE = slice(0, 6)
     BLACK_SLICE = slice(6, 12)
+    KING, QUEEN, ROOK, BISHOP, KNIGHT, PAWN = np.arange(6)
+    WHITE_KING, WHITE_QUEEN, WHITE_ROOK, WHITE_BISHOP, WHITE_KNIGHT, WHITE_PAWN, \
+        BLACK_KING, BLACK_QUEEN, BLACK_ROOK, BLACK_BISHOP, BLACK_KNIGHT, BLACK_PAWN = np.arange(12)
     PIECE_LETTERS = 'KQRBNPkqrbnp'
     DRAWING_DESCRIPTORS = ['Kk', 'KBk', 'KNk']
 
@@ -140,11 +143,11 @@ class Chess(Game):
             piece = where % 6
             is_white = where < 6
 
-            if piece == 0 and is_white == is_white_turn:  # if piece is a king whose turn it is
+            if piece == cls.KING and is_white == is_white_turn:  # if piece is a king whose turn it is
                 pieces.append(6 if is_white_turn else 14)
                 continue
 
-            if piece == 2 and i == (7 if is_white else 0):  # if piece is a rook on home rank
+            if piece == cls.ROOK and i == (7 if is_white else 0):  # if piece is a rook on home rank
                 if i == 0 and j == 0 and state[0, 2, -2] == 1:
                     pieces.append(15)
                     continue
@@ -158,7 +161,7 @@ class Chess(Game):
                     pieces.append(7)
                     continue
 
-            if piece == 5 and is_white != is_white_turn and i == (4 if is_white else 3) \
+            if piece == cls.PAWN and is_white != is_white_turn and i == (4 if is_white else 3) \
                     and state[(5 if is_white else 2), j, -2] == 1:
                 pieces.append(7 if is_white else 15)
                 continue
@@ -172,7 +175,7 @@ class Chess(Game):
                 if square:
                     value += (1 << i)
             board_bytes.append(value)
-        if np.sum(bitboard) % 2 == 1:
+        if len(pieces) % 2 == 1:
             board_bytes.append(pieces[0])
             pieces = pieces[1:]
         for i in range(0, len(pieces), 2):
@@ -210,7 +213,7 @@ class Chess(Game):
                 # process turn information
                 if is_white:
                     state[:, :, -1] = 1
-                piece = 0  # convert to regular king
+                piece = cls.KING  # convert to regular king
             if piece == 7:
                 if i == 0 or i == 7:  # if this is castling information
                     if i == 0 and j == 0 and not is_white:
@@ -224,7 +227,7 @@ class Chess(Game):
                     else:
                         raise ValueError(f'Castling information on invalid square! '
                                          f'i = {i}, j = {j}, is_white = {is_white}')
-                    piece = 2  # convert to regular rook
+                    piece = cls.ROOK  # convert to regular rook
                 elif i == 3 or i == 4:  # if this is en passant information
                     if en_passant_processed:
                         raise ValueError(f'Second en passant square found! i = {i}, j = {j}, is_white = {is_white}')
@@ -236,7 +239,7 @@ class Chess(Game):
                         raise ValueError(f'En passant rank does not match the correct colour! '
                                          f'i = {i}, j = {j}, is_white = {is_white}')
                     en_passant_processed = True
-                    piece = 5  # convert to regular pawn
+                    piece = cls.PAWN  # convert to regular pawn
                 else:
                     raise ValueError(f'Special piece on invalid square! i = {i}, j = {j}, is_white = {is_white}')
 
@@ -313,7 +316,7 @@ class Chess(Game):
 
         friendly_slice, _, _, queening_row, *_ = self.get_stats(self.state)
         promotion = None
-        if self.state[start_i, start_j, friendly_slice][5] == 1 and end_i == queening_row:
+        if self.state[start_i, start_j, friendly_slice][self.PAWN] == 1 and end_i == queening_row:
             promotion = self.ask_user_for_promotion()
 
         self.state = self.apply_from_to_move(self.state, start_i, start_j, end_i, end_j, promotion)
@@ -434,7 +437,7 @@ class Chess(Game):
         for i, j in iter_product(cls.BOARD_SHAPE):
             square_piece = state[i, j, friendly_slice]
             if np.any(square_piece == 1):
-                if square_piece[0] == 1:  # king moves
+                if square_piece[cls.KING] == 1:  # king moves
                     king_moves = cls.get_finite_distance_moves(state, i, j, DIRECTIONS_8, friendly_slice)
 
                     # castling moves
@@ -447,7 +450,7 @@ class Chess(Game):
                                 np.all(state[castling_row, castling_column, :12] == 0) and \
                                 cls.square_safe(state, castling_row, king_column, enemy_slice, -pawn_direction) and \
                                 cls.square_safe(state, castling_row, pass_through_column, enemy_slice, -pawn_direction) and \
-                                state[castling_row, rook_column, friendly_slice][2] == 1 and \
+                                state[castling_row, rook_column, friendly_slice][cls.ROOK] == 1 and \
                                 (empty_column is None or np.all(state[castling_row, empty_column, :12] == 0)):
                             move = cls.create_move(state, i, j, castling_row, castling_column)
                             move[castling_row, pass_through_column, :12] = move[castling_row, rook_column, :12]
@@ -460,10 +463,10 @@ class Chess(Game):
 
                     moves.extend(king_moves)
 
-                if square_piece[1] == 1:  # queen moves
+                if square_piece[cls.QUEEN] == 1:  # queen moves
                     moves.extend(cls.get_infinite_distance_moves(state, i, j, DIRECTIONS_8, friendly_slice))
 
-                if square_piece[2] == 1:  # rook moves
+                if square_piece[cls.ROOK] == 1:  # rook moves
                     rook_moves = cls.get_infinite_distance_moves(state, i, j, STRAIGHT_DIRECTIONS, friendly_slice)
 
                     # if castling was possible before the rook moved, remove the castling flag from all moves
@@ -474,13 +477,14 @@ class Chess(Game):
 
                     moves.extend(rook_moves)
 
-                if square_piece[3] == 1:  # bishop moves
+                if square_piece[cls.BISHOP] == 1:  # bishop moves
                     moves.extend(cls.get_infinite_distance_moves(state, i, j, DIAGONAL_DIRECTIONS, friendly_slice))
 
-                if square_piece[4] == 1:  # knight moves
+                if square_piece[cls.KNIGHT] == 1:  # knight moves
                     moves.extend(cls.get_finite_distance_moves(state, i, j, cls.KNIGHT_MOVES, friendly_slice))
 
-                if square_piece[5] == 1:  # pawn moves
+                if square_piece[cls.PAWN] == 1:  # pawn moves
+                    # 1 square pawn move
                     is_promoting = i + pawn_direction == queening_row
                     if np.all(state[i + pawn_direction, j, :12] == 0):
                         move = cls.create_move(state, i, j, i + pawn_direction, j)
@@ -489,6 +493,7 @@ class Chess(Game):
                         else:
                             moves.append(move)
 
+                    # 2 square pawn move
                     if i == pawn_starting_row and \
                             np.all(state[i + pawn_direction, j, :12] == 0) and \
                             np.all(state[i + 2 * pawn_direction, j, :12] == 0):
@@ -497,7 +502,7 @@ class Chess(Game):
                         # set en passant flag if there is an adjacent enemy pawn
                         for dj in [1, -1]:
                             if cls.is_valid(i + 2 * pawn_direction, j + dj) and \
-                                    state[i + 2 * pawn_direction, j + dj, enemy_slice][5] == 1:
+                                    state[i + 2 * pawn_direction, j + dj, enemy_slice][cls.PAWN] == 1:
                                 # play out the en passant capture and verify that it is a valid move
                                 test_board = cls.null_move(move)
                                 test_move = cls.create_move(test_board, i + 2 * pawn_direction, j + dj,
@@ -510,6 +515,7 @@ class Chess(Game):
 
                         moves.append(move)
 
+                    # pawn captures
                     for dj in [1, -1]:
                         target_i, target_j = i + pawn_direction, j + dj
                         if cls.is_valid(target_i, target_j):
@@ -521,7 +527,7 @@ class Chess(Game):
                                     moves.append(move)
 
                             elif i == en_passant_row and state[target_i, target_j, -2] == 1 \
-                                    and state[i, target_j, enemy_slice][5] == 1 \
+                                    and state[i, target_j, enemy_slice][cls.PAWN] == 1 \
                                     and np.all(state[target_i, target_j, :12] == 0):
                                 move = cls.create_move(state, i, j, target_i, target_j)
                                 move[i, target_j, :12] = 0
@@ -548,14 +554,14 @@ class Chess(Game):
         :param attacking_pawn_direction: The direction that the attacking pieces' pawns move.
         :return:
         """
-        for directions, relevant_pieces in [(STRAIGHT_DIRECTIONS, [1, 2]),
-                                            (DIAGONAL_DIRECTIONS, [1, 3])]:
+        for directions, relevant_pieces in [(STRAIGHT_DIRECTIONS, [cls.QUEEN, cls.ROOK]),
+                                            (DIAGONAL_DIRECTIONS, [cls.QUEEN, cls.BISHOP])]:
             for di, dj in directions:
                 for dist in range(1, 8):
                     target_i, target_j = i + dist * di, j + dist * dj
                     if not cls.is_valid(target_i, target_j):
                         break
-                    if dist == 1 and state[target_i, target_j, attacking_slice][0]:
+                    if dist == 1 and state[target_i, target_j, attacking_slice][cls.KING]:
                         return False  # enemy king is adjacent to this square
                     if np.any(state[target_i, target_j, attacking_slice][relevant_pieces] == 1):
                         return False  # enemy queen, rook, or bishop
@@ -563,11 +569,11 @@ class Chess(Game):
                         break
         for di, dj in cls.KNIGHT_MOVES:
             target_i, target_j = i + di, j + dj
-            if cls.is_valid(target_i, target_j) and state[target_i, target_j, attacking_slice][4] == 1:
+            if cls.is_valid(target_i, target_j) and state[target_i, target_j, attacking_slice][cls.KNIGHT] == 1:
                 return False  # enemy knight
         for dj in [-1, 1]:
             target_i, target_j = i - attacking_pawn_direction, j + dj
-            if cls.is_valid(target_i, target_j) and state[target_i, target_j, attacking_slice][5] == 1:
+            if cls.is_valid(target_i, target_j) and state[target_i, target_j, attacking_slice][cls.PAWN] == 1:
                 return False  # enemy pawn
         return True
 
@@ -575,7 +581,7 @@ class Chess(Game):
     def get_king_pos(cls, state, player_slice):
         king_pos = None
         for i, j in iter_product(cls.BOARD_SHAPE):
-            if state[i, j, player_slice][0] == 1:
+            if state[i, j, player_slice][cls.KING] == 1:
                 if king_pos is None:
                     king_pos = i, j
                 else:
@@ -622,13 +628,13 @@ class Chess(Game):
         for i, j, in iter_product(cls.BOARD_SHAPE):
             if np.any(state[i, j, friendly_slice] == 1) and np.all(move[i, j, :12] == 0):
                 # insert to the start of the list if its a king
-                if state[i, j, friendly_slice][0] == 1:
+                if state[i, j, friendly_slice][cls.KING] == 1:
                     from_squares.insert(0, (i, j))
                 else:
                     from_squares.append((i, j))
             elif np.all(state[i, j, friendly_slice] == 0) and np.any(move[i, j, friendly_slice] == 1):
                 # insert to the start of the list if its a king
-                if move[i, j, friendly_slice][0] == 1:
+                if move[i, j, friendly_slice][cls.KING] == 1:
                     to_squares.insert(0, (i, j))
                 else:
                     to_squares.append((i, j))

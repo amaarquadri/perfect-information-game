@@ -1,9 +1,7 @@
 import pickle
 import numpy as np
-from perfect_information_game.tablebases import ChessTablebaseManager
-from perfect_information_game.tablebases import SymmetryTransform
+from perfect_information_game.tablebases import ChessTablebaseManager, SymmetryTransform, get_verified_chess_subclass
 from perfect_information_game.utils import get_training_path
-from perfect_information_game.tablebases import get_verified_chess_subclass
 from functools import partial
 
 
@@ -13,24 +11,39 @@ class ChessTablebaseGenerator:
     If material is equal, then it will be treated as if white is up in material.
     Material comparison is determined using GameClass.heuristic.
 
-    Symmetry will be applied to ensure that for the attacking king: i < 4, j < 4, i <= j.
+    If there are no pawns, symmetry will be applied to ensure that for the attacking king: i < 4, j < 4, i <= j.
+    If there are pawns, symmetry will be applied to ensure that for the attacking king: j < 4.
 
-    The tablebase will not support any positions where pawns are present or castling is possible.
+    The tablebase will not support any positions where en passant or castling is possible.
     """
     class Node:
         def __init__(self, GameClass, state, descriptor, tablebase_manager):
             self.GameClass = get_verified_chess_subclass(GameClass)
 
-            # since many nodes will be stored in memory at once during generation, only the fen will be stored
+            # since many nodes will be stored in memory at once during generation, only the board_bytes will be stored
             self.board_bytes = self.GameClass.encode_board_bytes(state)
             self.is_maximizing = self.GameClass.is_player_1_turn(state)
             heuristic = self.GameClass.heuristic(state)
             self.has_material_advantage = (heuristic > 0) if self.is_maximizing else (heuristic < 0)
 
-            # create children, but leave references to other nodes as move_fen strings for now
             self.children = []
             self.children_symmetry_transforms = []
+            self.best_move = None
+            self.best_symmetry_transform = None
+
             moves = self.GameClass.get_possible_moves(state)
+            if self.GameClass.is_over(state, moves):
+                self.outcome = self.GameClass.get_winner(state, moves)
+                self.terminal_distance = 0
+                return  # skip populating children
+            else:
+                # assume that everything is a draw (by fortress) unless proven otherwise
+                # this will get overwritten with a win if any child node is proven to be a win
+                # this will get overwritten with a loss if all child nodes are proven to be a loss
+                self.outcome = 0
+                self.terminal_distance = np.inf
+
+            # populate children, but leave references to other nodes as board_bytes for now
             for move in moves:
                 # need to compare descriptors (piece count is not robust to pawn promotions)
                 move_descriptor = self.GameClass.get_position_descriptor(move)
@@ -48,20 +61,6 @@ class ChessTablebaseGenerator:
                             f'Could not find position in existing tablebase! descriptor = {move_descriptor}')
                     self.children.append(node)
                     self.children_symmetry_transforms.append(SymmetryTransform.identity(self.GameClass))
-
-            # TODO: remove reliance on the fact that:
-            #  if self.GameClass.is_over(state) then len(self.GameClass.get_possible_moves(state)) == 0
-            self.best_move = None
-            self.best_symmetry_transform = None
-            if self.GameClass.is_over(state, moves):
-                self.outcome = self.GameClass.get_winner(state, moves)
-                self.terminal_distance = 0
-            else:
-                # assume that everything is a draw (by fortress) unless proven otherwise
-                # this will get overwritten with a win if any child node is proven to be a win
-                # this will get overwritten with a loss if all child nodes are proven to be a loss
-                self.outcome = 0
-                self.terminal_distance = np.inf
 
         def init_children(self, nodes):
             # replace move_board_bytes with references to actual nodes
@@ -89,6 +88,7 @@ class ChessTablebaseGenerator:
                         if (move.terminal_distance > best_move.terminal_distance) if self.has_material_advantage \
                                 else (move.terminal_distance < best_move.terminal_distance):
                             best_move, best_symmetry_transform = move, symmetry_transform
+                    # pick the faster win if both moves are winning, and pick the slower loss if both moves are losing
                     elif (move.terminal_distance < best_move.terminal_distance) if move.outcome != losing_outcome \
                             else (move.terminal_distance > best_move.terminal_distance):
                         best_move, best_symmetry_transform = move, symmetry_transform
@@ -98,6 +98,7 @@ class ChessTablebaseGenerator:
                 self.best_move = best_move
                 self.best_symmetry_transform = best_symmetry_transform
                 # don't update for draws because of potential infinite loops (although that shouldn't happen in theory)
+                # TODO: figure this out and remove it
                 if self.outcome != 0:
                     updated = True
             if self.outcome != best_move.outcome:
@@ -107,6 +108,7 @@ class ChessTablebaseGenerator:
                 # note that this arithmetic will work, even with np.inf
                 self.terminal_distance = best_move.terminal_distance + 1
                 # don't update for draws because of potential infinite loops (although that shouldn't happen in theory)
+                # TODO: figure this out and remove it
                 if self.outcome != 0:
                     updated = True
             return updated
@@ -163,48 +165,61 @@ class ChessTablebaseGenerator:
         self.GameClass = get_verified_chess_subclass(GameClass)
         self.tablebase_manager = ChessTablebaseManager(self.GameClass)
 
-    def piece_position_generator(self, piece_count, pawnless=True):
+    def piece_config_generator(self, descriptor):
         """
         This function is a generator that iterates over all possible piece configurations.
-        Each piece configuration yielded is a list of (i, j) tuples.
-        The first index corresponds to the attacking king, which will only be placed on squares in the 10 unique squares
-        defined by SymmetryTransform.UNIQUE_SQUARE_INDICES.
-        This function assumes that pieces are unique. For example, having 2 white rooks are not supported.
+        Each piece configuration yielded is a list of (i, j, k) tuples,
+        where (i, j) represents the location of the piece and k represents the piece itself.
 
-        :param piece_count: The number of pieces.
-        :param pawnless: If True, then the fact that there are no pawns will be used to impose extra symmetries and
-                         decrease the total number of nodes to be considered.
+        The first element of the yielded lists will be the attacking king,
+        which will only be placed on squares in the unique squares defined by
+        SymmetryTransform.UNIQUE_SQUARE_INDICES or SymmetryTransform.PAWNLESS_UNIQUE_SQUARE_INDICES.
+
+        The descriptor must have white as the side who is up in material (or equal).
         """
-        # TODO: handle repeated pieces
-        unique_squares_index = 0
+        pieces = np.array([self.GameClass.PIECE_LETTERS.index(letter) for letter in descriptor])
+        if np.sum(pieces == self.GameClass.WHITE_KING) != 1 or np.sum(pieces == self.GameClass.BLACK_KING) != 1:
+            raise ValueError('Descriptor must have exactly 1 white king and 1 black king!')
+
+        piece_count = len(pieces)
+        pawnless = 'p' not in descriptor and 'P' not in descriptor
         unique_squares = SymmetryTransform.PAWNLESS_UNIQUE_SQUARE_INDICES if pawnless \
             else SymmetryTransform.UNIQUE_SQUARE_INDICES
-        indices = [unique_squares[unique_squares_index]] + [(0, 0)] * (piece_count - 1)
-        while True:
-            # yield if all indices are unique and attacking king is in one of the
-            if len(set(indices)) == piece_count:
-                yield indices.copy()
+        unique_squares_index = 0
 
-            for pointer in range(piece_count - 1, 0, -1):  # intentionally skip index 0
-                indices[pointer] = indices[pointer][0], indices[pointer][1] + 1
-                if indices[pointer][1] == self.GameClass.COLUMNS:
-                    indices[pointer] = indices[pointer][0] + 1, 0
-                    if indices[pointer][0] == self.GameClass.ROWS:
-                        indices[pointer] = 0, 0
+        piece_config = [unique_squares[unique_squares_index] + (self.GameClass.KING, )] + \
+                       [(0, 0, piece) for piece in pieces if piece != self.GameClass.KING]
+
+        yielded_configurations = set()
+
+        while True:
+            if len(set(map(lambda piece_i_config: piece_i_config[:2], piece_config))) == piece_count and \
+                    tuple(piece_config) not in yielded_configurations:
+                # only yield if there are no pieces on the same square
+                # and an identical configuration has not been yielded before
+                yield piece_config.copy()
+                yielded_configurations.add(tuple(piece_config))
+
+            for pointer in range(piece_count - 1, 0, -1):  # intentionally skip index 0 because it is handled separately
+                piece_config[pointer] = piece_config[pointer][0], piece_config[pointer][1] + 1, piece_config[pointer][2]
+                if piece_config[pointer][1] == self.GameClass.COLUMNS:
+                    piece_config[pointer] = piece_config[pointer][0] + 1, 0, piece_config[pointer][2]
+                    if piece_config[pointer][0] == self.GameClass.ROWS:
+                        piece_config[pointer] = 0, 0, piece_config[pointer][2]
                         continue
                 break
             else:
                 unique_squares_index += 1
                 if unique_squares_index == len(unique_squares):
                     break
-                indices[0] = unique_squares[unique_squares_index]
+                piece_config[0] = unique_squares[unique_squares_index] + (0,)
 
-    def create_node(self, piece_indices, descriptor, pieces):
+    def create_nodes(self, piece_config, descriptor):
         nodes = {}
-        for is_white_turn in True, False:
+        for is_white_turn in (True, False):
             # create the state
             state = np.zeros(self.GameClass.STATE_SHAPE)
-            for (i, j), k in zip(piece_indices, pieces):
+            for i, j, k in piece_config:
                 state[i, j, k] = 1
             if is_white_turn:
                 state[:, :, -1] = 1
@@ -216,8 +231,8 @@ class ChessTablebaseGenerator:
             if not self.GameClass.king_safe(state, enemy_slice, friendly_slice, -pawn_direction):
                 continue
 
-            if np.any(state[0, :, 5] == 1) or np.any(state[7, :, 5] == 1) \
-                    or np.any(state[0, :, 11] == 1) or np.any(state[7, :, 11] == 1):
+            if np.any(state[[0, self.GameClass.ROWS - 1], :, self.GameClass.WHITE_PAWN] == 1) or \
+                    np.any(state[[0, self.GameClass.ROWS - 1], :, self.GameClass.BLACK_PAWN] == 1):
                 # ignore states with pawns on the first or last ranks
                 continue
 
@@ -226,12 +241,6 @@ class ChessTablebaseGenerator:
         return nodes
 
     def generate_tablebase(self, descriptor, pool):
-        pieces = sorted([self.GameClass.PIECE_LETTERS.index(letter) for letter in descriptor])
-        if len(set(pieces)) < len(pieces):
-            raise NotImplementedError('Tablebases with duplicate pieces not implemented!')
-        if not (0 in pieces and 6 in pieces):
-            raise ValueError('White and black kings must be in the descriptor!')
-
         nodes_path = f'{get_training_path(self.GameClass)}/tablebases/nodes/{descriptor}_nodes.pickle'
         try:
             with open(nodes_path, 'rb') as file:
@@ -239,9 +248,8 @@ class ChessTablebaseGenerator:
             print(f'Using existing nodes file: {nodes_path}')
         except FileNotFoundError:
             nodes = {}
-            pawnless = 'P' not in descriptor and 'p' not in descriptor
-            for some_nodes in pool.map(partial(self.create_node, descriptor=descriptor, pieces=pieces),
-                                       self.piece_position_generator(len(pieces), pawnless)):
+            for some_nodes in pool.map(partial(self.create_nodes, descriptor=descriptor),
+                                       self.piece_config_generator(descriptor)):
                 nodes.update(some_nodes)
 
             with open(nodes_path, 'wb') as file:

@@ -31,9 +31,9 @@ Creating 2D perfect information board games, and playing them with machine learn
 - Install requirements: \
 `pip install -r requirements.txt`
 - Play a game of Connect 4 against the ai: \
-`python src/scripts/play_vs_ai.py`
+`python perfect_information_game/scripts/play_vs_ai.py`
 - View games files that were generated during training: \
-`python src/scripts/view_game_file.py`
+`python perfect_informationn_game/scripts/view_game_file.py`
 - For games with multiple versions, select the desired version by opening the corresponding file under `src/games/` and 
 uncommenting the corresponding line that starts with `CONFIG = `
 
