@@ -180,7 +180,7 @@ class TablebaseGenerator:
         The descriptor must have white as the side who is up in material (or equal).
         """
         pieces = np.array([self.GameClass.PIECE_LETTERS.index(letter) for letter in descriptor])
-        if np.sum(pieces == self.GameClass.KING) != 1 or np.sum(pieces == 6 + self.GameClass.KING) != 1:
+        if np.sum(pieces == self.GameClass.WHITE_KING) != 1 or np.sum(pieces == self.GameClass.BLACK_KING) != 1:
             raise ValueError('Descriptor must have exactly 1 white king and 1 black king!')
 
         piece_count = len(pieces)
@@ -233,8 +233,8 @@ class TablebaseGenerator:
             if not self.GameClass.king_safe(state, enemy_slice, friendly_slice, -pawn_direction):
                 continue
 
-            if np.any(state[[0, self.GameClass.ROWS - 1], :, self.GameClass.WHITE_SLICE][self.GameClass.PAWN] == 1) or \
-                    np.any(state[[0, self.GameClass.ROWS - 1], :, self.GameClass.BLACK_SLICE][self.GameClass.PAWN] == 1):
+            if np.any(state[[0, self.GameClass.ROWS - 1], :, self.GameClass.WHITE_PAWN] == 1) or \
+                    np.any(state[[0, self.GameClass.ROWS - 1], :, self.GameClass.BLACK_PAWN] == 1):
                 # ignore states with pawns on the first or last ranks
                 continue
 
