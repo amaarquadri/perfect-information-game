@@ -250,6 +250,49 @@ class Chess(Game):
 
         return state
 
+    @classmethod
+    def encode_move_bytes(cls, move_data, outcome, terminal_distance):
+        """
+        The move parameter consists of the tuple (start_i, start_j, end_i, end_j) which represents the coordinates of
+        the start and end location of the piece that moved.
+        """
+        start_i, start_j, end_i, end_j = move_data
+
+        if terminal_distance < 0:
+            raise ValueError(f'terminal_distance < 0: {terminal_distance}')
+        if np.isinf(terminal_distance):
+            terminal_distance = 2 ** 10 - 1  # maximum value in 10 bits
+        elif terminal_distance >= 2 ** 10 - 1:
+            print(f'Warning: terminal_distance of {terminal_distance} is too large. '
+                  f'Replacing with max value of {2 ** 10 - 2}')
+            # replace with 2^10 - 2 because 2^10 - 1 is reserved for infinity
+            terminal_distance = 2 ** 10 - 2
+        outcome += 1  # remap from -1, 0, 1 to 0, 1, 2
+
+        move_bytes = [outcome * 2 ** 6 + start_i * 2 ** 3 + start_j,
+                      end_i * 2 ** 5 + end_j * 2 ** 2 + terminal_distance // (2 ** 8),
+                      terminal_distance % (2 ** 8)]
+        return bytes(move_bytes)
+
+    @classmethod
+    def parse_move_bytes(cls, move_bytes):
+        move_bytes = list(move_bytes)  # convert back to list of integers
+        outcome = move_bytes[0] // (2 ** 6)
+        outcome -= 1  # map from 0, 1, 2 back to -1, 0, 1
+
+        start_i = (move_bytes[0] % (2 ** 6)) // (2 ** 3)
+        start_j = move_bytes[0] % (2 ** 3)
+        end_i = move_bytes[1] // (2 ** 5)
+        end_j = (move_bytes[1] % (2 ** 5)) // (2 ** 2)
+
+        terminal_distance = (move_bytes[1] % (2 ** 2)) * (2 ** 8) + move_bytes[2]
+        if terminal_distance == 2 ** 10 - 1:
+            terminal_distance = np.inf
+        elif terminal_distance == 2 ** 10 - 2:
+            print(f'Warning: terminal distance of {terminal_distance} may be incorrect due to overflow!')
+
+        return (start_i, start_j, end_i, end_j), outcome, terminal_distance
+
     def __init__(self, state=STARTING_STATE):
         super().__init__(self.parse_fen(state) if type(state) is str else state)
 

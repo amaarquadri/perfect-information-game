@@ -1,13 +1,13 @@
 import pickle
 import numpy as np
-from perfect_information_game.tablebases import TablebaseManager
+from perfect_information_game.tablebases import ChessTablebaseManager
 from perfect_information_game.tablebases import SymmetryTransform
 from perfect_information_game.utils import get_training_path
 from perfect_information_game.tablebases import get_verified_chess_subclass
 from functools import partial
 
 
-class TablebaseGenerator:
+class ChessTablebaseGenerator:
     """
     Tablebases will always be generated with white as the side who is up in material.
     If material is equal, then it will be treated as if white is up in material.
@@ -40,7 +40,7 @@ class TablebaseGenerator:
                     self.children.append(move_board_bytes)
                     self.children_symmetry_transforms.append(symmetry_transform)
                 else:
-                    node = TablebaseGenerator.Node(self.GameClass, move, move_descriptor, tablebase_manager)
+                    node = ChessTablebaseGenerator.Node(self.GameClass, move, move_descriptor, tablebase_manager)
                     node.children = []
                     node.outcome, node.terminal_distance = tablebase_manager.query_position(move, outcome_only=True)
                     if np.isnan(node.outcome) or np.isnan(node.terminal_distance):
@@ -140,7 +140,7 @@ class TablebaseGenerator:
             self.children_symmetry_transforms = None
             self.best_move = self.best_move.board_bytes if self.best_move is not None else None
 
-        def get_best_move(self):
+        def get_best_move_data(self):
             """
             The node's destroy_connections function must be called first.
             """
@@ -156,14 +156,12 @@ class TablebaseGenerator:
             return self.GameClass.get_from_to_move(self.GameClass.parse_board_bytes(self.board_bytes), move)
 
         @staticmethod
-        def get_move_bytes(node):
-            start_i, start_j, end_i, end_j = node.get_best_move()
-            return TablebaseManager.encode_move_bytes(node.outcome, start_i, start_j, end_i, end_j,
-                                                      node.terminal_distance)
+        def get_move_bytes(node, GameClass):
+            return GameClass.encode_move_bytes(node.get_best_move_data(), node.outcome, node.terminal_distance)
 
     def __init__(self, GameClass):
         self.GameClass = get_verified_chess_subclass(GameClass)
-        self.tablebase_manager = TablebaseManager(self.GameClass)
+        self.tablebase_manager = ChessTablebaseManager(self.GameClass)
 
     def piece_position_generator(self, piece_count, pawnless=True):
         """
@@ -223,7 +221,7 @@ class TablebaseGenerator:
                 # ignore states with pawns on the first or last ranks
                 continue
 
-            node = TablebaseGenerator.Node(self.GameClass, state, descriptor, self.tablebase_manager)
+            node = ChessTablebaseGenerator.Node(self.GameClass, state, descriptor, self.tablebase_manager)
             nodes[node.board_bytes] = node
         return nodes
 
@@ -234,7 +232,7 @@ class TablebaseGenerator:
         if not (0 in pieces and 6 in pieces):
             raise ValueError('White and black kings must be in the descriptor!')
 
-        nodes_path = f'{get_training_path(self.GameClass)}/tablebases/{descriptor}_nodes.pickle'
+        nodes_path = f'{get_training_path(self.GameClass)}/tablebases/nodes/{descriptor}_nodes.pickle'
         try:
             with open(nodes_path, 'rb') as file:
                 nodes = pickle.load(file)
@@ -266,7 +264,8 @@ class TablebaseGenerator:
         nodes = list(nodes.values())
         for node in nodes:
             node.destroy_connections()
-        node_move_bytes = pool.map(TablebaseGenerator.Node.get_move_bytes, nodes)
+        node_move_bytes = pool.map(partial(ChessTablebaseGenerator.Node.get_move_bytes, GameClass=self.GameClass),
+                                   nodes)
         tablebase = {node.board_bytes: move_bytes for node, move_bytes in zip(nodes, node_move_bytes)}
 
         with open(f'{get_training_path(self.GameClass)}/tablebases/{descriptor}.pickle', 'wb') as file:

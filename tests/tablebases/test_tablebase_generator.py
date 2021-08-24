@@ -1,7 +1,7 @@
 import unittest
 from functools import partial
 import numpy as np
-from perfect_information_game.tablebases import TablebaseManager
+from perfect_information_game.tablebases import ChessTablebaseManager
 from perfect_information_game.tablebases import SymmetryTransform
 from perfect_information_game.games import KingOfTheHillChess as GameClass
 from perfect_information_game.utils import OptionalPool
@@ -9,16 +9,16 @@ from perfect_information_game.utils import OptionalPool
 
 class TestTablebaseGenerator(unittest.TestCase):
     def test_K_vs_k(self):
-        manager = TablebaseManager(GameClass)
+        manager = ChessTablebaseManager(GameClass)
         manager.ensure_loaded('Kk')
         nodes = manager.tablebases['Kk']
-        if any([manager.parse_move_bytes(move_bytes)[0] == 0 for move_bytes in nodes.values()]):
+        if any([GameClass.parse_move_bytes(move_bytes)[1] == 0 for move_bytes in nodes.values()]):
             raise AssertionError('Draw found in king versus king for king of the hill chess!')
 
     @staticmethod
-    def get_move_board_bytes_and_terminal_distance(board_bytes, move_bytes, manager):
+    def get_move_board_bytes_and_terminal_distance(board_bytes, move_bytes):
         state = GameClass.parse_board_bytes(board_bytes)
-        outcome, start_i, start_j, end_i, end_j, terminal_distance = manager.parse_move_bytes(move_bytes)
+        (start_i, start_j, end_i, end_j), outcome, terminal_distance = GameClass.parse_move_bytes(move_bytes)
 
         moves = GameClass.get_possible_moves(state)
         if GameClass.is_over(state, moves):
@@ -59,7 +59,7 @@ class TestTablebaseGenerator(unittest.TestCase):
         # FOUR_MAN_NO_ENEMY_NO_DUPLICATE = 'KQRk,KQBk,KQNk,KRBk,KRNk,KBNk'
         # KQkq
         FOUR_MAN_WITH_ENEMY = 'KQkq,KQkr,KQkb,KQkn,KQkp,KRkr,KRkb,KRkn,KRkp,KBkb,KBkn,KBkp,KNkn,KNkp,KPkp'
-        manager = TablebaseManager(GameClass)
+        manager = ChessTablebaseManager(GameClass)
         for descriptor in FOUR_MAN_WITH_ENEMY.split(',')[1:-6]:
             print(f'Testing {descriptor}')
             manager.ensure_loaded(descriptor)
@@ -67,7 +67,7 @@ class TestTablebaseGenerator(unittest.TestCase):
             print(f'Loaded nodes for {descriptor}')
 
             with OptionalPool(12) as pool:
-                new_values = pool.starmap(partial(self.get_move_board_bytes_and_terminal_distance, manager=manager),
+                new_values = pool.starmap(self.get_move_board_bytes_and_terminal_distance,
                                           list(nodes.items()))
                 graph = {board_bytes: new_values for board_bytes, new_value in zip(nodes.keys(), new_values)}
                 print(f'Created graph for {descriptor}')
