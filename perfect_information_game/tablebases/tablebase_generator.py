@@ -20,16 +20,30 @@ class TablebaseGenerator:
         def __init__(self, GameClass, state, descriptor, tablebase_manager):
             self.GameClass = get_verified_chess_subclass(GameClass)
 
-            # since many nodes will be stored in memory at once during generation, only the fen will be stored
+            # since many nodes will be stored in memory at once during generation, only the board_bytes will be stored
             self.board_bytes = self.GameClass.encode_board_bytes(state)
             self.is_maximizing = self.GameClass.is_player_1_turn(state)
             heuristic = self.GameClass.heuristic(state)
             self.has_material_advantage = (heuristic > 0) if self.is_maximizing else (heuristic < 0)
 
-            # create children, but leave references to other nodes as move_fen strings for now
             self.children = []
             self.children_symmetry_transforms = []
+            self.best_move = None
+            self.best_symmetry_transform = None
+
             moves = self.GameClass.get_possible_moves(state)
+            if self.GameClass.is_over(state, moves):
+                self.outcome = self.GameClass.get_winner(state, moves)
+                self.terminal_distance = 0
+                return  # skip populating children
+            else:
+                # assume that everything is a draw (by fortress) unless proven otherwise
+                # this will get overwritten with a win if any child node is proven to be a win
+                # this will get overwritten with a loss if all child nodes are proven to be a loss
+                self.outcome = 0
+                self.terminal_distance = np.inf
+
+            # populate children, but leave references to other nodes as board_bytes for now
             for move in moves:
                 # need to compare descriptors (piece count is not robust to pawn promotions)
                 move_descriptor = self.GameClass.get_position_descriptor(move)
@@ -47,20 +61,6 @@ class TablebaseGenerator:
                             f'Could not find position in existing tablebase! descriptor = {move_descriptor}')
                     self.children.append(node)
                     self.children_symmetry_transforms.append(SymmetryTransform.identity(self.GameClass))
-
-            # TODO: remove reliance on the fact that:
-            #  if self.GameClass.is_over(state) then len(self.GameClass.get_possible_moves(state)) == 0
-            self.best_move = None
-            self.best_symmetry_transform = None
-            if self.GameClass.is_over(state, moves):
-                self.outcome = self.GameClass.get_winner(state, moves)
-                self.terminal_distance = 0
-            else:
-                # assume that everything is a draw (by fortress) unless proven otherwise
-                # this will get overwritten with a win if any child node is proven to be a win
-                # this will get overwritten with a loss if all child nodes are proven to be a loss
-                self.outcome = 0
-                self.terminal_distance = np.inf
 
         def init_children(self, nodes):
             # replace move_board_bytes with references to actual nodes
@@ -88,6 +88,7 @@ class TablebaseGenerator:
                         if (move.terminal_distance > best_move.terminal_distance) if self.has_material_advantage \
                                 else (move.terminal_distance < best_move.terminal_distance):
                             best_move, best_symmetry_transform = move, symmetry_transform
+                    # pick the faster win if both moves are winning, and pick the slower loss if both moves are losing
                     elif (move.terminal_distance < best_move.terminal_distance) if move.outcome != losing_outcome \
                             else (move.terminal_distance > best_move.terminal_distance):
                         best_move, best_symmetry_transform = move, symmetry_transform
@@ -97,6 +98,7 @@ class TablebaseGenerator:
                 self.best_move = best_move
                 self.best_symmetry_transform = best_symmetry_transform
                 # don't update for draws because of potential infinite loops (although that shouldn't happen in theory)
+                # TODO: figure this out and remove it
                 if self.outcome != 0:
                     updated = True
             if self.outcome != best_move.outcome:
@@ -106,6 +108,7 @@ class TablebaseGenerator:
                 # note that this arithmetic will work, even with np.inf
                 self.terminal_distance = best_move.terminal_distance + 1
                 # don't update for draws because of potential infinite loops (although that shouldn't happen in theory)
+                # TODO: figure this out and remove it
                 if self.outcome != 0:
                     updated = True
             return updated
