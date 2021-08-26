@@ -27,6 +27,10 @@ class OptionalPool:
         if self.pool is not None:
             self.pool.close()
 
+    def join(self):
+        if self.pool is not None:
+            self.pool.join()
+
 
 STRAIGHT_DIRECTIONS = [(0, 1), (0, -1), (1, 0), (-1, 0)]
 DIAGONAL_DIRECTIONS = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
