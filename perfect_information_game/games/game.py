@@ -159,7 +159,7 @@ class Game(ABC):
 
     @classmethod
     def heuristic(cls, state: np.ndarray) -> float:
-        raise NotImplemented()
+        raise NotImplementedError()
 
     @classmethod
     def encode_board_bytes(cls, state):
