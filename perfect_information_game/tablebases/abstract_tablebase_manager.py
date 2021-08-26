@@ -43,6 +43,9 @@ class AbstractTablebaseManager(ABC):
             with open(f'{get_training_path(self.GameClass)}/tablebases/{descriptor}.pickle', 'rb') as file:
                 self.tablebases[descriptor] = pickle.load(file)
 
+    def clear_tablebases(self):
+        self.tablebases = {}
+
     @abstractmethod
     def query_position(self, state, outcome_only=False):
         pass
