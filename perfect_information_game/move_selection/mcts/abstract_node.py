@@ -118,7 +118,8 @@ class AbstractNode(ABC):
                 # continue searching other children, there may be another child that is more optimal
                 continue
 
-            # check puct heuristic before calling child.get_evaluation() because it may result in division by 0
+            # check puct heuristic before calling child.get_evaluation() because
+            # it may result in division by 0 for RolloutNode
             puct_heuristic = self.get_puct_heuristic_for_child(i)
             if np.isinf(puct_heuristic):
                 return child
@@ -140,8 +141,8 @@ class AbstractNode(ABC):
                 # print this message when the root node becomes fully expanded so that it is only printed once
                 print('Fully expanded tree!')
 
-            minimax_evaluation = max([child.get_evaluation() for child in self.children]) if self.is_maximizing \
-                else min([child.get_evaluation() for child in self.children])
+            minimax_evaluation = (max if self.is_maximizing else min)(
+                [child.get_evaluation() for child in self.children])
             self.set_fully_expanded(minimax_evaluation)
             # this node is now fully expanded, so ask the parent to try to choose again
             # if no parent is available (i.e. this is the root node) then the entire search tree has been expanded
