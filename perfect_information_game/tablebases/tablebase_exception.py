@@ -1,0 +1,2 @@
+class TablebaseException(Exception):
+    pass
