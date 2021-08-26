@@ -25,13 +25,19 @@ class HeuristicNode(AbstractNode):
         return self.heuristic
 
     def expand(self, moves=None, network_call_results=None):
+        """
+        When a HeuristicNode is expanded, its children are created and they're heuristics are created with the network.
+        Then the tree is updated so that every node's heuristic is the minimax value of its children.
+        """
         if self.children is not None:
+            # this node was already expanded
             raise Exception('Node already has children!')
         if self.fully_expanded:
             raise Exception('Node is terminal!')
 
         self.ensure_children(moves, network_call_results)
         if self.children is None:
+            # this check is needed to prevent lint warnings
             raise Exception('Failed to create children!')
 
         critical_value = max([child.heuristic for child in self.children]) if self.is_maximizing else \

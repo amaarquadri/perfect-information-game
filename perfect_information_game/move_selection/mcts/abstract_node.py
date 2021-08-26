@@ -15,10 +15,18 @@ class AbstractNode(ABC):
 
     @abstractmethod
     def get_evaluation(self):
+        """
+        Returns the prediction of the evaluation of the game assuming perfect play, which is in the range [-1, 1].
+        This will be 1 if player 1 is winning, 0 if it is a draw, and -1 if player 1 is losing.
+        """
         pass
 
     @abstractmethod
     def count_expansions(self):
+        """
+        Returns the number of times that this node has been explored.
+        If the node is fully expanded, then np.inf will be returned.
+        """
         pass
 
     @abstractmethod
@@ -38,6 +46,10 @@ class AbstractNode(ABC):
         pass
 
     def choose_best_node(self, return_probability_distribution=False, optimal=False):
+        """
+        Chooses the best move based on the expansions performed so far.
+        This should only need to be called on the root node in order to choose a move for the AI.
+        """
         distribution = []
 
         optimal_value = 1 if self.is_maximizing else -1
@@ -84,9 +96,11 @@ class AbstractNode(ABC):
     def choose_expansion_node(self):
         # TODO: continue tree search in case the user makes a mistake and the game continues
         if self.fully_expanded:
+            # self must be the root node because a fully expanded node would never be chosen by its parent
             return None
 
         if self.count_expansions() == 0:
+            # this node itself has never been expanded
             return self
 
         self.ensure_children()
@@ -99,6 +113,7 @@ class AbstractNode(ABC):
                 # If this child is already optimal, then self is fully expanded and there is no point searching further
                 if child.get_evaluation() == optimal_value:
                     self.set_fully_expanded(optimal_value)
+                    # delegate to the parent, which will now choose differently since self is fully expanded
                     return self.parent.choose_expansion_node() if self.parent is not None else None
                 # continue searching other children, there may be another child that is more optimal
                 continue
@@ -122,6 +137,7 @@ class AbstractNode(ABC):
         # if nothing was found because all children are fully expanded
         if best_child is None:
             if self.verbose and not self.fully_expanded and self.parent is None:
+                # print this message when the root node becomes fully expanded so that it is only printed once
                 print('Fully expanded tree!')
 
             minimax_evaluation = max([child.get_evaluation() for child in self.children]) if self.is_maximizing \
@@ -131,6 +147,7 @@ class AbstractNode(ABC):
             # if no parent is available (i.e. this is the root node) then the entire search tree has been expanded
             return self.parent.choose_expansion_node() if self.parent is not None else None
 
+        # the best child has been chosen, and the expansion node choice is delegated to it now
         return best_child.choose_expansion_node()
 
     def depth_to_end_game(self):
