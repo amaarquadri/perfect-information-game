@@ -543,6 +543,7 @@ class Chess(Game):
                                  friendly_slice=friendly_slice,  enemy_slice=enemy_slice, pawn_direction=pawn_direction)
         return list(filter(king_safe_func, moves))
 
+    # TODO: try to optimize this function with numba (it is 44% of the runtime for tablebase generation
     @classmethod
     def square_safe(cls, state, i, j, attacking_slice, attacking_pawn_direction):
         """
