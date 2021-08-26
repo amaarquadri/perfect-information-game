@@ -3,24 +3,12 @@ import numpy as np
 
 
 class AbstractNode(ABC):
-    def __init__(self, position, parent, GameClass, tablebase_manager, c=np.sqrt(2), verbose=False):
-        """
-
-        :param position:
-        :param parent:
-        :param GameClass:
-        :param tablebase_manager: The tablebase manager.
-                                  If no tablebases are implemented, then use an EmptyTablebaseManager.
-        :param c:
-        :param verbose:
-        """
+    def __init__(self, position, parent, GameClass, c=np.sqrt(2), verbose=False):
         self.position = position
         self.parent = parent
         self.GameClass = GameClass
         self.c = c
-        self.tablebase_manager = tablebase_manager
-        self.tablebase_results = tablebase_manager.query_position(position)
-        self.fully_expanded = not np.isnan(self.tablebase_results[1])
+        self.fully_expanded = GameClass.is_over(position)
         self.is_maximizing = GameClass.is_player_1_turn(position)
         self.children = None
         self.verbose = verbose
