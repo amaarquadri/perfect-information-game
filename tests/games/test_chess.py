@@ -1,8 +1,9 @@
 import unittest
 import json
 import numpy as np
+from time import time
 from perfect_information_game.games import Chess
-from perfect_information_game.utils import OptionalPool
+from perfect_information_game.utils import OptionalPool, iter_product
 
 
 class TestChess(unittest.TestCase):
@@ -112,6 +113,35 @@ class TestChess(unittest.TestCase):
             raise AssertionError(f'Failed to consistently process board_bytes: {Chess.encode_fen(state)}')
         if not np.all(state == Chess.parse_fen(Chess.encode_fen(state))):
             raise AssertionError(f'Failed to consistently process fen: {Chess.encode_fen(state)}')
+
+    def test_benchmark_square_safe(self):
+        # run once to compile numba function
+        Chess.square_safe(Chess.STARTING_STATE, 0, 0, Chess.WHITE_SLICE, -1)
+
+        with open('chess_test_cases.json') as f:
+            test_cases = sorted(json.load(f), key=lambda case: case['nodes'])
+
+        test_cases = [test_case for test_case in test_cases if test_case['nodes'] < 1_000]
+
+        def get_positions(position, depth):
+            if depth == 0:
+                return [position]
+            result = []
+            for move in Chess.get_possible_moves(position):
+                result.extend(get_positions(move, depth - 1))
+            return result
+
+        for test_case in test_cases:
+            test_case['positions'] = get_positions(Chess.parse_fen(test_case['fen']), test_case['depth'])
+
+        total_cases = 64 * sum([test_case['nodes'] for test_case in test_cases])
+        print(f'Starting benchmark with {total_cases} invocations...')
+        start_time = time()
+        for test_case in test_cases:
+            for state in test_case['positions']:
+                for i, j in iter_product(Chess.BOARD_SHAPE):
+                    Chess.square_safe(state, i, j, Chess.WHITE_SLICE, -1)
+        print(time() - start_time)
 
 
 if __name__ == '__main__':

@@ -1,11 +1,11 @@
-from perfect_information_game.tablebases import TablebaseManager, TablebaseGenerator
+from perfect_information_game.tablebases import ChessTablebaseManager, ChessTablebaseGenerator
 from perfect_information_game.utils import OptionalPool
 from perfect_information_game.games import Chess as GameClass
 
 
 def generate_tablebases(threads=12):
-    manager = TablebaseManager(GameClass)
-    generator = TablebaseGenerator(GameClass)
+    manager = ChessTablebaseManager(GameClass)
+    generator = ChessTablebaseGenerator(GameClass)
 
     TWO_MAN = 'Kk'
     THREE_MAN = 'KQk,KRk,KBk,KNk,KPk'

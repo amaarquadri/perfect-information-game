@@ -94,6 +94,10 @@ class Game(ABC):
         pass
 
     @classmethod
+    def get_position_descriptor(cls, state):
+        return 'default'
+
+    @classmethod
     @abstractmethod
     def is_over(cls, state: np.ndarray) -> bool:
         pass
@@ -155,4 +159,44 @@ class Game(ABC):
 
     @classmethod
     def heuristic(cls, state: np.ndarray) -> float:
-        raise NotImplemented()
+        raise NotImplementedError()
+
+    @classmethod
+    def encode_board_bytes(cls, state):
+        """
+        Encodes the given state into a bytes object.
+        Subclasses should strive to use the fewest number of bytes possible.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def parse_board_bytes(cls, board_bytes):
+        """
+        Parses the given bytes object into the resulting board state.
+        This is the inverse of encode_board_bytes.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def encode_move_bytes(cls, move_data, outcome, terminal_distance):
+        """
+        Encodes the given data into a bytes object.
+        Subclasses should strive to use the fewest number of bytes possible.
+
+        :param move_data: The minimal data needed to represent a move from a known position.
+                          Subclasses must describe what the move_data parameter should consist of.
+                          The position itself does not need to be encoded.
+        :param outcome: The outcome of the game with perfect play from both sides.
+        :param terminal_distance: The number of moves until the game finishes with optimal play.
+                                  This may be np.inf, in which case the implementation should use a
+                                  large finite number in its place.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def parse_move_bytes(cls, move_bytes):
+        """
+        Parses the given bytes object into the resulting (move_data, outcome, terminal_distance) tuple.
+        This is the inverse of encode_move_bytes.
+        """
+        raise NotImplementedError
