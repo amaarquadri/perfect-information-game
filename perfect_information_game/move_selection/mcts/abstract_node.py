@@ -77,10 +77,9 @@ class AbstractNode(ABC):
                 if child.fully_expanded and child.get_evaluation() == self.get_evaluation():
                     # TODO: when losing, consider the number of ways the opponent can win in response to a move
                     depth_to_endgame = child.depth_to_end_game()
-                    # if we are winning, weight smaller depths much more strongly by using e^-x
-                    # if we are losing or drawing, weight larger depths much more strongly by using e^x
-                    relative_probability = np.exp(-depth_to_endgame if self.get_evaluation() == optimal_value else
-                                                  depth_to_endgame)
+                    # if we want a short game, weight smaller depths much more strongly by using e^-x
+                    # if we want a long game, weight larger depths much more strongly by using e^x
+                    relative_probability = np.exp(depth_to_endgame if self.want_long_game() else -depth_to_endgame)
                     distribution.append(relative_probability)
                 else:
                     distribution.append(0)
@@ -171,19 +170,35 @@ class AbstractNode(ABC):
         # the best child has been chosen, and the expansion node choice is delegated to it now
         return best_child.choose_expansion_node()
 
-    def depth_to_end_game(self):
+    def want_long_game(self):
+        """
+        Can only be called on fully expanded nodes.
+
+        Returns True if we want the game to be as long as possible and
+        False if we want the game to be as fast as possible.
+        """
         if not self.fully_expanded:
             raise Exception('Node not fully expanded!')
 
-        if self.children is None:
-            return 0
 
         optimal_value = 1 if self.is_maximizing else -1
-        if self.get_evaluation() == optimal_value:
+        if self.outcome == optimal_value:
             # if we are winning, win as fast as possible
-            return 1 + min(child.depth_to_end_game() for child in self.children
-                           if child.fully_expanded and child.get_evaluation() == self.get_evaluation())
+            return False
+        elif self.outcome == -optimal_value:
+            # if we are losing, lose as slow as possible
+            return True
         else:
-            # if we are losing or it is a draw, lose as slow as possible
-            return 1 + max(child.depth_to_end_game() for child in self.children
-                           if child.fully_expanded and child.get_evaluation() == self.get_evaluation())
+            try:
+                heuristic = self.GameClass.heuristic(self.position)
+                # if the game is a draw, make it as slow as possible if we have a material advantage
+                # otherwise, finish the game as fast as possible
+                return heuristic > 0 if self.is_maximizing else heuristic < 0
+            except NotImplementedError:
+                # if the game is a draw and no heuristic is defined, then finish the game as fast as possible
+                return False
+
+    def depth_to_end_game(self):
+        return 1 + (max if self.want_long_game() else min)(
+            child.depth_to_end_game() for child in self.children
+            if child.fully_expanded and child.get_evaluation() == self.get_evaluation())
