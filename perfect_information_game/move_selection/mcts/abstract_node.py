@@ -1,17 +1,27 @@
 from abc import ABC, abstractmethod
 import numpy as np
+from perfect_information_game.tablebases import EmptyTablebaseManager
 
 
 class AbstractNode(ABC):
-    def __init__(self, position, parent, GameClass, c=np.sqrt(2), verbose=False):
+    def __init__(self, position, parent, GameClass, tablebase_manager=None, verbose=False):
         self.position = position
         self.parent = parent
         self.GameClass = GameClass
-        self.c = c
-        self.fully_expanded = GameClass.is_over(position)
+        self.tablebase_manager = tablebase_manager if tablebase_manager is not None \
+            else EmptyTablebaseManager(GameClass)
+        self.verbose = verbose
+
+        moves = self.GameClass.get_possible_moves(position)
+        if self.GameClass.is_over(position, moves):
+            self.fully_expanded = True
+            self.outcome = GameClass.get_winner(position, moves)
+        else:
+            self.fully_expanded = False
+            self.outcome = None  # this will be None if fully_expanded is False, otherwise it will be either -1, 0, or 1
+
         self.is_maximizing = GameClass.is_player_1_turn(position)
         self.children = None
-        self.verbose = verbose
 
     @abstractmethod
     def get_evaluation(self):
@@ -41,9 +51,9 @@ class AbstractNode(ABC):
     def expand(self):
         pass
 
-    @abstractmethod
     def set_fully_expanded(self, minimax_evaluation):
-        pass
+        self.fully_expanded = True
+        self.outcome = minimax_evaluation
 
     def choose_best_node(self, return_probability_distribution=False, optimal=False):
         """
@@ -93,7 +103,17 @@ class AbstractNode(ABC):
         best_child = self.children[idx]
         return (best_child, distribution) if return_probability_distribution else best_child
 
-    def choose_expansion_node(self):
+    def choose_expansion_node(self, search_suboptimal=False):
+        """
+        Searches the tree to find a node to expand.
+        Returns None if no nodes could be found because they are all fully expanded.
+        :param search_suboptimal: If True, then nodes will continue to be searched even if
+                                  they have siblings that lead to a win.
+                                  This should only be set to True once the entire tree has been searched and the best line has been determined.
+        """
+        if search_suboptimal:
+            raise NotImplementedError()
+
         # TODO: continue tree search in case the user makes a mistake and the game continues
         if self.fully_expanded:
             # self must be the root node because a fully expanded node would never be chosen by its parent

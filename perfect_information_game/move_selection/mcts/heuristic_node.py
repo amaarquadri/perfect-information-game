@@ -5,8 +5,9 @@ from perfect_information_game.move_selection.mcts import AbstractNode
 class HeuristicNode(AbstractNode):
     def __init__(self, position, parent, GameClass, network, c=np.sqrt(2), d=1, network_call_results=None,
                  verbose=False):
-        super().__init__(position, parent, GameClass, c, verbose)
+        super().__init__(position, parent, GameClass, verbose)
         self.network = network
+        self.c = c
         self.d = d
 
         if self.fully_expanded:

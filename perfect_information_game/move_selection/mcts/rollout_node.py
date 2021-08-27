@@ -4,7 +4,8 @@ from perfect_information_game.move_selection.mcts import AbstractNode
 
 class RolloutNode(AbstractNode):
     def __init__(self, position, parent, GameClass, c=np.sqrt(2), rollout_batch_size=1, pool=None, verbose=False):
-        super().__init__(position, parent, GameClass, c, verbose)
+        super().__init__(position, parent, GameClass, verbose)
+        self.c = c
         self.rollout_batch_size = rollout_batch_size
         self.pool = pool
 
