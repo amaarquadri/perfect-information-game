@@ -41,15 +41,14 @@ class HeuristicNode(AbstractNode):
             # this check is needed to prevent lint warnings
             raise Exception('Failed to create children!')
 
-        critical_value = max([child.heuristic for child in self.children]) if self.is_maximizing else \
-            min([child.heuristic for child in self.children])
+        critical_value = (max if self.is_maximizing else min)(
+            [child.get_evaluation() for child in self.children])
         self.heuristic = critical_value
 
         # update heuristic for all parents if it beats their current best heuristic
         node = self.parent
         while node is not None:
-            if (node.is_maximizing and critical_value > node.heuristic) or \
-                    (not node.is_maximizing and critical_value < node.heuristic):
+            if critical_value > node.heuristic if node.is_maximizing else critical_value < node.heuristic:
                 node.heuristic = critical_value
                 node.expansions += 1
                 node = node.parent
