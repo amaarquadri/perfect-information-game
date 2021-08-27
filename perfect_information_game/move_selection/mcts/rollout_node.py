@@ -49,8 +49,9 @@ class RolloutNode(AbstractNode):
 
     def execute_single_rollout(self):
         state = self.position
-        while not self.GameClass.is_over(state):
-            sub_states = self.GameClass.get_possible_moves(state)
-            state = sub_states[np.random.randint(len(sub_states))]
+        outcome, _ = self.tablebase_manager.query_position(state, outcome_only=True)
+        while np.isnan(outcome):
+            state = choose_random(self.GameClass.get_possible_moves(state))
+            outcome, _ = self.tablebase_manager.query_position(state, outcome_only=True)
 
-        return self.GameClass.get_winner(state)
+        return outcome
