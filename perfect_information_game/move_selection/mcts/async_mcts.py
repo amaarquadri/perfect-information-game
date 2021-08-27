@@ -1,10 +1,11 @@
-from multiprocessing import Pipe, Pool
+from multiprocessing import Pipe
 from multiprocessing.context import Process
 from time import time
 import numpy as np
-from perfect_information_game.move_selection.mcts import HeuristicNode
-from perfect_information_game.move_selection.mcts import RolloutNode
 from perfect_information_game.move_selection import MoveChooser
+from perfect_information_game.move_selection.mcts import TablebaseNode, RolloutNode, HeuristicNode
+from perfect_information_game.tablebases import EmptyTablebaseManager
+from perfect_information_game.utils import OptionalPool
 
 
 class AsyncMCTS(MoveChooser):
@@ -13,7 +14,8 @@ class AsyncMCTS(MoveChooser):
     This is achieved using multiprocessing, and a Pipe for transferring data to and from the worker process.
     """
 
-    def __init__(self, GameClass, starting_position, time_limit=3, network=None, c=np.sqrt(2), d=1, threads=1):
+    def __init__(self, GameClass, starting_position, time_limit=3, network=None, c=np.sqrt(2), d=1, threads=1,
+                 tablebase_manager=None):
         """
         Either:
         If network is provided, threads must be 1.
@@ -23,10 +25,12 @@ class AsyncMCTS(MoveChooser):
         if network is not None and threads != 1:
             raise ValueError('Threads != 1 with Network != None')
 
+        if tablebase_manager is None:
+            tablebase_manager = EmptyTablebaseManager(GameClass)
         self.parent_pipe, worker_pipe = Pipe()
         self.worker_process = Process(target=self.loop_func,
                                       args=(GameClass, starting_position, time_limit, network, c, d, threads,
-                                            worker_pipe))
+                                            tablebase_manager, worker_pipe))
 
     def start(self):
         self.worker_process.start()
@@ -60,69 +64,71 @@ class AsyncMCTS(MoveChooser):
         self.worker_process.join()
 
     @staticmethod
-    def loop_func(GameClass, position, time_limit, network, c, d, threads, worker_pipe):
-        if network is None:
-            pool = Pool(threads) if threads > 1 else None
-            root = RolloutNode(position, parent=None, GameClass=GameClass, c=c, rollout_batch_size=threads, pool=pool,
-                               verbose=True)
-        else:
-            network.initialize()
-            root = HeuristicNode(position, None, GameClass, network, c, d, verbose=True)
+    def loop_func(GameClass, position, time_limit, network, c, d, threads, tablebase_manager, worker_pipe):
+        with OptionalPool(threads) as pool:
+            if network is not None:
+                network.initialize()
 
-        while True:
-            best_node = root.choose_expansion_node()
+            root = TablebaseNode.attempt_create(position, None, GameClass, tablebase_manager, verbose=True,
+                                                backup_factory=lambda:
+                                                RolloutNode(position, None, GameClass, c, threads, pool, verbose=True)
+                                                if network is None else
+                                                HeuristicNode(position, None, GameClass, network, c, d, verbose=True))
 
-            if best_node is not None:
-                best_node.expand()
+            while True:
+                best_node = root.choose_expansion_node()
 
-            if root.children is not None and worker_pipe.poll():
-                user_chosen_position = worker_pipe.recv()
+                if best_node is not None:
+                    best_node.expand()
 
-                if user_chosen_position is not None:
-                    # an updated position has been received so we can truncate the tree
-                    for child in root.children:
-                        if np.all(child.position == user_chosen_position):
-                            root = child
-                            root.parent = None
+                if root.children is not None and worker_pipe.poll():
+                    user_chosen_position = worker_pipe.recv()
+
+                    if user_chosen_position is not None:
+                        # an updated position has been received so we can truncate the tree
+                        for child in root.children:
+                            if np.all(child.position == user_chosen_position):
+                                root = child
+                                root.parent = None
+                                break
+                        else:
+                            print(user_chosen_position)
+                            raise Exception('Invalid user chosen move!')
+
+                        if GameClass.is_over(root.position):
+                            print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
                             break
                     else:
-                        print(user_chosen_position)
-                        raise Exception('Invalid user chosen move!')
-
-                    if GameClass.is_over(root.position):
-                        print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
-                        return
-                else:
-                    # this move chooser has been requested to decide on a move via the choose_move function
-                    start_time = time()
-                    while time() - start_time < time_limit:
-                        best_node = root.choose_expansion_node()
-
-                        # best_node will be None if the tree is fully expanded
-                        if best_node is None:
-                            break
-
-                        best_node.expand()
-
-                    is_ai_player_1 = GameClass.is_player_1_turn(root.position)
-                    chosen_positions = []
-                    print(f'MCTS choosing move based on {root.count_expansions()} expansions!')
-
-                    # choose moves as long as it is still the ai's turn
-                    while GameClass.is_player_1_turn(root.position) == is_ai_player_1:
-                        if root.children is None:
+                        # this move chooser has been requested to decide on a move via the choose_move function
+                        start_time = time()
+                        while time() - start_time < time_limit:
                             best_node = root.choose_expansion_node()
-                            if best_node is not None:
-                                best_node.expand()
-                        root, distribution = root.choose_best_node(return_probability_distribution=True, optimal=True)
-                        chosen_positions.append((root.position, distribution))
 
-                    print('Expected outcome: ', root.get_evaluation())
-                    root.parent = None  # delete references to the parent and siblings
-                    worker_pipe.send(chosen_positions)
-                    if GameClass.is_over(root.position):
-                        print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
-                        return
+                            # best_node will be None if the tree is fully expanded
+                            if best_node is None:
+                                break
+
+                            best_node.expand()
+
+                        is_ai_player_1 = GameClass.is_player_1_turn(root.position)
+                        chosen_positions = []
+                        print(f'MCTS choosing move based on {root.count_expansions()} expansions!')
+
+                        # choose moves as long as it is still the ai's turn
+                        while GameClass.is_player_1_turn(root.position) == is_ai_player_1:
+                            if root.children is None:
+                                best_node = root.choose_expansion_node()
+                                if best_node is not None:
+                                    best_node.expand()
+                            root, distribution = root.choose_best_node(return_probability_distribution=True, optimal=True)
+                            chosen_positions.append((root.position, distribution))
+
+                        print('Expected outcome: ', root.get_evaluation())
+                        root.parent = None  # delete references to the parent and siblings
+                        worker_pipe.send(chosen_positions)
+                        if GameClass.is_over(root.position):
+                            print('Game Over in Async MCTS: ', GameClass.get_winner(root.position))
+                            break
 
     def reset(self):
         raise NotImplementedError('')

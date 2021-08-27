@@ -2,8 +2,8 @@ from time import time
 from multiprocessing import Pool
 import numpy as np
 from perfect_information_game.move_selection import MoveChooser
-from perfect_information_game.move_selection.mcts import RolloutNode
-from perfect_information_game.move_selection.mcts import HeuristicNode
+from perfect_information_game.move_selection.mcts import TablebaseNode, RolloutNode, HeuristicNode
+from perfect_information_game.tablebases import EmptyTablebaseManager
 
 
 # TODO: add hash table to keep track of multiple move combinations that lead to the same position
@@ -15,7 +15,8 @@ class MCTS(MoveChooser):
     https://www.youtube.com/watch?v=UXW2yZndl7U
     """
 
-    def __init__(self, GameClass, starting_position=None, network=None, c=np.sqrt(2), d=1, threads=1):
+    def __init__(self, GameClass, starting_position=None, network=None, c=np.sqrt(2), d=1, threads=1,
+                 tablebase_manager=None):
         """
         Either:
         If network is provided, threads must be 1.
@@ -32,6 +33,8 @@ class MCTS(MoveChooser):
         self.d = d
         self.threads = threads
         self.pool = Pool(threads) if threads > 1 else None
+        self.tablebase_manager = tablebase_manager if tablebase_manager is not None \
+            else EmptyTablebaseManager(GameClass)
 
     def choose_move(self, return_distribution=False, time_limit=10):
         if return_distribution:
@@ -40,11 +43,13 @@ class MCTS(MoveChooser):
         if self.GameClass.is_over(self.position):
             raise Exception('Game Finished!')
 
-        if self.network is None:
-            root = RolloutNode(self.position, parent=None, GameClass=self.GameClass, c=self.c,
-                               rollout_batch_size=self.threads, pool=self.pool, verbose=True)
-        else:
-            root = HeuristicNode(self.position, None, self.GameClass, self.network, self.c, self.d, verbose=True)
+        root = TablebaseNode.attempt_create(self.position, None, self.GameClass, self.tablebase_manager, verbose=True,
+                                            backup_factory=lambda:
+                                            RolloutNode(self.position, None, self.GameClass, self.c, self.threads,
+                                                        self.pool, verbose=True)
+                                            if self.network is None else
+                                            HeuristicNode(self.position, None, self.GameClass, self.network, self.c,
+                                                          self.d, verbose=True))
 
         start_time = time()
         while time() - start_time < time_limit:
