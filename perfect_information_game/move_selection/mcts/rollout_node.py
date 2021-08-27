@@ -36,9 +36,16 @@ class RolloutNode(AbstractNode):
         return exploration_term
 
     def expand(self):
-        rollout_sum = sum(self.pool.starmap(self.execute_single_rollout, [() for _ in range(self.rollout_batch_size)])
-                          if self.pool is not None else
-                          [self.execute_single_rollout() for _ in range(self.rollout_batch_size)])
+        """
+        When a RolloutNode is expanded, random rollouts are performed from the given node.
+        The node as well as all its parents are updated such that each node keeps track of the average rollout outcome
+        out of all rollouts from itself or any of its children.
+
+        Although any node can be expanded, only leaf nodes determined by choose_expansion_node should be expanded.
+        If non-leaf nodes are expanded, then the tree will never grow and the children of the expanded node
+        would not have their average rollout updated.
+        """
+        rollout_sum = sum(self.pool.starmap(self.execute_single_rollout, [() for _ in range(self.rollout_batch_size)]))
 
         # update this node and all its parents
         node = self
