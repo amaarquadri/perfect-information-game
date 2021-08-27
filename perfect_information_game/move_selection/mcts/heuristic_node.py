@@ -1,29 +1,24 @@
 import numpy as np
-from perfect_information_game.move_selection.mcts import AbstractNode
+from perfect_information_game.move_selection.mcts import AbstractNode, TablebaseNode
 
 
 class HeuristicNode(AbstractNode):
     def __init__(self, position, parent, GameClass, network, c=np.sqrt(2), d=1, network_call_results=None,
-                 verbose=False):
-        super().__init__(position, parent, GameClass, verbose)
+                 tablebase_manager=None, verbose=False):
+        super().__init__(position, parent, GameClass, tablebase_manager, verbose)
         self.network = network
         self.c = c
         self.d = d
 
-        if self.fully_expanded:
-            self.heuristic = GameClass.get_winner(position)
-            self.policy = None
-            self.expansions = np.inf
-        else:
-            self.policy, self.heuristic = network.call(position[np.newaxis, ...])[0] if network_call_results is None \
-                else network_call_results
-            self.expansions = 0
+        self.policy, self.heuristic = network.call(position[np.newaxis, ...])[0] if network_call_results is None \
+            else network_call_results
+        self.expansions = 0
 
     def count_expansions(self):
         return self.expansions
 
     def get_evaluation(self):
-        return self.heuristic
+        return self.outcome if self.fully_expanded else self.heuristic
 
     def expand(self, moves=None, network_call_results=None):
         """
@@ -34,7 +29,7 @@ class HeuristicNode(AbstractNode):
             # this node was already expanded
             raise Exception('Node already has children!')
         if self.fully_expanded:
-            raise Exception('Node is terminal!')
+            raise Exception('Node is fully expanded!')
 
         self.ensure_children(moves, network_call_results)
         if self.children is None:
@@ -65,9 +60,8 @@ class HeuristicNode(AbstractNode):
             node = node.parent
 
     def set_fully_expanded(self, minimax_evaluation):
-        self.heuristic = minimax_evaluation
+        super(HeuristicNode, self).set_fully_expanded(minimax_evaluation)
         self.expansions = np.inf
-        self.fully_expanded = True
 
     def get_puct_heuristic_for_child(self, i):
         exploration_term = self.c * np.sqrt(np.log(self.expansions) / (self.children[i].expansions + 1))
@@ -75,11 +69,14 @@ class HeuristicNode(AbstractNode):
         return exploration_term + policy_term
 
     def ensure_children(self, moves=None, network_call_results=None):
-        if self.children is None:
-            moves = self.GameClass.get_possible_moves(self.position) if moves is None else moves
-            network_call_results = self.network.call(np.stack(moves, axis=0)) if network_call_results is None \
-                else network_call_results
-            self.children = [HeuristicNode(move, self, self.GameClass, self.network, self.c, self.d,
-                                           network_call_results=network_call_result, verbose=self.verbose)
-                             for move, network_call_result in zip(moves, network_call_results)]
-            self.expansions = 1
+        if self.children is not None:
+            return
+        moves = self.GameClass.get_possible_moves(self.position) if moves is None else moves
+        network_call_results = self.network.call(np.stack(moves, axis=0)) if network_call_results is None \
+            else network_call_results
+        self.children = [TablebaseNode.attempt_create(move, self, self.GameClass, self.tablebase_manager, self.verbose,
+                                                      lambda: HeuristicNode(move, self, self.GameClass, self.network,
+                                                                            self.c, self.d, network_call_result,
+                                                                            self.verbose))
+                         for move, network_call_result in zip(moves, network_call_results)]
+        self.expansions = 1
