@@ -31,9 +31,8 @@ class ChessTablebaseGenerator:
             self.best_move = None
             self.best_symmetry_transform = None
 
-            moves = self.GameClass.get_possible_moves(state)
-            if self.GameClass.is_over(state, moves):
-                self.outcome = self.GameClass.get_winner(state, moves)
+            if self.GameClass.is_over(state):
+                self.outcome = self.GameClass.get_winner(state)
                 self.terminal_distance = 0
                 return  # skip populating children
             else:
@@ -44,7 +43,7 @@ class ChessTablebaseGenerator:
                 self.terminal_distance = np.inf
 
             # populate children, but leave references to other nodes as board_bytes for now
-            for move in moves:
+            for move in self.GameClass.get_possible_moves(state):
                 # need to compare descriptors (piece count is not robust to pawn promotions)
                 move_descriptor = self.GameClass.get_position_descriptor(move)
                 if move_descriptor == descriptor:

@@ -1,7 +1,7 @@
 from perfect_information_game.games import Game, InvalidMoveException
 import numpy as np
 from perfect_information_game.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
-from functools import partial
+from functools import partial, lru_cache
 import easygui
 
 
@@ -350,9 +350,8 @@ class Chess(Game):
 
         is_capture = np.any(state[end_i, end_j, enemy_slice] == 1)
 
-        moves_ = cls.get_possible_moves(move)
         optimal_score = 1 if cls.is_player_1_turn(state) else -1
-        is_checkmate = cls.is_over(move, moves_) and cls.get_winner(move, moves_) == optimal_score
+        is_checkmate = cls.is_over(move) and cls.get_winner(move) == optimal_score
         is_check = cls.is_check(move)
 
         if piece == 'K' and start_j == 4 and end_j == 6:
@@ -535,7 +534,16 @@ class Chess(Game):
         return moves
 
     @classmethod
+    @lru_cache(maxsize=1)
     def get_possible_moves(cls, state):
+        """
+        This function is wrapped in a cache that tracks that result for the most recently used state parameter.
+        This allows for code such as the following to be used, without this function being called multiple times:
+        if Chess.is_over(state):
+            outcome = Chess.get_winner(state)
+        for move in Chess.get_possible_moves(state):
+            ...
+        """
         friendly_slice, enemy_slice, pawn_direction, *_ = cls.get_stats(state)
         moves = cls.get_pseudo_legal_moves(state)
 
@@ -677,13 +685,12 @@ class Chess(Game):
         return cls.get_position_descriptor(state) in cls.DRAWING_DESCRIPTORS
 
     @classmethod
-    def is_over(cls, state, moves=None):
-        return cls.is_draw_by_insufficient_material(state) or \
-               (len(cls.get_possible_moves(state)) == 0 if moves is None else len(moves) == 0)
+    def is_over(cls, state):
+        return cls.is_draw_by_insufficient_material(state) or len(cls.get_possible_moves(state)) == 0
 
     @classmethod
-    def get_winner(cls, state, moves=None):
-        if not cls.is_over(state, moves):
+    def get_winner(cls, state):
+        if not cls.is_over(state):
             raise Exception('Game is not over!')
 
         if cls.is_draw_by_insufficient_material(state):
