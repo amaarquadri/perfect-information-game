@@ -537,7 +537,7 @@ class Chess(Game):
     @lru_cache(maxsize=1)
     def get_possible_moves(cls, state):
         """
-        This function is wrapped in a cache that tracks that result for the most recently used state parameter.
+        This function is wrapped in a cache that tracks the result for the most recently used state parameter.
         This allows for code such as the following to be used, without this function being called multiple times:
         if Chess.is_over(state):
             outcome = Chess.get_winner(state)
