@@ -147,7 +147,8 @@ class ChessTablebaseGenerator:
             The node's destroy_connections function must be called first.
             """
             if self.best_move is None:
-                return 0, 0, 0, 0
+                # this node was terminal
+                return None
 
             if type(self.best_move) is not bytes:
                 print('Warning: destroy_connections not called. Calling now...')
@@ -274,12 +275,11 @@ class ChessTablebaseGenerator:
             node.destroy_connections()
         node_move_bytes = pool.map(partial(ChessTablebaseGenerator.Node.get_move_bytes, GameClass=self.GameClass),
                                    nodes)
-        tablebase = {node.board_bytes: move_bytes for node, move_bytes in zip(nodes, node_move_bytes)}
+        tablebase = {node.board_bytes: move_bytes for node, move_bytes in zip(nodes, node_move_bytes)
+                     # this check ensures that terminal nodes are not included
+                     if move_bytes is not None}
 
         with open(f'{get_training_path(self.GameClass)}/tablebases/{descriptor}.pickle', 'wb') as file:
             pickle.dump(tablebase, file)
 
         self.tablebase_manager.update_tablebase_list()
-
-# create a copy of ChessTablebaseGenerator with the legacy name to allow unpickling
-# TablebaseGenerator = ChessTablebaseGenerator
