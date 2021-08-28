@@ -710,7 +710,7 @@ class Chess(Game):
 
     @classmethod
     def null_move(cls, state):
-        move = super(Chess, cls).null_move(state)
+        move = super().null_move(state)
         # remove en passant possibilities
         move[2, :, -2] = 0
         move[-3, :, -2] = 0

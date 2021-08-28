@@ -184,7 +184,7 @@ class Checkers(Game):
 
     @classmethod
     def null_move(cls, state):
-        move = super(Checkers, cls).null_move(state)
+        move = super().null_move(state)
         move[:, :, -2] = 0  # remove double jump possibilities
         return move
 

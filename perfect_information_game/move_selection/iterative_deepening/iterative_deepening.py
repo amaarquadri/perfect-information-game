@@ -5,7 +5,7 @@ from perfect_information_game.move_selection.iterative_deepening import Deepenin
 
 class IterativeDeepening(MoveChooser):
     def __init__(self, GameClass, starting_position=None, depth=3):
-        super(IterativeDeepening, self).__init__(GameClass, starting_position)
+        super().__init__(GameClass, starting_position)
         self.root = DeepeningNode(GameClass, starting_position)
         self.depth = depth
 
@@ -25,7 +25,7 @@ class IterativeDeepening(MoveChooser):
             raise ValueError('Invalid move!')
 
     def reset(self):
-        super(IterativeDeepening, self).reset()
+        super().reset()
         self.root = DeepeningNode(self.GameClass, self.position)
 
     def choose_move(self, return_distribution=False):

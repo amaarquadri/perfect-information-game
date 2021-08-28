@@ -8,7 +8,7 @@ from perfect_information_game.move_selection.iterative_deepening import Deepenin
 
 class AsyncIterativeDeepening(MoveChooser):
     def __init__(self, GameClass, starting_position=None, time_limit=3):
-        super(AsyncIterativeDeepening, self).__init__(GameClass, starting_position)
+        super().__init__(GameClass, starting_position)
         self.root = DeepeningNode(GameClass, starting_position)
         self.time_limit = time_limit
 
