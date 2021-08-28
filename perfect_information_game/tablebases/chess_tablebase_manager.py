@@ -24,6 +24,10 @@ class ChessTablebaseManager(AbstractTablebaseManager):
         :param outcome_only: If True, then the state after the move has been made
                              will not be included in the returned tuple.
         """
+        if self.GameClass.is_over(state):
+            outcome = self.GameClass.get_winner(state)
+            return (outcome, 0) if outcome_only else (None, outcome, 0)
+
         if np.any(state[:, :, -2] == 1):
             # any positions with en passant or castling are excluded from the tablebase
             return (np.nan, np.nan) if outcome_only else (None, np.nan, np.nan)
