@@ -81,7 +81,7 @@ class MonsterChess(Chess):
             # flip back to white's turn
             move = cls.null_move(move)
 
-            if len(super(MonsterChess, cls).get_possible_moves(move)) == 0:
+            if len(super().get_possible_moves(move)) == 0:
                 raise InvalidMoveException(
                     'Invalid Move: White king will not be able to get out of check on the second move!')
 
@@ -136,7 +136,7 @@ class MonsterChess(Chess):
 
     @classmethod
     def is_check(cls, state):
-        if super(MonsterChess, cls).is_check(state):
+        if super().is_check(state):
             return True
         if not cls.is_player_1_turn(state):
             return np.any([Chess.is_check(move)

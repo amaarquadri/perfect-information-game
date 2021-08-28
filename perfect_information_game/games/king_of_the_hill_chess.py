@@ -12,7 +12,7 @@ class KingOfTheHillChess(Chess):
     def get_possible_moves(cls, state):
         if cls.get_king_of_the_hill_winner(state) is not None:
             return []
-        return super(KingOfTheHillChess, cls).get_possible_moves(state)
+        return super().get_possible_moves(state)
 
     @classmethod
     def get_king_of_the_hill_winner(cls, state):
@@ -26,12 +26,11 @@ class KingOfTheHillChess(Chess):
         return None
 
     @classmethod
-    def is_over(cls, state, moves=None):
-        return cls.get_king_of_the_hill_winner(state) is not None or \
-               (len(cls.get_possible_moves(state)) == 0 if moves is None else len(moves) == 0)
+    def is_over(cls, state):
+        return cls.get_king_of_the_hill_winner(state) is not None or super().is_over(state)
 
     @classmethod
-    def get_winner(cls, state, moves=None):
+    def get_winner(cls, state):
         king_of_the_hill_winner = cls.get_king_of_the_hill_winner(state)
         return king_of_the_hill_winner if king_of_the_hill_winner is not None else \
-            super(KingOfTheHillChess, cls).get_winner(state, moves)
+            super().get_winner(state)
