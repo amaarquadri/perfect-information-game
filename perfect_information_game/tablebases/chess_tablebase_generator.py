@@ -31,9 +31,8 @@ class ChessTablebaseGenerator:
             self.best_move = None
             self.best_symmetry_transform = None
 
-            moves = self.GameClass.get_possible_moves(state)
-            if self.GameClass.is_over(state, moves):
-                self.outcome = self.GameClass.get_winner(state, moves)
+            if self.GameClass.is_over(state):
+                self.outcome = self.GameClass.get_winner(state)
                 self.terminal_distance = 0
                 return  # skip populating children
             else:
@@ -44,7 +43,7 @@ class ChessTablebaseGenerator:
                 self.terminal_distance = np.inf
 
             # populate children, but leave references to other nodes as board_bytes for now
-            for move in moves:
+            for move in self.GameClass.get_possible_moves(state):
                 # need to compare descriptors (piece count is not robust to pawn promotions)
                 move_descriptor = self.GameClass.get_position_descriptor(move)
                 if move_descriptor == descriptor:
@@ -147,7 +146,8 @@ class ChessTablebaseGenerator:
             The node's destroy_connections function must be called first.
             """
             if self.best_move is None:
-                return 0, 0, 0, 0
+                # this node was terminal
+                return None
 
             if type(self.best_move) is not bytes:
                 print('Warning: destroy_connections not called. Calling now...')
@@ -274,12 +274,11 @@ class ChessTablebaseGenerator:
             node.destroy_connections()
         node_move_bytes = pool.map(partial(ChessTablebaseGenerator.Node.get_move_bytes, GameClass=self.GameClass),
                                    nodes)
-        tablebase = {node.board_bytes: move_bytes for node, move_bytes in zip(nodes, node_move_bytes)}
+        tablebase = {node.board_bytes: move_bytes for node, move_bytes in zip(nodes, node_move_bytes)
+                     # this check ensures that terminal nodes are not included
+                     if move_bytes is not None}
 
         with open(f'{get_training_path(self.GameClass)}/tablebases/{descriptor}.pickle', 'wb') as file:
             pickle.dump(tablebase, file)
 
         self.tablebase_manager.update_tablebase_list()
-
-# create a copy of ChessTablebaseGenerator with the legacy name to allow unpickling
-# TablebaseGenerator = ChessTablebaseGenerator
