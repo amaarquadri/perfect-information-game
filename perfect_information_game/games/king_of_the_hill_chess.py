@@ -27,7 +27,7 @@ class KingOfTheHillChess(Chess):
 
     @classmethod
     def is_over(cls, state):
-        return cls.get_king_of_the_hill_winner(state) is not None or len(cls.get_possible_moves(state)) == 0
+        return cls.get_king_of_the_hill_winner(state) is not None or super().is_over(state)
 
     @classmethod
     def get_winner(cls, state):
