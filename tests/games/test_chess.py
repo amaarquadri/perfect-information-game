@@ -114,14 +114,11 @@ class TestChess(unittest.TestCase):
         if not np.all(state == Chess.parse_fen(Chess.encode_fen(state))):
             raise AssertionError(f'Failed to consistently process fen: {Chess.encode_fen(state)}')
 
-    def test_benchmark_square_safe(self):
-        # run once to compile numba function
-        Chess.square_safe(Chess.STARTING_STATE, 0, 0, Chess.WHITE_SLICE, -1)
-
+    @staticmethod
+    def get_benchmark_test_cases(max_nodes=10_000):
         with open('chess_test_cases.json') as f:
             test_cases = sorted(json.load(f), key=lambda case: case['nodes'])
-
-        test_cases = [test_case for test_case in test_cases if test_case['nodes'] < 1_000]
+        test_cases = [test_case for test_case in test_cases if test_case['nodes'] < max_nodes]
 
         def get_positions(position, depth):
             if depth == 0:
@@ -133,14 +130,47 @@ class TestChess(unittest.TestCase):
 
         for test_case in test_cases:
             test_case['positions'] = get_positions(Chess.parse_fen(test_case['fen']), test_case['depth'])
+        total_cases = sum([test_case['nodes'] for test_case in test_cases])
+        return test_cases, total_cases
 
-        total_cases = 64 * sum([test_case['nodes'] for test_case in test_cases])
-        print(f'Starting benchmark with {total_cases} invocations...')
+    def test_benchmark_square_safe(self):
+        # run once to compile numba function if applicable
+        Chess.square_safe(Chess.STARTING_STATE, 0, 0, Chess.WHITE_SLICE, -1)
+
+        test_cases, total_cases = self.get_benchmark_test_cases()
+        print(f'Starting benchmark with {64 * total_cases} invocations...')
         start_time = time()
         for test_case in test_cases:
             for state in test_case['positions']:
                 for i, j in iter_product(Chess.BOARD_SHAPE):
                     Chess.square_safe(state, i, j, Chess.WHITE_SLICE, -1)
+        print(time() - start_time)
+
+    def test_benchmark_zobrist_hash(self):
+        # run once to compile numba function if applicable
+        Chess.zobrist_hash(Chess.STARTING_STATE)
+
+        test_cases, total_cases = self.get_benchmark_test_cases()
+        print(f'Starting benchmark with {total_cases} invocations...')
+        start_time = time()
+        for test_case in test_cases:
+            for state in test_case['positions']:
+                Chess.zobrist_hash(state)
+        print(time() - start_time)
+
+    def test_benchmark_get_possible_moves(self):
+        """
+        Note whether or not Chess.get_possible_moves is wrapped in a cached decorator when benchmarking.
+        """
+        # run once to compile numba function if applicable
+        Chess.get_possible_moves(Chess.STARTING_STATE)
+
+        test_cases, total_cases = self.get_benchmark_test_cases()
+        print(f'Starting benchmark with {total_cases} invocations...')
+        start_time = time()
+        for test_case in test_cases:
+            for state in test_case['positions']:
+                Chess.get_possible_moves(state)
         print(time() - start_time)
 
 

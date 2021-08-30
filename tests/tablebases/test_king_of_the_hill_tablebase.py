@@ -20,8 +20,7 @@ class TestTablebaseGenerator(unittest.TestCase):
         state = GameClass.parse_board_bytes(board_bytes)
         (start_i, start_j, end_i, end_j), outcome, terminal_distance = GameClass.parse_move_bytes(move_bytes)
 
-        moves = GameClass.get_possible_moves(state)
-        if GameClass.is_over(state, moves):
+        if GameClass.is_over(state):
             if terminal_distance != 0:
                 raise AssertionError(f'Game is over but terminal_distance != 0. Fen: {GameClass.encode_fen(state)}')
             return None, 0
