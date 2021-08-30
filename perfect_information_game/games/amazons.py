@@ -12,11 +12,11 @@ class Amazons(Game):
                                             [0, 0, 0, 0, 0, 0],
                                             [0, 0, 0, 0, 0, 0],
                                             [0, 0, 0, 0, 0, 0],
-                                            [0, 0, 1, 0, 0, 0]])
+                                            [0, 0, 1, 0, 0, 0]], dtype=np.uint8)
     PLAYER_1_STARTING_BOARD_4x4 = np.array([[0, 0, 1, 0],
                                             [0, 0, 0, 0],
                                             [0, 0, 0, 0],
-                                            [0, 1, 0, 0]])
+                                            [0, 1, 0, 0]], dtype=np.uint8)
     PLAYER_1_STARTING_BOARD = PLAYER_1_STARTING_BOARD_6x6 if CONFIG == '6x6' else PLAYER_1_STARTING_BOARD_4x4
     PLAYER_2_STARTING_BOARD = np.rot90(PLAYER_1_STARTING_BOARD)
     STARTING_STATE = np.stack([PLAYER_1_STARTING_BOARD,

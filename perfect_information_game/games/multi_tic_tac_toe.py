@@ -7,7 +7,10 @@ class MultiTicTacToe(Game):
     # TODO: finish coding, and debugging
     D = 3
     W = 3
-    STARTING_STATE = np.stack([np.zeros(D * [W]), np.zeros(D * [W]), np.ones(D * [W])], axis=-1).astype(np.uint8)
+    STARTING_STATE = np.stack([np.zeros(D * [W], dtype=np.uint8),
+                               np.zeros(D * [W], dtype=np.uint8),
+                               np.ones(D * [W], dtype=np.uint8)],
+                              axis=-1)
     STATE_SHAPE = STARTING_STATE.shape  # 3, 3, 3
     FEATURE_COUNT = STATE_SHAPE[-1]  # 3, 3, 3
     BOARD_SHAPE = STATE_SHAPE[:-1]  # 3, 3
