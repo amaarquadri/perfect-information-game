@@ -70,7 +70,9 @@ class ChessTablebaseGenerator:
             :return: True if an update was made.
             """
             if len(self.children) == 0:
-                # this was a terminal node from the start, so there is nothing to update
+                # this was a terminal node from the start
+                # (either due to the game ending, or simplification to another descriptor)
+                # so there is nothing to update
                 return False
 
             losing_outcome = -1 if self.is_maximizing else 1
