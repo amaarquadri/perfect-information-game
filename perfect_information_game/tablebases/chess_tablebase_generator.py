@@ -220,7 +220,7 @@ class ChessTablebaseGenerator:
         nodes = {}
         for is_white_turn in (True, False):
             # create the state
-            state = np.zeros(self.GameClass.STATE_SHAPE)
+            state = np.zeros(self.GameClass.STATE_SHAPE, dtype=np.uint8)
             for i, j, k in piece_config:
                 state[i, j, k] = 1
             if is_white_turn:
