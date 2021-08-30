@@ -199,7 +199,7 @@ class Chess(Game):
         if len(pieces) != piece_count:
             raise ValueError(f'Inconsistent number of pieces! Expected {piece_count} but got {len(pieces)}')
 
-        state = np.zeros(Chess.STATE_SHAPE)
+        state = np.zeros(Chess.STATE_SHAPE).astype(np.uint8)
         en_passant_processed = False
         for i, j in iter_product(Chess.BOARD_SHAPE):
             if not bitboard[i, j]:
