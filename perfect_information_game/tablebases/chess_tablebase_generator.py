@@ -243,6 +243,10 @@ class ChessTablebaseGenerator:
         return nodes
 
     def generate_tablebase(self, descriptor, pool):
+        self.tablebase_manager.update_tablebase_list()
+        if descriptor in self.tablebase_manager.available_tablebases:
+            raise ValueError('Tablebase for the given descriptor already exists!')
+
         nodes_path = f'{get_training_path(self.GameClass)}/tablebases/nodes/{descriptor}_nodes.pickle'
         try:
             with open(nodes_path, 'rb') as file:
