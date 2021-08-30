@@ -1,7 +1,9 @@
 from perfect_information_game.games import Game, InvalidMoveException
 import numpy as np
-from perfect_information_game.utils import one_hot, iter_product, STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
-from functools import partial, lru_cache
+from perfect_information_game.utils import one_hot, iter_product, get_np_uint_type, alternate_iterables, \
+    STRAIGHT_DIRECTIONS, DIAGONAL_DIRECTIONS, DIRECTIONS_8
+from functools import partial, reduce
+from cachetools import cached, LRUCache
 import easygui
 
 
@@ -36,6 +38,9 @@ class Chess(Game):
         BLACK_KING, BLACK_QUEEN, BLACK_ROOK, BLACK_BISHOP, BLACK_KNIGHT, BLACK_PAWN = np.arange(12)
     PIECE_LETTERS = 'KQRBNPkqrbnp'
     DRAWING_DESCRIPTORS = ['Kk', 'KBk', 'KNk']
+    ZOBRIST_HASH_SIZE_BITS = 64  # must be either 8, 16, 32 or 64
+    ZOBRIST_CONSTANTS = np.random.randint(0, 2 ** ZOBRIST_HASH_SIZE_BITS, (ROWS, COLUMNS, FEATURE_COUNT),
+                                          dtype=get_np_uint_type(ZOBRIST_HASH_SIZE_BITS))
 
     @classmethod
     def parse_algebraic_notation(cls, square, layer_slice=None, as_slice=True):
@@ -534,7 +539,7 @@ class Chess(Game):
         return moves
 
     @classmethod
-    @lru_cache(maxsize=1)
+    @cached(cache=LRUCache(maxsize=256), key=lambda cls, state: cls.zobrist_hash(state))
     def get_possible_moves(cls, state):
         """
         This function is wrapped in a cache that tracks the result for the most recently used state parameter.
@@ -723,6 +728,12 @@ class Chess(Game):
     @classmethod
     def heuristic(cls, state):
         return np.sum(np.dot(state, [100, 9, 5, 3.25, 3, 1, -100, -9, -5, -3.25, -3, -1, 0, 0]))
+
+    @classmethod
+    def zobrist_hash(cls, state):
+        return reduce(lambda b1, b2: b1 ^ b2, cls.ZOBRIST_CONSTANTS[state == 1],
+                      # convert 0 of type int to the correct numpy unsigned int type
+                      get_np_uint_type(cls.ZOBRIST_HASH_SIZE_BITS)(0))
 
 
 # need to define this after the Chess class is created so that we can use the parse_fen function
