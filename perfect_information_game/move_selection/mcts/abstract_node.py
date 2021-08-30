@@ -12,10 +12,9 @@ class AbstractNode(ABC):
             else EmptyTablebaseManager(GameClass)
         self.verbose = verbose
 
-        moves = self.GameClass.get_possible_moves(position)
-        if self.GameClass.is_over(position, moves):
+        if self.GameClass.is_over(position):
             self.fully_expanded = True
-            self.outcome = GameClass.get_winner(position, moves)
+            self.outcome = GameClass.get_winner(position)
         else:
             self.fully_expanded = False
             self.outcome = None  # this will be None if fully_expanded is False, otherwise it will be either -1, 0, or 1
