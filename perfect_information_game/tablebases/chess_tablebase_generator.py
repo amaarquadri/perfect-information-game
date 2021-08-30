@@ -1,6 +1,7 @@
 import pickle
 import numpy as np
-from perfect_information_game.tablebases import ChessTablebaseManager, SymmetryTransform, get_verified_chess_subclass
+from perfect_information_game.tablebases import ChessTablebaseManager, SymmetryTransform, get_verified_chess_subclass, \
+    TablebaseException
 from perfect_information_game.utils import get_training_path
 from functools import partial
 
@@ -31,11 +32,13 @@ class ChessTablebaseGenerator:
             self.best_move = None
             self.best_symmetry_transform = None
 
-            if self.GameClass.is_over(state):
-                self.outcome = self.GameClass.get_winner(state)
-                self.terminal_distance = 0
+            self.outcome, self.terminal_distance = tablebase_manager.query_position(state, outcome_only=True)
+            if not np.isnan(self.outcome):
+                # if position was found in an existing tablebase
+                self.terminal = True
                 return  # skip populating children
             else:
+                self.terminal = False
                 # assume that everything is a draw (by fortress) unless proven otherwise
                 # this will get overwritten with a win if any child node is proven to be a win
                 # this will get overwritten with a loss if all child nodes are proven to be a loss
@@ -53,11 +56,9 @@ class ChessTablebaseGenerator:
                     self.children_symmetry_transforms.append(symmetry_transform)
                 else:
                     node = ChessTablebaseGenerator.Node(self.GameClass, move, move_descriptor, tablebase_manager)
-                    node.children = []
-                    node.outcome, node.terminal_distance = tablebase_manager.query_position(move, outcome_only=True)
-                    if np.isnan(node.outcome) or np.isnan(node.terminal_distance):
-                        raise ValueError(
-                            f'Could not find position in existing tablebase! descriptor = {move_descriptor}')
+                    if not node.terminal:
+                        raise TablebaseException(f'Required position with descriptor {move_descriptor} '
+                                                 f'was not found in an existing tablebase!')
                     self.children.append(node)
                     self.children_symmetry_transforms.append(SymmetryTransform.identity(self.GameClass))
 
@@ -69,7 +70,7 @@ class ChessTablebaseGenerator:
             """
             :return: True if an update was made.
             """
-            if len(self.children) == 0:
+            if self.terminal:
                 # this was a terminal node from the start
                 # (either due to the game ending, or simplification to another descriptor)
                 # so there is nothing to update
@@ -147,8 +148,7 @@ class ChessTablebaseGenerator:
             """
             The node's destroy_connections function must be called first.
             """
-            if self.best_move is None:
-                # this node was terminal
+            if self.terminal:
                 return None
 
             if type(self.best_move) is not bytes:
