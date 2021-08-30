@@ -680,10 +680,27 @@ class Chess(Game):
             en_passant_row
 
     @classmethod
-    def get_position_descriptor(cls, state):
+    def get_position_descriptor(cls, state, pawn_ranks=False):
+        """
+        :param state:
+        :param pawn_ranks: If True, then all pawns will be followed by their rank from their own perspectives.
+                           For example, KP7kp3.
+        """
         piece_counts = [np.sum(state[:, :, i] == 1) for i in range(12)]
-        return ''.join([piece_count * letter
-                        for piece_count, letter in zip(piece_counts, cls.PIECE_LETTERS)])
+        descriptor = ''.join([piece_count * letter
+                              for piece_count, letter in zip(piece_counts, cls.PIECE_LETTERS)])
+
+        if pawn_ranks:
+            for pawn, rank_func in [(cls.WHITE_PAWN, lambda i: 8 - i),
+                                    (cls.BLACK_PAWN, lambda i: i + 1)]:
+                # rank_func maps the row i, to the corresponding rank from that players perspective
+                pawn_ranks = [rank_func(i) for i, _ in np.argwhere(state[:, :, pawn] == 1)]
+                pawn_ranks = sorted(pawn_ranks, reverse=True)  # sort so that further advanced pawns are included first
+                pawn_descriptors = [cls.PIECE_LETTERS[pawn] + str(rank) for rank in pawn_ranks]
+                # replace the letters for the pawns with the updated pawn_descriptors which include the rank numbers
+                descriptor = ''.join(alternate_iterables(descriptor.split(cls.PIECE_LETTERS[pawn]),
+                                                         pawn_descriptors))
+        return descriptor
 
     @classmethod
     def is_draw_by_insufficient_material(cls, state):
