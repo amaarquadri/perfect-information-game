@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import numpy as np
-from typing import Optional, Sequence, Tuple, Literal
+from typing import Optional, Sequence, Tuple, Literal, Union, Any
 
 
 # noinspection PyUnresolvedReferences
@@ -162,23 +162,26 @@ class Game(ABC):
         raise NotImplementedError()
 
     @classmethod
-    def encode_board_bytes(cls, state):
+    def encode_board_bytes(cls, state: np.ndarray) -> bytes:
         """
         Encodes the given state into a bytes object.
         Subclasses should strive to use the fewest number of bytes possible.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     @classmethod
-    def parse_board_bytes(cls, board_bytes):
+    def parse_board_bytes(cls, board_bytes: bytes) -> np.ndarray:
         """
         Parses the given bytes object into the resulting board state.
         This is the inverse of encode_board_bytes.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     @classmethod
-    def encode_move_bytes(cls, move_data, outcome, terminal_distance):
+    def encode_move_bytes(cls, move_data: Any, outcome: Literal[-1, 0, 1],
+                          # terminal_distance should be type hinted as Union[int, Literal[np.inf]],
+                          # but Python typing doesn't support float literals
+                          terminal_distance: Union[int, float]) -> bytes:
         """
         Encodes the given data into a bytes object.
         Subclasses should strive to use the fewest number of bytes possible.
@@ -191,12 +194,12 @@ class Game(ABC):
                                   This may be np.inf, in which case the implementation should use a
                                   large finite number in its place.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     @classmethod
-    def parse_move_bytes(cls, move_bytes):
+    def parse_move_bytes(cls, move_bytes: bytes) -> Tuple[Any, Literal[-1, 0, 1], Union[int, float]]:
         """
         Parses the given bytes object into the resulting (move_data, outcome, terminal_distance) tuple.
         This is the inverse of encode_move_bytes.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
