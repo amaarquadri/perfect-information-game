@@ -47,8 +47,8 @@ def choose_random(values):
     return values[np.random.randint(len(values))]
 
 
-def one_hot(index, size):
-    result = np.zeros(size)
+def one_hot(index, size, dtype=None):
+    result = np.zeros(size, dtype=dtype)
     result[index] = 1
     return result
 
