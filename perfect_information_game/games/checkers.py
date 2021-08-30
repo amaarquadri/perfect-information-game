@@ -16,12 +16,12 @@ class Checkers(Game):
     Double jumps are not possible after a piece becomes a king.
     """
 
-    RED = np.array(5 * [8 * [0]] + [4 * [1, 0]] + [4 * [0, 1]] + [4 * [1, 0]])
-    BLACK = np.array([4 * [0, 1]] + [4 * [1, 0]] + [4 * [0, 1]] + 5 * [8 * [0]])
-    STARTING_STATE = np.stack([RED, np.zeros((8, 8)),
-                               BLACK, np.zeros((8, 8)),
-                               np.zeros((8, 8)),
-                               np.ones((8, 8))], axis=-1).astype(np.uint8)
+    RED = np.array(5 * [8 * [0]] + [4 * [1, 0]] + [4 * [0, 1]] + [4 * [1, 0]], dtype=np.uint8)
+    BLACK = np.array([4 * [0, 1]] + [4 * [1, 0]] + [4 * [0, 1]] + 5 * [8 * [0]], dtype=np.uint8)
+    STARTING_STATE = np.stack([RED, np.zeros((8, 8), dtype=np.uint8),
+                               BLACK, np.zeros((8, 8), dtype=np.uint8),
+                               np.zeros((8, 8), dtype=np.uint8),
+                               np.ones((8, 8), dtype=np.uint8)], axis=-1)
     STATE_SHAPE = STARTING_STATE.shape  # 8, 8, 6
     ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 8, 8, 6
     BOARD_SHAPE = (ROWS, COLUMNS)  # 8, 8

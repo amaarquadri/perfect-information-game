@@ -4,7 +4,9 @@ from perfect_information_game.utils import iter_product
 
 
 class Connect4(Game):
-    STARTING_STATE = np.stack([np.zeros((6, 7)), np.zeros((6, 7)), np.ones((6, 7))], axis=-1).astype(np.uint8)
+    STARTING_STATE = np.stack([np.zeros((6, 7), dtype=np.uint8),
+                               np.zeros((6, 7), dtype=np.uint8),
+                               np.ones((6, 7), dtype=np.uint8)], axis=-1)
     STATE_SHAPE = STARTING_STATE.shape  # 6, 7, 3
     ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 6, 7, 3
     BOARD_SHAPE = (ROWS, COLUMNS)  # 6, 7

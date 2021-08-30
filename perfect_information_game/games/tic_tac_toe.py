@@ -5,7 +5,9 @@ from perfect_information_game.utils import iter_product
 
 class TicTacToe(Game):
     W = 3
-    STARTING_STATE = np.stack([np.zeros((W, W)), np.zeros((W, W)), np.ones((W, W))], axis=-1).astype(np.uint8)
+    STARTING_STATE = np.stack([np.zeros((W, W), dtype=np.uint8),
+                               np.zeros((W, W), dtype=np.uint8),
+                               np.ones((W, W), dtype=np.uint8)], axis=-1)
     STATE_SHAPE = STARTING_STATE.shape  # 3, 3, 3
     ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 3, 3, 3
     BOARD_SHAPE = (ROWS, COLUMNS)  # 3, 3

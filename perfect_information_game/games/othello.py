@@ -11,10 +11,10 @@ class Othello(Game):
                                         [0, 0, 0, 1, 0, 0, 0, 0],
                                         [0, 0, 0, 0, 0, 0, 0, 0],
                                         [0, 0, 0, 0, 0, 0, 0, 0],
-                                        [0, 0, 0, 0, 0, 0, 0, 0]])
+                                        [0, 0, 0, 0, 0, 0, 0, 0]], dtype=np.uint8)
     PLAYER_2_STARTING_BOARD = np.rot90(PLAYER_1_STARTING_BOARD)
     STARTING_STATE = np.stack([PLAYER_1_STARTING_BOARD, PLAYER_2_STARTING_BOARD,
-                               np.ones_like(PLAYER_1_STARTING_BOARD)], axis=-1).astype(np.uint8)
+                               np.ones_like(PLAYER_1_STARTING_BOARD)], axis=-1)
 
     STATE_SHAPE = STARTING_STATE.shape  # 8, 8, 3
     ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # 8, 8, 3

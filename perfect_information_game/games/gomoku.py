@@ -7,7 +7,9 @@ class Gomoku(Game):
     # TODO: replace TicTacToe, MultiTicTacToe, and Gomoku with a single generalization
     W = 19  # board width
     K = 5  # number in a row needed to win
-    STARTING_STATE = np.stack([np.zeros((W, W)), np.zeros((W, W)), np.ones((W, W))], axis=-1).astype(np.uint8)
+    STARTING_STATE = np.stack([np.zeros((W, W), dtype=np.uint8),
+                               np.zeros((W, W), dtype=np.uint8),
+                               np.ones((W, W), dtype=np.uint8)], axis=-1)
     STATE_SHAPE = STARTING_STATE.shape  # W, W, W
     ROWS, COLUMNS, FEATURE_COUNT = STATE_SHAPE  # W, W, W
     BOARD_SHAPE = (ROWS, COLUMNS)  # W, W
