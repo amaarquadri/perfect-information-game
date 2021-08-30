@@ -70,7 +70,9 @@ class ChessTablebaseGenerator:
             :return: True if an update was made.
             """
             if len(self.children) == 0:
-                # this was a terminal node from the start, so there is nothing to update
+                # this was a terminal node from the start
+                # (either due to the game ending, or simplification to another descriptor)
+                # so there is nothing to update
                 return False
 
             losing_outcome = -1 if self.is_maximizing else 1
@@ -241,6 +243,10 @@ class ChessTablebaseGenerator:
         return nodes
 
     def generate_tablebase(self, descriptor, pool):
+        self.tablebase_manager.update_tablebase_list()
+        if descriptor in self.tablebase_manager.available_tablebases:
+            raise ValueError('Tablebase for the given descriptor already exists!')
+
         nodes_path = f'{get_training_path(self.GameClass)}/tablebases/nodes/{descriptor}_nodes.pickle'
         try:
             with open(nodes_path, 'rb') as file:

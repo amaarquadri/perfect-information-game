@@ -60,6 +60,32 @@ def iter_product(shape, actions=None):
     return product(*values)
 
 
+def get_np_uint_type(bits):
+    if bits == 8:
+        return np.uint8
+    if bits == 16:
+        return np.uint16
+    if bits == 32:
+        return np.uint32
+    if bits == 64:
+        return np.uint64
+    raise ValueError(f'No numpy data type for {bits} bit unsigned integer!')
+
+
+def alternate_iterables(*iterables):
+    """
+    This function is a generator that alternates between yielding elements from the given iterables
+    """
+    iterators = [iter(iterable) for iterable in iterables]
+
+    while True:
+        try:
+            for iterator in iterators:
+                yield next(iterator)
+        except StopIteration:
+            break
+
+
 def test():
     for i, j, k, l in iter_product((2, 3, 4), ['a', 'b', 'c']):
         print(i, j, k, l)
