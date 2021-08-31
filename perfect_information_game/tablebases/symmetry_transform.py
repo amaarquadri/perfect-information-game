@@ -14,7 +14,7 @@ class SymmetryTransform:
         self.GameClass = get_verified_chess_subclass(GameClass)
         self.flip_colors = self.flip_i = self.flip_j = self.flip_diagonal = False
 
-        if self.GameClass.heuristic(state) < 0:
+        if self.should_swap_colours(state):
             # black is attacking, so switch white and black
             self.flip_colors = True
             i, j = self.GameClass.get_king_pos(state, self.GameClass.BLACK_SLICE)
@@ -33,6 +33,23 @@ class SymmetryTransform:
             j = self.GameClass.COLUMNS - 1 - j
         if pawnless and not (i <= j):
             self.flip_diagonal = True
+
+    def should_swap_colours(self, state):
+        heuristic = self.GameClass.heuristic(state)
+        if heuristic > 0:
+            # white is up in material, so don't swap colours
+            return False
+        if heuristic < 0:
+            # black is up in material, so swap colours
+            return True
+        # compare the number of pawns on each rank, from most advanced to least advanced pawns
+        # no need to check second rank pawns, because if everything else is equal they must be equal too
+        for rank in range(7, 2, -1):
+            if np.sum(state[rank - 1, :, self.GameClass.BLACK_PAWN]) > \
+                    np.sum(state[8 - rank, :, self.GameClass.WHITE_PAWN]):
+                # black has more pawns than white on this rank, so swap colours
+                return True
+        return False
 
     @staticmethod
     def identity(GameClass):
