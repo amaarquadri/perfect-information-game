@@ -18,7 +18,15 @@ class ChessTablebaseGenerator:
     The tablebase will not support any positions where en passant or castling is possible.
     """
     class Node:
-        def __init__(self, GameClass, state, descriptor, tablebase_manager):
+        def __init__(self, GameClass, state, descriptor, tablebase_manager, require_terminal=False):
+            """
+            :param GameClass:
+            :param state:
+            :param descriptor:
+            :param tablebase_manager:
+            :param require_terminal: If True, then a TablebaseException will be raised if this node is not terminal.
+                                     Note that this ensures that the children will never be populated.
+            """
             self.GameClass = get_verified_chess_subclass(GameClass)
 
             # since many nodes will be stored in memory at once during generation, only the board_bytes will be stored
@@ -38,6 +46,9 @@ class ChessTablebaseGenerator:
                 self.terminal = True
                 return  # skip populating children
             else:
+                if require_terminal:
+                    raise TablebaseException(f'Required position with descriptor {descriptor} '
+                                             f'was not found in an existing tablebase!')
                 self.terminal = False
                 # assume that everything is a draw (by fortress) unless proven otherwise
                 # this will get overwritten with a win if any child node is proven to be a win
@@ -55,10 +66,10 @@ class ChessTablebaseGenerator:
                     self.children.append(move_board_bytes)
                     self.children_symmetry_transforms.append(symmetry_transform)
                 else:
-                    node = ChessTablebaseGenerator.Node(self.GameClass, move, move_descriptor, tablebase_manager)
-                    if not node.terminal:
-                        raise TablebaseException(f'Required position with descriptor {move_descriptor} '
-                                                 f'was not found in an existing tablebase!')
+                    # create this node with require_terminal=True so that if it is not terminal a TablebaseException
+                    # will be raised right away, before its children are populated
+                    node = ChessTablebaseGenerator.Node(self.GameClass, move, move_descriptor, tablebase_manager,
+                                                        require_terminal=True)
                     self.children.append(node)
                     self.children_symmetry_transforms.append(SymmetryTransform.identity(self.GameClass))
 
