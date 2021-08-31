@@ -59,7 +59,7 @@ class ChessTablebaseGenerator:
             # populate children, but leave references to other nodes as board_bytes for now
             for move in self.GameClass.get_possible_moves(state):
                 # need to compare descriptors (piece count is not robust to pawn promotions)
-                move_descriptor = self.GameClass.get_position_descriptor(move)
+                move_descriptor = self.GameClass.get_position_descriptor(move, pawn_ranks=True)
                 if move_descriptor == descriptor:
                     symmetry_transform = SymmetryTransform(self.GameClass, move)
                     move_board_bytes = self.GameClass.encode_board_bytes(symmetry_transform.transform_state(move))
