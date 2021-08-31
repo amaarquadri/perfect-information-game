@@ -267,6 +267,7 @@ class ChessTablebaseGenerator:
                 # ignore states with pawns on the first or last ranks
                 continue
 
+            # TODO: check if en passant might be possible for the piece_config, and compute all results if so
             node = ChessTablebaseGenerator.Node(self.GameClass, state, descriptor, self.tablebase_manager)
             nodes[node.board_bytes] = node
         return nodes
@@ -275,6 +276,9 @@ class ChessTablebaseGenerator:
         self.tablebase_manager.update_tablebase_list()
         if descriptor in self.tablebase_manager.available_tablebases:
             raise ValueError('Tablebase for the given descriptor already exists!')
+
+        if 'p' in descriptor and 'P' in descriptor:
+            raise NotImplementedError('No support for positions with pawns of both colours yet due to en passant.')
 
         nodes_path = f'{get_training_path(self.GameClass)}/tablebases/nodes/{descriptor}_nodes.pickle'
         try:
