@@ -51,7 +51,7 @@ class AbstractTablebaseManager(ABC):
                 self.tablebases[descriptor] = pickle.load(file)
 
     def clear_tablebases(self):
-        self.tablebases = {}
+        self.tablebases.clear()
 
     @abstractmethod
     def query_position(self, state, outcome_only=False):
