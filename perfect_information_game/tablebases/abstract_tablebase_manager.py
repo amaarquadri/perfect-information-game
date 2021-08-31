@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from os import listdir
+from sys import getsizeof
+from cachetools import LRUCache
 import pickle
 from perfect_information_game.utils import get_training_path
 from perfect_information_game.utils import choose_random
@@ -19,11 +21,16 @@ class AbstractTablebaseManager(ABC):
     The values are bytes objects which represent (move_data, outcome, terminal_distance) tuples as defined by
     GameClass.parse_move_bytes.
     """
-    def __init__(self, GameClass):
+    def __init__(self, GameClass, tablebase_cache_mb=256):
+        """
+        :param tablebase_cache_mb: The maximum size of tablebases that will be stored in memory at once.
+                                   This must be at least as large as the largest tablebase that will be loaded.
+                                   The least recently used tablebases will be unloaded to clear up capacity when needed.
+        """
         self.GameClass = GameClass
 
-        # dictionary mapping descriptors to tablebases
-        self.tablebases = {}
+        # cache mapping descriptors to tablebases
+        self.tablebases = LRUCache(tablebase_cache_mb * 2 ** 20, getsizeof)
 
         self.available_tablebases = []
         self.update_tablebase_list()
