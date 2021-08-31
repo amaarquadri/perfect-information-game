@@ -190,7 +190,19 @@ class ChessTablebaseGenerator:
 
         The descriptor must have white as the side who is up in material (or equal).
         """
-        pieces = np.array([self.GameClass.PIECE_LETTERS.index(letter) for letter in descriptor])
+        if descriptor[0] != self.GameClass.PIECE_LETTERS[self.GameClass.WHITE_KING]:
+            raise ValueError('Descriptor must start with white king!')
+
+        def rank_to_row(rank, is_white):
+            return 8 - rank if is_white else rank - 1
+        pieces = np.array([self.GameClass.PIECE_LETTERS.index(letter)
+                           for letter in descriptor if letter.isalpha()])
+        restrictions = [rank_to_row(int(descriptor[i + 1]), letter.isupper())
+                        if i + 1 < len(descriptor) and descriptor[i + 1].isnumeric() else None
+                        for i, letter in enumerate(descriptor) if letter.isalpha()]
+        if restrictions[0] is not None:
+            raise ValueError('White king position cannot have rank restrictions!')
+
         if np.sum(pieces == self.GameClass.WHITE_KING) != 1 or np.sum(pieces == self.GameClass.BLACK_KING) != 1:
             raise ValueError('Descriptor must have exactly 1 white king and 1 black king!')
 
@@ -200,8 +212,10 @@ class ChessTablebaseGenerator:
             else SymmetryTransform.UNIQUE_SQUARE_INDICES
         unique_squares_index = 0
 
-        piece_config = [unique_squares[unique_squares_index] + (self.GameClass.KING, )] + \
-                       [(0, 0, piece) for piece in pieces if piece != self.GameClass.KING]
+        piece_config = [unique_squares[unique_squares_index] + (self.GameClass.WHITE_KING, )] + \
+                       [(0 if restriction is None else restriction, 0, piece)
+                        for piece, restriction in zip(pieces, restrictions)
+                        if piece != self.GameClass.WHITE_KING]
 
         yielded_configurations = set()
 
@@ -216,6 +230,10 @@ class ChessTablebaseGenerator:
             for pointer in range(piece_count - 1, 0, -1):  # intentionally skip index 0 because it is handled separately
                 piece_config[pointer] = piece_config[pointer][0], piece_config[pointer][1] + 1, piece_config[pointer][2]
                 if piece_config[pointer][1] == self.GameClass.COLUMNS:
+                    if restrictions[pointer] is not None:
+                        piece_config[pointer] = piece_config[pointer][0], 0, piece_config[pointer][2]
+                        continue
+
                     piece_config[pointer] = piece_config[pointer][0] + 1, 0, piece_config[pointer][2]
                     if piece_config[pointer][0] == self.GameClass.ROWS:
                         piece_config[pointer] = 0, 0, piece_config[pointer][2]
