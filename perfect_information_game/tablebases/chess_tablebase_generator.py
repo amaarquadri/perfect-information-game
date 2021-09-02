@@ -329,3 +329,45 @@ class ChessTablebaseGenerator:
             pickle.dump(tablebase, file)
 
         self.tablebase_manager.update_tablebase_list()
+
+    @staticmethod
+    def generate_descriptors(piece_count):
+        if piece_count < 2:
+            raise ValueError('Must be at least two pieces!')
+        if piece_count == 2:
+            yield 'Kk'
+            return
+        pieces = 'QRBN'
+        # values = {'Q': 9, 'R': 5, 'B': 3.25, 'N': 3}
+        if piece_count == 3:
+            for piece in pieces:
+                yield f'K{piece}k'
+            for rank in range(7, 1, -1):
+                yield f'KP{rank}k'
+        if piece_count == 4:
+            # two pieces
+            for i, strong_piece in enumerate(pieces):
+                for weak_piece in pieces[i:]:
+                    yield f'K{strong_piece}{weak_piece}k'
+                    yield f'K{strong_piece}k{weak_piece.lower()}'
+            # one pawn one piece
+            for piece in pieces:
+                for rank in range(7, 1, -1):
+                    yield f'K{piece}P{rank}k'
+                    yield f'K{piece}kp{rank}'
+            # two pawns
+            for strong_rank in range(7, 1, -1):
+                for weak_rank in range(strong_rank, 1, -1):
+                    yield f'KP{strong_rank}P{weak_rank}k'
+                    yield f'KP{strong_rank}kp{weak_rank}'
+        if piece_count >= 5:
+            raise NotImplementedError()
+            # for i, strong_piece in enumerate(pieces):
+            #     for j, middle_piece in enumerate(pieces[i:]):
+            #         for weak_piece in pieces[j:]:
+            #             yield f'K{strong_piece}{middle_piece}{weak_piece}k'
+            #             yield f'K{strong_piece}{middle_piece}k{weak_piece.lower()}'
+            #             if values[strong_piece] > values[middle_piece] + values[weak_piece]:
+            #                 yield f'K{strong_piece}k{middle_piece.lower()}{weak_piece.lower()}'
+            #             else:
+            #                 yield f'K{middle_piece}{weak_piece}k{strong_piece.lower()}'
