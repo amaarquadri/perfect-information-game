@@ -287,8 +287,18 @@ class ChessTablebaseGenerator:
             print(f'Using existing nodes file: {nodes_path}')
         except FileNotFoundError:
             nodes = {}
-            for some_nodes in pool.map(partial(self.create_nodes, descriptor=descriptor),
-                                       self.piece_config_generator(descriptor)):
+            """
+            Choosing a reasonable chunksize is a complex task.
+            Too small and the overhead from inter-process communication for each batch will be too large.
+            Too large and the potential lost capacity at the end when some workers have nothing to do will be too large.
+            As a rough approximation, we can minimize the following: 
+            task_to_overhead_ratio * (threads - 1) * chunksize + tasks / chunksize
+            Making the approximations: task_to_overhead_ratio = 500, threads = 15, tasks = 8 * 64 * 64 * 64
+            And minimizing gives chunksize ~ 20
+            """
+            for some_nodes in pool.imap_unordered(partial(self.create_nodes, descriptor=descriptor),
+                                                  self.piece_config_generator(descriptor),
+                                                  chunksize=20):
                 nodes.update(some_nodes)
 
             with open(nodes_path, 'wb') as file:
