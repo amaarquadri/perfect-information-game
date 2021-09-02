@@ -1,6 +1,7 @@
 import pickle
 import numpy as np
-from perfect_information_game.tablebases import ChessTablebaseManager, SymmetryTransform, get_verified_chess_subclass
+from perfect_information_game.tablebases import ChessTablebaseManager, SymmetryTransform, get_verified_chess_subclass, \
+    TablebaseException
 from perfect_information_game.utils import get_training_path
 from functools import partial
 
@@ -17,7 +18,15 @@ class ChessTablebaseGenerator:
     The tablebase will not support any positions where en passant or castling is possible.
     """
     class Node:
-        def __init__(self, GameClass, state, descriptor, tablebase_manager):
+        def __init__(self, GameClass, state, descriptor, tablebase_manager, require_terminal=False):
+            """
+            :param GameClass:
+            :param state:
+            :param descriptor:
+            :param tablebase_manager:
+            :param require_terminal: If True, then a TablebaseException will be raised if this node is not terminal.
+                                     Note that this ensures that the children will never be populated.
+            """
             self.GameClass = get_verified_chess_subclass(GameClass)
 
             # since many nodes will be stored in memory at once during generation, only the board_bytes will be stored
@@ -31,11 +40,16 @@ class ChessTablebaseGenerator:
             self.best_move = None
             self.best_symmetry_transform = None
 
-            if self.GameClass.is_over(state):
-                self.outcome = self.GameClass.get_winner(state)
-                self.terminal_distance = 0
+            self.outcome, self.terminal_distance = tablebase_manager.query_position(state, outcome_only=True)
+            if not np.isnan(self.outcome):
+                # if position was found in an existing tablebase
+                self.terminal = True
                 return  # skip populating children
             else:
+                if require_terminal:
+                    raise TablebaseException(f'Required position with descriptor {descriptor} '
+                                             f'was not found in an existing tablebase!')
+                self.terminal = False
                 # assume that everything is a draw (by fortress) unless proven otherwise
                 # this will get overwritten with a win if any child node is proven to be a win
                 # this will get overwritten with a loss if all child nodes are proven to be a loss
@@ -45,19 +59,17 @@ class ChessTablebaseGenerator:
             # populate children, but leave references to other nodes as board_bytes for now
             for move in self.GameClass.get_possible_moves(state):
                 # need to compare descriptors (piece count is not robust to pawn promotions)
-                move_descriptor = self.GameClass.get_position_descriptor(move)
+                move_descriptor = self.GameClass.get_position_descriptor(move, pawn_ranks=True)
                 if move_descriptor == descriptor:
                     symmetry_transform = SymmetryTransform(self.GameClass, move)
                     move_board_bytes = self.GameClass.encode_board_bytes(symmetry_transform.transform_state(move))
                     self.children.append(move_board_bytes)
                     self.children_symmetry_transforms.append(symmetry_transform)
                 else:
-                    node = ChessTablebaseGenerator.Node(self.GameClass, move, move_descriptor, tablebase_manager)
-                    node.children = []
-                    node.outcome, node.terminal_distance = tablebase_manager.query_position(move, outcome_only=True)
-                    if np.isnan(node.outcome) or np.isnan(node.terminal_distance):
-                        raise ValueError(
-                            f'Could not find position in existing tablebase! descriptor = {move_descriptor}')
+                    # create this node with require_terminal=True so that if it is not terminal a TablebaseException
+                    # will be raised right away, before its children are populated
+                    node = ChessTablebaseGenerator.Node(self.GameClass, move, move_descriptor, tablebase_manager,
+                                                        require_terminal=True)
                     self.children.append(node)
                     self.children_symmetry_transforms.append(SymmetryTransform.identity(self.GameClass))
 
@@ -69,7 +81,7 @@ class ChessTablebaseGenerator:
             """
             :return: True if an update was made.
             """
-            if len(self.children) == 0:
+            if self.terminal:
                 # this was a terminal node from the start
                 # (either due to the game ending, or simplification to another descriptor)
                 # so there is nothing to update
@@ -147,9 +159,8 @@ class ChessTablebaseGenerator:
             """
             The node's destroy_connections function must be called first.
             """
-            if self.best_move is None:
-                # this node was terminal
-                return None
+            if self.terminal:
+                raise TablebaseException('Cannot get best_move_data from a terminal node!')
 
             if type(self.best_move) is not bytes:
                 print('Warning: destroy_connections not called. Calling now...')
@@ -179,7 +190,19 @@ class ChessTablebaseGenerator:
 
         The descriptor must have white as the side who is up in material (or equal).
         """
-        pieces = np.array([self.GameClass.PIECE_LETTERS.index(letter) for letter in descriptor])
+        if descriptor[0] != self.GameClass.PIECE_LETTERS[self.GameClass.WHITE_KING]:
+            raise ValueError('Descriptor must start with white king!')
+
+        def rank_to_row(rank, is_white):
+            return 8 - rank if is_white else rank - 1
+        pieces = np.array([self.GameClass.PIECE_LETTERS.index(letter)
+                           for letter in descriptor if letter.isalpha()])
+        restrictions = [rank_to_row(int(descriptor[i + 1]), letter.isupper())
+                        if i + 1 < len(descriptor) and descriptor[i + 1].isnumeric() else None
+                        for i, letter in enumerate(descriptor) if letter.isalpha()]
+        if restrictions[0] is not None:
+            raise ValueError('White king position cannot have rank restrictions!')
+
         if np.sum(pieces == self.GameClass.WHITE_KING) != 1 or np.sum(pieces == self.GameClass.BLACK_KING) != 1:
             raise ValueError('Descriptor must have exactly 1 white king and 1 black king!')
 
@@ -189,8 +212,10 @@ class ChessTablebaseGenerator:
             else SymmetryTransform.UNIQUE_SQUARE_INDICES
         unique_squares_index = 0
 
-        piece_config = [unique_squares[unique_squares_index] + (self.GameClass.KING, )] + \
-                       [(0, 0, piece) for piece in pieces if piece != self.GameClass.KING]
+        piece_config = [unique_squares[unique_squares_index] + (self.GameClass.WHITE_KING, )] + \
+                       [(0 if restriction is None else restriction, 0, piece)
+                        for piece, restriction in zip(pieces, restrictions)
+                        if piece != self.GameClass.WHITE_KING]
 
         yielded_configurations = set()
 
@@ -205,6 +230,10 @@ class ChessTablebaseGenerator:
             for pointer in range(piece_count - 1, 0, -1):  # intentionally skip index 0 because it is handled separately
                 piece_config[pointer] = piece_config[pointer][0], piece_config[pointer][1] + 1, piece_config[pointer][2]
                 if piece_config[pointer][1] == self.GameClass.COLUMNS:
+                    if restrictions[pointer] is not None:
+                        piece_config[pointer] = piece_config[pointer][0], 0, piece_config[pointer][2]
+                        continue
+
                     piece_config[pointer] = piece_config[pointer][0] + 1, 0, piece_config[pointer][2]
                     if piece_config[pointer][0] == self.GameClass.ROWS:
                         piece_config[pointer] = 0, 0, piece_config[pointer][2]
@@ -220,7 +249,7 @@ class ChessTablebaseGenerator:
         nodes = {}
         for is_white_turn in (True, False):
             # create the state
-            state = np.zeros(self.GameClass.STATE_SHAPE)
+            state = np.zeros(self.GameClass.STATE_SHAPE, dtype=np.uint8)
             for i, j, k in piece_config:
                 state[i, j, k] = 1
             if is_white_turn:
@@ -238,6 +267,7 @@ class ChessTablebaseGenerator:
                 # ignore states with pawns on the first or last ranks
                 continue
 
+            # TODO: check if en passant might be possible for the piece_config, and compute all results if so
             node = ChessTablebaseGenerator.Node(self.GameClass, state, descriptor, self.tablebase_manager)
             nodes[node.board_bytes] = node
         return nodes
@@ -247,6 +277,9 @@ class ChessTablebaseGenerator:
         if descriptor in self.tablebase_manager.available_tablebases:
             raise ValueError('Tablebase for the given descriptor already exists!')
 
+        if 'p' in descriptor and 'P' in descriptor:
+            raise NotImplementedError('No support for positions with pawns of both colours yet due to en passant.')
+
         nodes_path = f'{get_training_path(self.GameClass)}/tablebases/nodes/{descriptor}_nodes.pickle'
         try:
             with open(nodes_path, 'rb') as file:
@@ -254,8 +287,18 @@ class ChessTablebaseGenerator:
             print(f'Using existing nodes file: {nodes_path}')
         except FileNotFoundError:
             nodes = {}
-            for some_nodes in pool.map(partial(self.create_nodes, descriptor=descriptor),
-                                       self.piece_config_generator(descriptor)):
+            """
+            Choosing a reasonable chunksize is a complex task.
+            Too small and the overhead from inter-process communication for each batch will be too large.
+            Too large and the potential lost capacity at the end when some workers have nothing to do will be too large.
+            As a rough approximation, we can minimize the following: 
+            task_to_overhead_ratio * (threads - 1) * chunksize + tasks / chunksize
+            Making the approximations: task_to_overhead_ratio = 500, threads = 15, tasks = 8 * 64 * 64 * 64
+            And minimizing gives chunksize ~ 20
+            """
+            for some_nodes in pool.imap_unordered(partial(self.create_nodes, descriptor=descriptor),
+                                                  self.piece_config_generator(descriptor),
+                                                  chunksize=20):
                 nodes.update(some_nodes)
 
             with open(nodes_path, 'wb') as file:
@@ -275,16 +318,56 @@ class ChessTablebaseGenerator:
             if iterations % 10 == 0:
                 print(f'{iterations} iterations completed')
 
-        nodes = list(nodes.values())
+        nodes = [node for node in nodes.values() if not node.terminal]  # ensure that terminal nodes are not included
         for node in nodes:
             node.destroy_connections()
         node_move_bytes = pool.map(partial(ChessTablebaseGenerator.Node.get_move_bytes, GameClass=self.GameClass),
                                    nodes)
-        tablebase = {node.board_bytes: move_bytes for node, move_bytes in zip(nodes, node_move_bytes)
-                     # this check ensures that terminal nodes are not included
-                     if move_bytes is not None}
+        tablebase = {node.board_bytes: move_bytes for node, move_bytes in zip(nodes, node_move_bytes)}
 
         with open(f'{get_training_path(self.GameClass)}/tablebases/{descriptor}.pickle', 'wb') as file:
             pickle.dump(tablebase, file)
 
         self.tablebase_manager.update_tablebase_list()
+
+    @staticmethod
+    def generate_descriptors(piece_count):
+        if piece_count < 2:
+            raise ValueError('Must be at least two pieces!')
+        if piece_count == 2:
+            yield 'Kk'
+            return
+        pieces = 'QRBN'
+        # values = {'Q': 9, 'R': 5, 'B': 3.25, 'N': 3}
+        if piece_count == 3:
+            for piece in pieces:
+                yield f'K{piece}k'
+            for rank in range(7, 1, -1):
+                yield f'KP{rank}k'
+        if piece_count == 4:
+            # two pieces
+            for i, strong_piece in enumerate(pieces):
+                for weak_piece in pieces[i:]:
+                    yield f'K{strong_piece}{weak_piece}k'
+                    yield f'K{strong_piece}k{weak_piece.lower()}'
+            # one pawn one piece
+            for piece in pieces:
+                for rank in range(7, 1, -1):
+                    yield f'K{piece}P{rank}k'
+                    yield f'K{piece}kp{rank}'
+            # two pawns
+            for strong_rank in range(7, 1, -1):
+                for weak_rank in range(strong_rank, 1, -1):
+                    yield f'KP{strong_rank}P{weak_rank}k'
+                    yield f'KP{strong_rank}kp{weak_rank}'
+        if piece_count >= 5:
+            raise NotImplementedError()
+            # for i, strong_piece in enumerate(pieces):
+            #     for j, middle_piece in enumerate(pieces[i:]):
+            #         for weak_piece in pieces[j:]:
+            #             yield f'K{strong_piece}{middle_piece}{weak_piece}k'
+            #             yield f'K{strong_piece}{middle_piece}k{weak_piece.lower()}'
+            #             if values[strong_piece] > values[middle_piece] + values[weak_piece]:
+            #                 yield f'K{strong_piece}k{middle_piece.lower()}{weak_piece.lower()}'
+            #             else:
+            #                 yield f'K{middle_piece}{weak_piece}k{strong_piece.lower()}'

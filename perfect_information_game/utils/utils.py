@@ -10,6 +10,14 @@ class OptionalPool:
     def map(self, func, iterable, chunksize=None):
         return self.pool.map(func, iterable, chunksize) if self.pool is not None else map(func, iterable)
 
+    def imap_unordered(self, func, iterable, chunksize=1):
+        """
+        If self.pool is not None, then:
+        items are taken from the iterable lazily and
+        the result is not guaranteed to be in the corresponding order of the iterable
+        """
+        return self.pool.imap_unordered(func, iterable, chunksize) if self.pool is not None else map(func, iterable)
+
     def starmap(self, func, iterable, chunksize=None):
         return self.pool.starmap(func, iterable, chunksize) if self.pool is not None \
             else [func(*params) for params in iterable]
@@ -47,8 +55,8 @@ def choose_random(values):
     return values[np.random.randint(len(values))]
 
 
-def one_hot(index, size):
-    result = np.zeros(size)
+def one_hot(index, size, dtype=None):
+    result = np.zeros(size, dtype=dtype)
     result[index] = 1
     return result
 

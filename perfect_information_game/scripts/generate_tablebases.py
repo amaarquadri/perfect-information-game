@@ -7,13 +7,9 @@ def generate_tablebases(threads=12):
     manager = ChessTablebaseManager(GameClass)
     generator = ChessTablebaseGenerator(GameClass)
 
-    TWO_MAN = 'Kk'
-    THREE_MAN = 'KQk,KRk,KBk,KNk,KPk'
-    FOUR_MAN_NO_ENEMY = 'KQQk,KQRk,KQBk,KQNk,KQPk,KRRk,KRBk,KRNk,KRPk,KBBk,KBNk,KBPk,KNNk,KNPk,KPPk'
-    FOUR_MAN_WITH_ENEMY = 'KQkq,KQkr,KQkb,KQkn,KQkp,KRkr,KRkb,KRkn,KRkp,KBkb,KBkn,KBkp,KNkn,KNkp,KPkp'
     with OptionalPool(threads) as pool:
-        for section in [TWO_MAN, THREE_MAN, FOUR_MAN_NO_ENEMY, FOUR_MAN_WITH_ENEMY]:
-            for descriptor in section.split(','):
+        for piece_count in [2, 3, 4]:
+            for descriptor in ChessTablebaseGenerator.generate_descriptors(piece_count):
                 if descriptor in GameClass.DRAWING_DESCRIPTORS:
                     print(f'Skipping drawing descriptor: {descriptor}')
                     continue

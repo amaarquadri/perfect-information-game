@@ -18,7 +18,8 @@ class MonsterChess(Chess):
 
     @classmethod
     def create_monster_state(cls, chess_state, is_double_move):
-        monster_state = np.ones(cls.BOARD_SHAPE) if is_double_move else np.zeros(cls.BOARD_SHAPE)
+        monster_state = np.ones(cls.BOARD_SHAPE, dtype=np.uint8) if is_double_move \
+            else np.zeros(cls.BOARD_SHAPE, dtype=np.uint8)
         return np.concatenate((chess_state[..., :-1],
                                monster_state[..., np.newaxis],
                                chess_state[..., -1][..., np.newaxis]), axis=-1)

@@ -77,24 +77,24 @@ class Chess(Game):
 
         def parse_piece(piece_character):
             if piece_character == '1':
-                return np.zeros(len(cls.PIECE_LETTERS))
+                return np.zeros(len(cls.PIECE_LETTERS), dtype=np.uint8)
             where = np.argwhere(piece_character == np.array(list(cls.PIECE_LETTERS)))
             if len(where) == 0:
                 raise ValueError(f'Invalid piece: {piece_character}')
-            return one_hot(where[0, 0], len(cls.PIECE_LETTERS))
+            return one_hot(where[0, 0], len(cls.PIECE_LETTERS), dtype=np.uint8)
 
         pieces = np.stack([np.stack([parse_piece(piece) for piece in rank], axis=0)
                            for rank in pieces.split('/')], axis=0)
 
-        special_moves = np.zeros((8, 8, 1))
+        special_moves = np.zeros((8, 8, 1), dtype=np.uint8)
         for letter, square in zip('KQkq', ['G1', 'C1', 'G8', 'C8']):
             if letter in castling:
                 special_moves[cls.parse_algebraic_notation(square)] = 1
         if en_passant != '-':
             special_moves[cls.parse_algebraic_notation(en_passant.capitalize())] = 1
 
-        turn = np.full((8, 8, 1), 1 if turn.lower() == 'w' else 0)
-        return np.concatenate((pieces, special_moves, turn), axis=-1).astype(np.uint8)
+        turn = np.full((8, 8, 1), 1 if turn.lower() == 'w' else 0, dtype=np.uint8)
+        return np.concatenate((pieces, special_moves, turn), axis=-1)
 
     @classmethod
     def encode_fen(cls, state):
@@ -204,7 +204,7 @@ class Chess(Game):
         if len(pieces) != piece_count:
             raise ValueError(f'Inconsistent number of pieces! Expected {piece_count} but got {len(pieces)}')
 
-        state = np.zeros(Chess.STATE_SHAPE).astype(np.uint8)
+        state = np.zeros(Chess.STATE_SHAPE, dtype=np.uint8)
         en_passant_processed = False
         for i, j in iter_product(Chess.BOARD_SHAPE):
             if not bitboard[i, j]:
@@ -264,6 +264,7 @@ class Chess(Game):
         The move parameter consists of the tuple (start_i, start_j, end_i, end_j) which represents the coordinates of
         the start and end location of the piece that moved.
         """
+        # TODO: This does not account for pawn promotions!
         start_i, start_j, end_i, end_j = move_data
 
         if terminal_distance < 0:

@@ -35,7 +35,7 @@ class ChessTablebaseManager(AbstractTablebaseManager):
         symmetry_transform = SymmetryTransform(self.GameClass, state)
         transformed_state = symmetry_transform.transform_state(state)
 
-        descriptor = self.GameClass.get_position_descriptor(transformed_state)
+        descriptor = self.GameClass.get_position_descriptor(transformed_state, pawn_ranks=True)
 
         if descriptor in self.GameClass.DRAWING_DESCRIPTORS:
             return (0, 0) if outcome_only else (None, 0, 0)

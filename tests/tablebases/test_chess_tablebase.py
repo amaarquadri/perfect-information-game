@@ -8,7 +8,7 @@ import chess
 import chess.syzygy
 
 
-class TestTablebaseGenerator(unittest.TestCase):
+class TestChessTablebase(unittest.TestCase):
     @staticmethod
     def check_tablebase_for_major_piece(manager, descriptor, mate_in):
         if descriptor not in manager.available_tablebases:
@@ -66,38 +66,38 @@ class TestTablebaseGenerator(unittest.TestCase):
         # TestTablebaseGenerator.check_longest_mate(manager, 'KPk', 28)
 
         # 4 man no enemy
-        TestTablebaseGenerator.check_longest_mate(manager, 'KPPk', 32)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KNNk', 1)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KNPk', 27)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KBPk', 32)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KBNk', 33)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KBBk', 13)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KRPk', 16)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KRNk', 16)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KRBk', 16)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KRRk', 7)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KQPk', 10)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KQNk', 9)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KQBk', 8)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KQRk', 6)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KQQk', 4)
+        TestChessTablebase.check_longest_mate(manager, 'KPPk', 32)
+        TestChessTablebase.check_longest_mate(manager, 'KNNk', 1)
+        TestChessTablebase.check_longest_mate(manager, 'KNPk', 27)
+        TestChessTablebase.check_longest_mate(manager, 'KBPk', 32)
+        TestChessTablebase.check_longest_mate(manager, 'KBNk', 33)
+        TestChessTablebase.check_longest_mate(manager, 'KBBk', 13)
+        TestChessTablebase.check_longest_mate(manager, 'KRPk', 16)
+        TestChessTablebase.check_longest_mate(manager, 'KRNk', 16)
+        TestChessTablebase.check_longest_mate(manager, 'KRBk', 16)
+        TestChessTablebase.check_longest_mate(manager, 'KRRk', 7)
+        TestChessTablebase.check_longest_mate(manager, 'KQPk', 10)
+        TestChessTablebase.check_longest_mate(manager, 'KQNk', 9)
+        TestChessTablebase.check_longest_mate(manager, 'KQBk', 8)
+        TestChessTablebase.check_longest_mate(manager, 'KQRk', 6)
+        TestChessTablebase.check_longest_mate(manager, 'KQQk', 4)
 
         # 4 man with enemy
-        TestTablebaseGenerator.check_longest_mate(manager, 'KPkp', 33, 33)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KNkp', 7, 29)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KBkp', 1, 29)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KRkp', 26, 43)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KQkp', 28, 29)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KNkn', 1, 1)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KBkn', 1, 1)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KRkn', 40, 1)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KQkn', 21)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KBkb', 1, 1)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KRkb', 29)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KQkb', 17)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KRkr', 19, 19)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KQkr', 35, 19)
-        TestTablebaseGenerator.check_longest_mate(manager, 'KQkq', 13, 13)
+        TestChessTablebase.check_longest_mate(manager, 'KPkp', 33, 33)
+        TestChessTablebase.check_longest_mate(manager, 'KNkp', 7, 29)
+        TestChessTablebase.check_longest_mate(manager, 'KBkp', 1, 29)
+        TestChessTablebase.check_longest_mate(manager, 'KRkp', 26, 43)
+        TestChessTablebase.check_longest_mate(manager, 'KQkp', 28, 29)
+        TestChessTablebase.check_longest_mate(manager, 'KNkn', 1, 1)
+        TestChessTablebase.check_longest_mate(manager, 'KBkn', 1, 1)
+        TestChessTablebase.check_longest_mate(manager, 'KRkn', 40, 1)
+        TestChessTablebase.check_longest_mate(manager, 'KQkn', 21)
+        TestChessTablebase.check_longest_mate(manager, 'KBkb', 1, 1)
+        TestChessTablebase.check_longest_mate(manager, 'KRkb', 29)
+        TestChessTablebase.check_longest_mate(manager, 'KQkb', 17)
+        TestChessTablebase.check_longest_mate(manager, 'KRkr', 19, 19)
+        TestChessTablebase.check_longest_mate(manager, 'KQkr', 35, 19)
+        TestChessTablebase.check_longest_mate(manager, 'KQkq', 13, 13)
 
     def test_puzzles(self):
         manager = ChessTablebaseManager(GameClass)
@@ -115,8 +115,8 @@ class TestTablebaseGenerator(unittest.TestCase):
         manager = ChessTablebaseManager(GameClass)
         for descriptor in GameClass.DRAWING_DESCRIPTORS + manager.available_tablebases:
             if len(descriptor) > 2:
-                python_chess_descriptor = TestTablebaseGenerator.to_python_chess_descriptor(descriptor)
-                TestTablebaseGenerator.ensure_python_chess_loaded(python_chess_descriptor)
+                python_chess_descriptor = TestChessTablebase.to_python_chess_descriptor(descriptor)
+                TestChessTablebase.ensure_python_chess_loaded(python_chess_descriptor)
 
         for descriptor in manager.available_tablebases:
             if descriptor == 'KBNk':

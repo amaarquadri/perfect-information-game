@@ -19,10 +19,10 @@ class Battleship(Game):
         10x10x7, where the 7 channels correspond to: p1 pieces, p1 hits, p1 misses, p2 pieces, p2 hits, p2 misses, turn
 
     Placement Network is not feasible:
-        Goal would be to maps a random vector (from latent space) to a placement vector with shape representing all
+        Goal would be to map a random vector (from latent space) to a placement vector with shape representing all
         possible moves: 2x10x9x2x10x8x2x10x8x2x10x7x2x10x6. This is a 77.4144 billion dimensional output space.
         Of this 30,093,975,536 moves are legal (due to no ships overlapping) which is about 39%.
-        Even reducing by a factor of 8 due to symmetry leaves 3,761,746,942 unique legal moves.
+        Even reducing by a factor of 8 due to symmetry leaves 3,761,746,942 unique legal placements.
         Thus this is not feasible, so starting positions will be chosen randomly instead.
 
     Policy Network:
@@ -47,9 +47,9 @@ class Battleship(Game):
         if player_2_pieces is None:
             player_2_pieces = Battleship.get_random_starting_position()
 
-        starting_state = np.stack(player_1_pieces, np.zeros_like(player_1_pieces), np.zeros_like(player_1_pieces),
-                                  player_2_pieces, np.zeros_like(player_2_pieces), np.zeros_like(player_2_pieces),
-                                  np.ones_like(player_1_pieces))
+        starting_state = np.stack((player_1_pieces, np.zeros_like(player_1_pieces), np.zeros_like(player_1_pieces),
+                                   player_2_pieces, np.zeros_like(player_2_pieces), np.zeros_like(player_2_pieces),
+                                   np.ones_like(player_1_pieces)))
         super().__init__(starting_state)
 
     @classmethod
