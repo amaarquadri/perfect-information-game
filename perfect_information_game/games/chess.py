@@ -264,6 +264,7 @@ class Chess(Game):
         The move parameter consists of the tuple (start_i, start_j, end_i, end_j) which represents the coordinates of
         the start and end location of the piece that moved.
         """
+        # TODO: This does not account for pawn promotions!
         start_i, start_j, end_i, end_j = move_data
 
         if terminal_distance < 0:
