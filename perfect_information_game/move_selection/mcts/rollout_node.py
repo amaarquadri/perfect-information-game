@@ -1,36 +1,34 @@
 import numpy as np
-from perfect_information_game.move_selection.mcts import AbstractNode
+from perfect_information_game.move_selection.mcts import AbstractNode, TablebaseNode
+from perfect_information_game.utils import OptionalPool, choose_random
 
 
 class RolloutNode(AbstractNode):
-    def __init__(self, position, parent, GameClass, c=np.sqrt(2), rollout_batch_size=1, pool=None, verbose=False):
-        super().__init__(position, parent, GameClass, c, verbose)
+    def __init__(self, position, parent, GameClass, c=np.sqrt(2), rollout_batch_size=1, pool=None,
+                 tablebase_manager=None, verbose=False):
+        super().__init__(position, parent, GameClass, tablebase_manager, verbose)
+        self.c = c
         self.rollout_batch_size = rollout_batch_size
-        self.pool = pool
+        self.pool = pool if pool is not None else OptionalPool(threads=1)
 
-        if self.fully_expanded:
-            self.rollout_sum = GameClass.get_winner(position)
-            self.rollout_count = np.inf
-        else:
-            self.rollout_sum = 0
-            self.rollout_count = 0
+        # track the sum and the number of rollouts so that the average can be updated as more rollouts are done.
+        self.rollout_sum = 0
+        self.rollout_count = 0
 
     def count_expansions(self):
-        return self.rollout_count
+        return self.rollout_count if not self.fully_expanded else np.inf
 
     def get_evaluation(self):
-        return self.rollout_sum / self.rollout_count if not self.fully_expanded else self.rollout_sum
+        return self.rollout_sum / self.rollout_count if not self.fully_expanded else self.outcome
 
     def ensure_children(self):
-        if self.children is None:
-            self.children = [RolloutNode(move, self, self.GameClass, self.c, self.rollout_batch_size, self.pool,
-                                         self.verbose)
-                             for move in self.GameClass.get_possible_moves(self.position)]
-
-    def set_fully_expanded(self, minimax_evaluation):
-        self.rollout_sum = minimax_evaluation
-        self.rollout_count = np.inf
-        self.fully_expanded = True
+        if self.children is not None:
+            return
+        self.children = [TablebaseNode.attempt_create(move, self, self.GameClass, self.tablebase_manager, self.verbose,
+                                                      lambda: RolloutNode(move, self, self.GameClass, self.c,
+                                                                          self.rollout_batch_size, self.pool,
+                                                                          self.verbose))
+                         for move in self.GameClass.get_possible_moves(self.position)]
 
     def get_puct_heuristic_for_child(self, i):
         exploration_term = self.c * np.sqrt(np.log(self.rollout_count) / self.children[i].rollout_count) \
@@ -38,9 +36,16 @@ class RolloutNode(AbstractNode):
         return exploration_term
 
     def expand(self):
-        rollout_sum = sum(self.pool.starmap(self.execute_single_rollout, [() for _ in range(self.rollout_batch_size)])
-                          if self.pool is not None else
-                          [self.execute_single_rollout() for _ in range(self.rollout_batch_size)])
+        """
+        When a RolloutNode is expanded, random rollouts are performed from the given node.
+        The node as well as all its parents are updated such that each node keeps track of the average rollout outcome
+        out of all rollouts from itself or any of its children.
+
+        Although any node can be expanded, only leaf nodes determined by choose_expansion_node should be expanded.
+        If non-leaf nodes are expanded, then the tree will never grow and the children of the expanded node
+        would not have their average rollout updated.
+        """
+        rollout_sum = sum(self.pool.starmap(self.execute_single_rollout, [() for _ in range(self.rollout_batch_size)]))
 
         # update this node and all its parents
         node = self
@@ -51,8 +56,9 @@ class RolloutNode(AbstractNode):
 
     def execute_single_rollout(self):
         state = self.position
-        while not self.GameClass.is_over(state):
-            sub_states = self.GameClass.get_possible_moves(state)
-            state = sub_states[np.random.randint(len(sub_states))]
+        outcome, _ = self.tablebase_manager.query_position(state, outcome_only=True)
+        while np.isnan(outcome):
+            state = choose_random(self.GameClass.get_possible_moves(state))
+            outcome, _ = self.tablebase_manager.query_position(state, outcome_only=True)
 
-        return self.GameClass.get_winner(state)
+        return outcome
